@@ -1,5 +1,4 @@
 "use client";
-import { Badge } from "~/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -11,7 +10,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "~/components/ui/tabs";
 import QueryCard from "./_components/query-card";
 
 export default function DocumentationPage() {
-  const baseUrl = "/api/trpc";
   return (
     <div className="relative mt-5 grid place-items-center">
       <Card className="w-full max-w-5xl">
