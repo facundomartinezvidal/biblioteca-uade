@@ -1,5 +1,9 @@
 import { type Config } from "drizzle-kit";
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
+
+// Cargar variables locales primero de .env y luego .env.local (override)
+loadEnv({ path: ".env" });
+loadEnv({ path: ".env.local", override: true });
 
 // Nota:
 // 1. Pasamos a usar un array/glob para que drizzle-kit incluya todos los archivos
@@ -16,6 +20,11 @@ export default {
   ],
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL!,
+    url:
+      process.env.DATABASE_URL ??
+      process.env.POSTGRES_URL_NON_POOLING ??
+      process.env.POSTGRES_URL ??
+      process.env.POSTGRES_PRISMA_URL ??
+      "",
   },
 } satisfies Config;
