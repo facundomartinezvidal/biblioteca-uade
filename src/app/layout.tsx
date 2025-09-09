@@ -6,8 +6,9 @@ import { Geist } from "next/font/google";
 import { TRPCReactProvider } from "~/trpc/react";
 
 export const metadata: Metadata = {
-  title: "Full Stack Template",
-  description: "A template for building full stack applications",
+  title: "Biblioteca UADE",
+  description:
+    "Portal de la Biblioteca de la Universidad Argentina de la Empresa",
   icons: [{ rel: "icon", url: "/favicon.png" }],
 };
 
