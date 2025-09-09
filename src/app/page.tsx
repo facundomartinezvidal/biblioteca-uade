@@ -1,5 +1,5 @@
 "use client";
-import { ArrowRight, Globe, Landmark } from "lucide-react";
+import { ArrowRight, Globe, Landmark, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { routes } from "~/lib/routes";
 import * as React from "react";
@@ -55,7 +55,11 @@ export default function HomePage() {
                   className="bg-golden-brown hover:bg-golden-brown/75 rounded-md"
                 >
                   Ver Documentación
-                  <ArrowRight className="ml-1 h-4 w-4" />
+                  {goingDocumentation ? (
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <ArrowRight className="ml-1 h-4 w-4" />
+                  )}
                 </Button>
                 <span className="text-xs tracking-wide text-white/40">
                   Versión preliminar • {new Date().getFullYear()}

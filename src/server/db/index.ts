@@ -2,7 +2,9 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
 // Load DB URL from environment
-import * as schema from "./schema";
+// Con moduleResolution "Bundler" + verbatimModuleSyntax, las rutas relativas deben llevar
+// la extensión de runtime (.js). TypeScript resolverá el .ts correspondiente.
+import * as schema from "./schema.js";
 
 /**
  * Cache the database connection in development. This avoids creating a new connection on every HMR

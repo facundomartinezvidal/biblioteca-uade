@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "~/components/ui/tabs";
-import QueryCard from "./_components/query-card";
+import QuerySection from "./_components/query-section";
 
 export default function DocumentationPage() {
   return (
@@ -26,10 +26,7 @@ export default function DocumentationPage() {
               <TabsTrigger value="error">Error</TabsTrigger>
             </TabsList>
             <TabsContent value="query">
-              <QueryCard
-                title="Hello World"
-                description="Endpoint para que el servidor te salude"
-              />
+              <QuerySection title="Hello World" />
             </TabsContent>
             <TabsContent value="error"></TabsContent>
           </Tabs>
