@@ -5,36 +5,33 @@ interface QueryHeaderProps {
   endpoint: string;
 }
 
-export default function QueryHeader({ method, endpoint }: QueryHeaderProps) {
-  const basicUrl = "api/trpc/";
-  let color;
+function getMethodBgClass(method: "GET" | "POST" | "PUT" | "DELETE") {
   switch (method) {
     case "GET":
-      color = "emerald";
-      break;
+      return "bg-emerald-500";
     case "POST":
-      color = "rose";
-      break;
+      return "bg-rose-500";
     case "PUT":
-      color = "amber";
-      break;
+      return "bg-amber-500";
     case "DELETE":
-      color = "red";
-      break;
+      return "bg-red-500";
     default:
-      color = "esmerald";
+      return "bg-emerald-500";
   }
+}
+
+export default function QueryHeader({ method, endpoint }: QueryHeaderProps) {
+  const basicUrl = "api/trpc";
 
   return (
     <div className="flex w-full items-center gap-3 text-left">
       <Badge
-        variant="secondary"
-        className={`bg-${color}-500 font-mono text-xs text-white`}
+        className={`${getMethodBgClass(method)} font-mono text-xs text-white`}
       >
         {method}
       </Badge>
-      <code className="bg-muted rounded px-2 py-1 font-mono text-sm">
-        {`${basicUrl}/${endpoint}`}
+      <code className="rounded px-2 py-1 font-mono text-sm">
+        {`${basicUrl}${endpoint}`}
       </code>
     </div>
   );
