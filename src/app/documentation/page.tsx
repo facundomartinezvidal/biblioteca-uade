@@ -12,10 +12,10 @@ import { api } from "~/trpc/react";
 
 export default function DocumentationPage() {
   const {
-    data: booksData,
+    data: groups,
     isLoading,
     error,
-  } = api.documentation.books.getAll.useQuery({});
+  } = api.documentation.groups.useQuery();
   return (
     <div className="relative mt-5 grid place-items-center">
       <Card className="w-full max-w-5xl">
@@ -33,7 +33,24 @@ export default function DocumentationPage() {
               <TabsTrigger value="error">Error</TabsTrigger>
             </TabsList>
             <TabsContent value="query">
-              <QuerySection title="Books Endpoint" data={booksData} />
+              <div className="space-y-8">
+                {!groups
+                  ? null
+                  : groups.map((group) => (
+                      <div key={group.group} className="space-y-2">
+                        <h3 className="text-base font-semibold tracking-wide text-gray-500 dark:text-gray-400">
+                          {group.group}
+                        </h3>
+                        {group.endpoints.map((ep, idx) => (
+                          <QuerySection
+                            key={`${group.group}-${idx}`}
+                            title={ep.endpoint}
+                            data={ep}
+                          />
+                        ))}
+                      </div>
+                    ))}
+              </div>
             </TabsContent>
             <TabsContent value="error">
               {error ? String(error.message ?? "Unknown error") : ""}

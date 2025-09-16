@@ -7,3 +7,17 @@ export const bookStatusEnum = pgEnum("book_status", [
   "NOT_AVAILABLE",
   "RESERVED",
 ]);
+
+export const loanStatusEnum = pgEnum("loan_status", [
+  "RESERVED",
+  "ACTIVE",
+  "FINISHED",
+  "EXPIRED",
+  "CANCELLED",
+]);
+
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "LOANS_DEADLINE",
+  "LOANS_EXPIRED",
+  "USER_PENALIZED",
+]);

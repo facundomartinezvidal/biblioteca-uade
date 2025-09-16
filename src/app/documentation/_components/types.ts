@@ -8,7 +8,7 @@ export interface Parameter {
 export interface ResponseField {
   field: string;
   type: string;
-  description: string;
+  description?: string;
 }
 
 export interface QueryCardProps {
@@ -17,6 +17,7 @@ export interface QueryCardProps {
   method: "GET" | "POST" | "PUT" | "DELETE";
   parameters?: Parameter[];
   responseFields?: ResponseField[];
-  exampleRequest?: Record<string, unknown> | null;
+  exampleRequest?: string | Record<string, unknown> | null;
+  exampleBody?: Record<string, unknown> | null;
   exampleResponse?: Record<string, unknown> | null;
 }

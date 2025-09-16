@@ -27,7 +27,6 @@ export default function ResponseTable({ responseFields }: ResponseTableProps) {
         <TableRow>
           <TableHead className="w-32">Field</TableHead>
           <TableHead className="w-20">Type</TableHead>
-          <TableHead>Description</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -38,9 +37,6 @@ export default function ResponseTable({ responseFields }: ResponseTableProps) {
             </TableCell>
             <TableCell className="text-xs font-medium text-gray-600 dark:text-gray-400">
               {field.type}
-            </TableCell>
-            <TableCell className="text-xs text-gray-700 dark:text-gray-300">
-              {field.description}
             </TableCell>
           </TableRow>
         ))}

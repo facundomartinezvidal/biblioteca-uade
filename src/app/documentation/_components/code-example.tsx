@@ -2,7 +2,7 @@ import React from "react";
 
 interface CodeExampleProps {
   title: string;
-  code: Record<string, unknown> | null;
+  code: string | Record<string, unknown> | null;
   placeholder?: string;
 }
 
@@ -118,8 +118,13 @@ export default function CodeExample({
   code,
   placeholder,
 }: CodeExampleProps) {
-  const displayCode = code ?? {};
-  const hasContent = Object.keys(displayCode).length > 0;
+  const isString = typeof code === "string";
+  const displayCode: string | Record<string, unknown> =
+    code ?? (isString ? "" : {});
+  const hasContent =
+    typeof displayCode === "string"
+      ? displayCode.length > 0
+      : Object.keys(displayCode).length > 0;
 
   return (
     <div>
@@ -127,7 +132,15 @@ export default function CodeExample({
       <div className="rounded-md border border-gray-200 bg-gray-100 p-3 dark:border-gray-800 dark:bg-gray-900">
         {hasContent ? (
           <pre className="overflow-x-auto text-xs font-normal">
-            <code>{highlightJSON(displayCode)}</code>
+            <code>
+              {typeof displayCode === "string" ? (
+                <span className="text-gray-900 dark:text-gray-100">
+                  {displayCode}
+                </span>
+              ) : (
+                highlightJSON(displayCode)
+              )}
+            </code>
           </pre>
         ) : (
           <div className="text-xs font-normal text-gray-500 italic dark:text-gray-400">

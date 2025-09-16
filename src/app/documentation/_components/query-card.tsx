@@ -18,6 +18,7 @@ export default function QueryCard({
   parameters = [],
   responseFields = [],
   exampleRequest = null,
+  exampleBody = null,
   exampleResponse = null,
 }: QueryCardProps) {
   return (
@@ -47,6 +48,17 @@ export default function QueryCard({
                   code={exampleRequest}
                   placeholder="No request example available"
                 />
+
+                {method !== "GET" && exampleBody ? (
+                  <>
+                    <Separator />
+                    <CodeExample
+                      title="Example Body"
+                      code={exampleBody}
+                      placeholder="No body example available"
+                    />
+                  </>
+                ) : null}
 
                 <Separator />
 

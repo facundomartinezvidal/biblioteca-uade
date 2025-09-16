@@ -27,7 +27,6 @@ export default function ParametersTable({ parameters }: ParametersTableProps) {
       <TableHeader>
         <TableRow>
           <TableHead className="w-32">Field</TableHead>
-          <TableHead className="w-32">Type</TableHead>
           <TableHead className="w-32">Required</TableHead>
           <TableHead>Example</TableHead>
         </TableRow>
@@ -37,9 +36,6 @@ export default function ParametersTable({ parameters }: ParametersTableProps) {
           <TableRow key={index}>
             <TableCell className="font-mono text-xs font-medium text-gray-900 dark:text-gray-100">
               {param.field}
-            </TableCell>
-            <TableCell className="text-xs font-medium text-gray-600 dark:text-gray-400">
-              {param.type}
             </TableCell>
             <TableCell>
               {param.required !== false ? (

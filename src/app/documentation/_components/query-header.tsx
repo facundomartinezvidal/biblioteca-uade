@@ -10,7 +10,7 @@ function getMethodBgClass(method: "GET" | "POST" | "PUT" | "DELETE") {
     case "GET":
       return "bg-emerald-500";
     case "POST":
-      return "bg-rose-500";
+      return "bg-blue-500";
     case "PUT":
       return "bg-amber-500";
     case "DELETE":

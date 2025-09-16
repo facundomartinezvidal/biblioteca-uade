@@ -1,4 +1,4 @@
-import { pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { bookStatusEnum } from "../enums";
 import { authors } from "./authors";
 import { genders } from "./genders";
@@ -7,10 +7,11 @@ import { locations } from "./locations";
 export const books = pgTable("books", {
   id: uuid("id").defaultRandom().primaryKey(),
   title: text("title").notNull(),
-  author: text("author").notNull(),
   description: text("description").notNull(),
   isbn: text("isbn").notNull().unique(),
   status: bookStatusEnum("book_status").notNull().default("AVAILABLE"),
+  year: integer("year").notNull(),
+  editorial: text("editorial").notNull(),
   authorId: uuid("author_id")
     .notNull()
     .references(() => authors.id),
