@@ -111,10 +111,11 @@ export default function QuerySection({
                                 typeof val === "boolean"
                                   ? String(val)
                                   : JSON.stringify(val);
-                              search.append(
-                                fk,
-                                keyStr ? `${keyStr}:${valueStr}` : valueStr,
-                              );
+                              const payload =
+                                keyStr && keyStr !== "filters"
+                                  ? `${keyStr}:${valueStr}`
+                                  : valueStr;
+                              search.append(fk, payload);
                             });
                           }
                         }
