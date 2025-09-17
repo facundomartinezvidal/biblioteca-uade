@@ -7,7 +7,7 @@ import {
 } from "../examples/book";
 import { buildUserByIdResponse } from "../examples/users";
 import { buildNotificationsList } from "../examples/notifications";
-import { buildLoansList } from "../examples/loans";
+import { buildLoansById, buildLoansList } from "../examples/loans";
 import {
   buildPenaltyByIdResponse,
   buildPenaltyListResponse,
@@ -77,6 +77,13 @@ export const documentationRouter = createTRPCRouter({
           request: { userId: randomUUID() },
           response: buildBooksListResponse(),
         },
+        {
+          method: "GET",
+          endpoint: "/books.getReadBooks{userId}",
+          description: "Obtiene los libros leídos por un usuario por su ID",
+          request: { userId: randomUUID() },
+          response: buildBooksListResponse(),
+        },
       ];
 
       // Users
@@ -117,10 +124,25 @@ export const documentationRouter = createTRPCRouter({
         },
         {
           method: "GET",
+          endpoint: "/loans.getActive{id}",
+          description: "Obtiene los préstamos activos por su ID",
+          request: { id: randomUUID() },
+          response: buildLoansList(),
+        },
+        {
+          method: "GET",
+          endpoint: "/loans.nextDeadline{id}",
+          description:
+            "Obtiene los préstamos con la fecha proxima a vencer por su ID",
+          request: { id: randomUUID() },
+          response: buildLoansList(),
+        },
+        {
+          method: "GET",
           endpoint: "/loans.getById{id}",
           description: "Obtiene un préstamo por su ID",
           request: { id: randomUUID() },
-          response: buildLoansList(),
+          response: buildLoansById(),
         },
         {
           method: "POST",
@@ -211,6 +233,44 @@ export const documentationRouter = createTRPCRouter({
           },
           response: buildPenaltyListResponse(),
         },
+        {
+          method: "POST",
+          endpoint: "/penalties.create",
+          description: "Crea una penalización",
+          body: {
+            userId: randomUUID(),
+            motive: "LOANS_EXPIRED",
+          },
+          response: buildPenaltyByIdResponse(),
+        },
+      ];
+
+      const libraryEndpoints: DocumentationResponse[] = [
+        {
+          method: "GET",
+          endpoint: "/library.getAll",
+          description: "Obtiene todas las bibliotecas",
+          request: {
+            page: 1,
+            limit: 10,
+            filters: [{ key: "filters", values: ["MONSERRAT"] }],
+          },
+          response: {
+            results: [
+              {
+                id: randomUUID(),
+                name: "Biblioteca de Montserrat",
+                address: "Lima 1 Piso 2",
+                campus: "MONSERRAT",
+                hours: "09:00 - 18:00",
+                createdAt: new Date().toISOString(),
+              },
+            ],
+            total: 1,
+            page: 1,
+            limit: 10,
+          },
+        },
       ];
 
       return [
@@ -219,6 +279,7 @@ export const documentationRouter = createTRPCRouter({
         { group: "Notifications", endpoints: notificationsEndpoints },
         { group: "Loans", endpoints: loansEndpoints },
         { group: "Penalties", endpoints: penaltiesEndpoints },
+        { group: "Library", endpoints: libraryEndpoints },
       ];
     }),
 });
