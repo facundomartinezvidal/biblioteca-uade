@@ -273,6 +273,65 @@ export const documentationRouter = createTRPCRouter({
         },
       ];
 
+      const errorsEndpoints: DocumentationResponse[] = [
+        {
+          method: "ERROR",
+          endpoint: "/errors.badRequest",
+          description: "Solicitud inválida (400)",
+          response: {
+            status: 400,
+            code: "BAD_REQUEST",
+            message: "The request parameters are invalid",
+            traceId: randomUUID(),
+          },
+        },
+        {
+          method: "ERROR",
+          endpoint: "/errors.unauthorized",
+          description: "No autorizado (401)",
+          response: {
+            status: 401,
+            code: "UNAUTHORIZED",
+            message: "Authentication is required",
+            traceId: randomUUID(),
+          },
+        },
+        {
+          method: "ERROR",
+          endpoint: "/errors.forbidden",
+          description: "Prohibido (403)",
+          response: {
+            status: 403,
+            code: "FORBIDDEN",
+            message: "You do not have access to this resource",
+            traceId: randomUUID(),
+          },
+        },
+        {
+          method: "ERROR",
+          endpoint: "/errors.notFound",
+          description: "No encontrado (404)",
+          response: {
+            status: 404,
+            code: "NOT_FOUND",
+            message: "The requested resource was not found",
+            traceId: randomUUID(),
+          },
+        },
+
+        {
+          method: "ERROR",
+          endpoint: "/errors.internal",
+          description: "Error interno del servidor (500)",
+          response: {
+            status: 500,
+            code: "INTERNAL_SERVER_ERROR",
+            message: "An unexpected error occurred",
+            traceId: randomUUID(),
+          },
+        },
+      ];
+
       return [
         { group: "Books", endpoints: booksEndpoints },
         { group: "Users", endpoints: usersEndpoints },
@@ -280,6 +339,7 @@ export const documentationRouter = createTRPCRouter({
         { group: "Loans", endpoints: loansEndpoints },
         { group: "Penalties", endpoints: penaltiesEndpoints },
         { group: "Library", endpoints: libraryEndpoints },
+        { group: "Errors", endpoints: errorsEndpoints },
       ];
     }),
 });

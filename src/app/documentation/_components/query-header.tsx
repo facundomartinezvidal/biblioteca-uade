@@ -5,7 +5,7 @@ interface QueryHeaderProps {
   endpoint: string;
 }
 
-function getMethodBgClass(method: "GET" | "POST" | "PUT" | "DELETE") {
+function getMethodBgClass(method: "GET" | "POST" | "PUT" | "DELETE" | "ERROR") {
   switch (method) {
     case "GET":
       return "bg-emerald-500";
@@ -14,6 +14,8 @@ function getMethodBgClass(method: "GET" | "POST" | "PUT" | "DELETE") {
     case "PUT":
       return "bg-amber-500";
     case "DELETE":
+      return "bg-red-500";
+    case "ERROR":
       return "bg-red-500";
     default:
       return "bg-emerald-500";

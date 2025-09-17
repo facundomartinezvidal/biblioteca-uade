@@ -25,7 +25,6 @@ export default function DocumentationPage() {
             Documentacion de los endpoints disponibles en la API tRPC
           </CardDescription>
         </CardHeader>
-        {isLoading ? null : null}
         <CardContent className="space-y-8">
           <Tabs defaultValue="query" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
@@ -33,27 +32,72 @@ export default function DocumentationPage() {
               <TabsTrigger value="error">Error</TabsTrigger>
             </TabsList>
             <TabsContent value="query">
-              <div className="space-y-8">
-                {!groups
-                  ? null
-                  : groups.map((group) => (
-                      <div key={group.group} className="space-y-2">
-                        <h3 className="text-base font-semibold tracking-wide text-gray-500 dark:text-gray-400">
-                          {group.group}
-                        </h3>
-                        {group.endpoints.map((ep, idx) => (
-                          <QuerySection
-                            key={`${group.group}-${idx}`}
-                            title={ep.endpoint}
-                            data={ep}
-                          />
+              {isLoading ? (
+                <div className="space-y-6">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="space-y-3">
+                      <div className="bg-muted h-4 w-40 animate-pulse rounded" />
+                      <div className="bg-muted h-24 w-full animate-pulse rounded-md" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  {!groups
+                    ? null
+                    : groups
+                        .filter((group) => group.group !== "Errors")
+                        .map((group) => (
+                          <div key={group.group} className="space-y-2">
+                            <h3 className="text-base font-semibold tracking-wide text-gray-500 dark:text-gray-400">
+                              {group.group}
+                            </h3>
+                            {group.endpoints.map((ep, idx) => (
+                              <QuerySection
+                                key={`${group.group}-${idx}`}
+                                title={ep.endpoint}
+                                data={ep}
+                              />
+                            ))}
+                          </div>
                         ))}
-                      </div>
-                    ))}
-              </div>
+                </div>
+              )}
             </TabsContent>
             <TabsContent value="error">
-              {error ? String(error.message ?? "Unknown error") : ""}
+              {isLoading ? (
+                <div className="space-y-6">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="space-y-3">
+                      <div className="bg-muted h-4 w-40 animate-pulse rounded" />
+                      <div className="bg-muted h-24 w-full animate-pulse rounded-md" />
+                    </div>
+                  ))}
+                </div>
+              ) : error ? (
+                String(error.message ?? "Unknown error")
+              ) : (
+                <div className="space-y-8">
+                  {!groups
+                    ? null
+                    : groups
+                        .filter((group) => group.group === "Errors")
+                        .map((group) => (
+                          <div key={group.group} className="space-y-2">
+                            <h3 className="text-base font-semibold tracking-wide text-gray-500 dark:text-gray-400">
+                              {group.group}
+                            </h3>
+                            {group.endpoints.map((ep, idx) => (
+                              <QuerySection
+                                key={`${group.group}-${idx}`}
+                                title={ep.endpoint}
+                                data={ep}
+                              />
+                            ))}
+                          </div>
+                        ))}
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </CardContent>
