@@ -24,6 +24,9 @@ function getMethodBgClass(method: "GET" | "POST" | "PUT" | "DELETE" | "ERROR") {
 
 export default function QueryHeader({ method, endpoint }: QueryHeaderProps) {
   const basicUrl = "api/trpc";
+  const display = /^https?:\/\//i.test(endpoint)
+    ? endpoint
+    : `${basicUrl}${endpoint}`;
 
   return (
     <div className="flex w-full items-center gap-3 text-left">
@@ -32,9 +35,7 @@ export default function QueryHeader({ method, endpoint }: QueryHeaderProps) {
       >
         {method}
       </Badge>
-      <code className="rounded px-2 py-1 font-mono text-sm">
-        {`${basicUrl}${endpoint}`}
-      </code>
+      <code className="rounded px-2 py-1 font-mono text-sm">{display}</code>
     </div>
   );
 }

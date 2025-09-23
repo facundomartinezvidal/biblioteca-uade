@@ -332,6 +332,145 @@ export const documentationRouter = createTRPCRouter({
         },
       ];
 
+      const externalBackOfficeEndpoints: DocumentationResponse[] = [
+        {
+          method: "GET",
+          endpoint: "https://backoffice-yoem.onrender.com/api/v1/users/{id}",
+          description: "Obtiene un usuario por su ID desde el backoffice",
+          request: { id: randomUUID() },
+          response: {
+            id: randomUUID(),
+            name: "Juan Pérez",
+            email: "juan@example.com",
+            role: "STUDENT",
+          },
+        },
+        {
+          method: "GET",
+          endpoint:
+            "https://backoffice-yoem.onrender.com/api/v1/penalties/{motive}",
+          description: "Obtiene las multas desde el backoffice por motivo",
+          request: { motive: "LOANS_EXPIRED" },
+          response: {
+            id: randomUUID(),
+            userId: randomUUID(),
+            motive: "LOANS_EXPIRED",
+            amount: 100,
+          },
+        },
+        {
+          method: "GET",
+          endpoint:
+            "https://backoffice-yoem.onrender.com/api/v1/spaces/libraries",
+          description: "Obtiene todas las bibliotecas desde el backoffice",
+          response: {
+            locations: [
+              {
+                id: randomUUID(),
+                address: "Lima 1 Piso 2",
+                campus: "MONSERRAT",
+                hours: "09:00 - 18:00",
+              },
+              {
+                id: randomUUID(),
+                address: "Independencia Piso 5",
+                campus: "RECOLETA",
+                hours: "09:00 - 18:00",
+              },
+            ],
+          },
+        },
+      ];
+
+      const externalCoreEndpoints: DocumentationResponse[] = [
+        {
+          method: "GET",
+          endpoint: "https://api-core/api/auth/login",
+          description: "Obtiene un token de acceso desde el Core",
+          body: {
+            email: "juan@example.com",
+            password: "123456",
+          },
+          response: {
+            success: true,
+            data: {
+              access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+              refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+              token_type: "Bearer",
+              expires_in: 3600,
+              user: {
+                uuid: randomUUID(),
+                name: "John Doe",
+                email: "john.doe@example.com",
+              },
+            },
+          },
+        },
+        {
+          method: "GET",
+          endpoint: "https://api-core/api/auth/refresh",
+          description: "Refresca un token de acceso desde el Core",
+          body: {
+            refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+          },
+          response: {
+            success: true,
+            data: {
+              access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+              refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+              token_type: "Bearer",
+              expires_in: 3600,
+              user: {
+                uuid: randomUUID(),
+                name: "John Doe",
+                email: "john.doe@example.com",
+              },
+            },
+          },
+        },
+        {
+          method: "GET",
+          endpoint: "https://api-core/api/auth/logout",
+          description: "Cierra la sesión desde el Core",
+          response: {
+            success: true,
+            message: "Logout successful",
+          },
+        },
+        {
+          method: "GET",
+          endpoint: "https://api-core/api/wallets/by-user/{user_id}",
+          description: "Obtiene el wallet de un usuario desde el Core",
+          request: { user_id: randomUUID(), currency: "ARS" },
+          response: {
+            uuid: randomUUID(),
+            userId: randomUUID(),
+            currency: "ARS",
+            status: "active",
+            createdAt: new Date().toISOString(),
+          },
+        },
+        {
+          method: "POST",
+          endpoint: "https://api-core/api/transactions/by-user/{user_id}",
+          description: "Crea un transacción de un usuario desde el Core",
+          body: {
+            user_id: randomUUID(),
+            currency: "ARS",
+            amount: 100,
+            type: "penalty_payment",
+            description: "Pago de multa de 100 ARS",
+          },
+          response: {
+            uuid: randomUUID(),
+            userId: randomUUID(),
+            currency: "ARS",
+            status: "completed",
+            createdAt: new Date().toISOString(),
+          },
+        },
+      ];
+
       return [
         { group: "Books", endpoints: booksEndpoints },
         { group: "Users", endpoints: usersEndpoints },
@@ -340,6 +479,14 @@ export const documentationRouter = createTRPCRouter({
         { group: "Penalties", endpoints: penaltiesEndpoints },
         { group: "Library", endpoints: libraryEndpoints },
         { group: "Errors", endpoints: errorsEndpoints },
+        {
+          group: "Backoffice - Endpoints",
+          endpoints: externalBackOfficeEndpoints,
+        },
+        {
+          group: "Core - Endpoints",
+          endpoints: externalCoreEndpoints,
+        },
       ];
     }),
 });

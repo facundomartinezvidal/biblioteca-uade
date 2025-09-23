@@ -41,7 +41,8 @@ export default function DocumentationPage() {
       endpoint: string,
       request?: Record<string, unknown>,
     ) => {
-      const base = `api/trpc${endpoint}`;
+      const isAbsolute = /^https?:\/\//i.test(endpoint);
+      const base = isAbsolute ? endpoint : `api/trpc${endpoint}`;
       const search = new URLSearchParams();
       const req = request ?? {};
       Object.entries(req).forEach(([k, v]) => {
@@ -117,7 +118,9 @@ export default function DocumentationPage() {
             const exampleRequest =
               ep.method === "GET"
                 ? buildGetUrl(ep.endpoint, ep.request)
-                : `api/trpc${ep.endpoint}`;
+                : /^https?:\/\//i.test(ep.endpoint)
+                  ? ep.endpoint
+                  : `api/trpc${ep.endpoint}`;
             const bodyBlock =
               ep.method === "GET"
                 ? ""

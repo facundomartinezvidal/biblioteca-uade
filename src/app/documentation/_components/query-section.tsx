@@ -77,7 +77,10 @@ export default function QuerySection({
           exampleRequest={
             data.method === "GET"
               ? (() => {
-                  const base = `api/trpc${data.endpoint}`;
+                  const isAbsolute = /^https?:\/\//i.test(data.endpoint);
+                  const base = isAbsolute
+                    ? data.endpoint
+                    : `api/trpc${data.endpoint}`;
                   const request = data.request ?? {};
                   const search = new URLSearchParams();
                   Object.entries(request).forEach(([k, v]) => {
@@ -144,7 +147,9 @@ export default function QuerySection({
                   const qs = search.toString();
                   return qs ? `${base}?${qs}` : base;
                 })()
-              : `api/trpc${data.endpoint}`
+              : /^https?:\/\//i.test(data.endpoint)
+                ? data.endpoint
+                : `api/trpc${data.endpoint}`
           }
           exampleBody={
             data.method !== "GET" ? (data.body ?? data.request ?? {}) : null
