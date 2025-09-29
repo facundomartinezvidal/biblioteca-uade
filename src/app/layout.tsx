@@ -4,6 +4,7 @@ import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 
 import { TRPCReactProvider } from "~/trpc/react";
+import AppNavbar from "./_components/navbar/app-navbar";
 
 export const metadata: Metadata = {
   title: "Biblioteca UADE",
@@ -23,7 +24,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geist.variable}`}>
       <body>
-        <TRPCReactProvider>{children}</TRPCReactProvider>
+        <TRPCReactProvider>
+          <AppNavbar />
+          {children}
+        </TRPCReactProvider>
       </body>
     </html>
   );
