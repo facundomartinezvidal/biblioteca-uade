@@ -35,7 +35,7 @@ export default function AppNavbar() {
   };
 
   return (
-    <nav className="bg-berkeley-blue mt-2 border-b border-white/10 px-8 py-4 text-white">
+    <nav className="bg-berkeley-blue border-b border-white/10 px-8 py-4 text-white">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-8">
           <Link
