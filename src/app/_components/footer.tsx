@@ -2,30 +2,22 @@ import Link from "next/link";
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
+import Image from "next/image";
 
 export function Footer() {
   return (
     <footer className="bg-berkeley-blue text-white">
       <div className="container mx-auto px-8 py-12">
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-white/10">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-6 w-6"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                </svg>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs leading-none">Biblioteca</span>
-                <span className="text-sm leading-none font-bold">UADE</span>
-              </div>
+          <div className="flex flex-col items-start gap-4">
+            <div className="relative flex h-14 w-32 items-center overflow-visible">
+              <Image
+                src="/favicon.png"
+                alt="UADE Logo"
+                width={160}
+                height={160}
+                className="object-contain"
+              />
             </div>
             <p className="text-sm leading-relaxed text-white/70">
               Portal académico para consulta, gestión y descubrimiento de

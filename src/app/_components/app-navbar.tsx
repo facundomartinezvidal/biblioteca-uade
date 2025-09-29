@@ -40,23 +40,16 @@ export default function AppNavbar() {
         <div className="flex items-center gap-8">
           <Link
             href={routes.home}
-            className="flex items-center gap-2 transition-opacity hover:opacity-80"
+            className="flex items-center transition-opacity hover:opacity-80"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-white/10">
-              <svg
-                viewBox="0 0 24 24"
-                className="h-6 w-6"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-              </svg>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs leading-none">Biblioteca</span>
-              <span className="text-sm leading-none font-bold">UADE</span>
+            <div className="relative flex h-12 w-30 items-center overflow-visible">
+              <Image
+                src="/favicon.png"
+                alt="UADE Logo"
+                width={160}
+                height={160}
+                className="object-contain"
+              />
             </div>
           </Link>
 
