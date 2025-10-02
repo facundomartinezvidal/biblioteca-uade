@@ -5,9 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import BookCard from "./_components/home/book-card";
 import FiltersSidebar from "./_components/home/filters-sidebar";
 import { api } from "~/trpc/react";
+import BookCardSkeleton from "./_components/home/book-card-skeleton";
 
 export default function HomePage() {
-  const { data: books } = api.books.getAll.useQuery();
+  const { data: books, isLoading } = api.books.getAll.useQuery();
   return (
     <div>
       {/* Header */}
@@ -50,19 +51,23 @@ export default function HomePage() {
 
             <TabsContent value="all" className="mt-6">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {books?.response.map((book) => (
-                  <BookCard
-                    key={book.id}
-                    title={book.title}
-                    author={book.author}
-                    category={book.gender}
-                    description={book.description}
-                    isbn={book.isbn}
-                    location={book.location ?? ""}
-                    available={book.status === "AVAILABLE"}
-                    coverUrl={book.imageUrl}
-                  />
-                ))}
+                {isLoading
+                  ? Array.from({ length: 10 }).map((_, index) => (
+                      <BookCardSkeleton key={index} />
+                    ))
+                  : books?.response.map((book) => (
+                      <BookCard
+                        key={book.id}
+                        title={book.title}
+                        author={book.author}
+                        category={book.gender}
+                        description={book.description}
+                        isbn={book.isbn}
+                        location={book.location ?? ""}
+                        available={book.status === "AVAILABLE"}
+                        coverUrl={book.imageUrl}
+                      />
+                    ))}
               </div>
             </TabsContent>
 
