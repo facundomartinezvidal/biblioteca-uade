@@ -58,7 +58,7 @@ export default function HomePage() {
                     category={book.gender}
                     description={book.description}
                     isbn={book.isbn}
-                    location={book.location}
+                    location={book.location ?? ""}
                     available={book.status === "AVAILABLE"}
                     coverUrl={book.imageUrl}
                   />

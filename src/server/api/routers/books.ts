@@ -1,6 +1,6 @@
 import { createTRPCRouter, publicProcedure } from "../trpc";
 import type { RouterInput, RouterOutput } from "../root";
-import { authors, books, genders, locations } from "~/server/db/schemas";
+import { authors, books, genders } from "~/server/db/schemas";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -24,15 +24,13 @@ export const booksRouter = createTRPCRouter({
         year: books.year,
         editorial: books.editorial,
         gender: genders.name,
-        location: locations.address,
-        locationCampus: locations.campus,
+        location: books.locationId,
         imageUrl: books.imageUrl,
         createdAt: books.createdAt,
       })
       .from(books)
       .innerJoin(authors, eq(books.authorId, authors.id))
-      .innerJoin(genders, eq(books.genderId, genders.id))
-      .innerJoin(locations, eq(books.locationId, locations.id));
+      .innerJoin(genders, eq(books.genderId, genders.id));
     return {
       success: true,
       method: "GET",
@@ -55,16 +53,14 @@ export const booksRouter = createTRPCRouter({
           year: books.year,
           editorial: books.editorial,
           gender: genders.name,
-          location: locations.address,
-          locationCampus: locations.campus,
+          location: books.locationId,
           imageUrl: books.imageUrl,
           createdAt: books.createdAt,
         })
         .from(books)
         .where(eq(books.id, input.id))
         .innerJoin(authors, eq(books.authorId, authors.id))
-        .innerJoin(genders, eq(books.genderId, genders.id))
-        .innerJoin(locations, eq(books.locationId, locations.id));
+        .innerJoin(genders, eq(books.genderId, genders.id));
       return {
         success: true,
         method: "GET",
