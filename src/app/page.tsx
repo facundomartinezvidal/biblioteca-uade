@@ -6,9 +6,16 @@ import BookCard from "./_components/home/book-card";
 import FiltersSidebar from "./_components/home/filters-sidebar";
 import { api } from "~/trpc/react";
 import BookCardSkeleton from "./_components/home/book-card-skeleton";
+import { useRouter } from "next/navigation";
 
 export default function HomePage() {
   const { data: books, isLoading } = api.books.getAll.useQuery();
+  const router = useRouter();
+
+  const handleReserve = (book: any) => {
+    // Navegar a la página de reserva con el ID del libro
+    router.push(`/reserve?bookId=${book.id}`);
+  };
   return (
     <div>
       {/* Header */}
@@ -66,6 +73,7 @@ export default function HomePage() {
                         location={book.location ?? ""}
                         available={book.status === "AVAILABLE"}
                         coverUrl={book.imageUrl}
+                        onReserve={() => handleReserve(book)}
                       />
                     ))}
               </div>
@@ -82,6 +90,7 @@ export default function HomePage() {
                   location="Piso 2, Seccion Ciencias"
                   available
                   isFavorite
+                  onReserve={() => handleReserve({ id: "nexus-book", title: "Nexus", author: "Yuval Noah Harari" })}
                 />
               </div>
             </TabsContent>
@@ -96,6 +105,7 @@ export default function HomePage() {
                   isbn="543-65-376-0400-1"
                   location="Piso 2, Seccion Ciencias"
                   available
+                  onReserve={() => handleReserve({ id: "python-book", title: "Python para todos", author: "Charles Severance" })}
                 />
               </div>
             </TabsContent>
