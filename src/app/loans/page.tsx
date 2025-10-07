@@ -136,17 +136,17 @@ export default function LoansPage() {
       {expiredLoans > 0 && (
         <Alert className="bg-white border-[#CC3F0C] rounded-lg border-2" style={{ color: '#CC3F0C' }}>
           <AlertDescription className="flex items-start gap-3">
-            <span className="text-lg">⚠️</span>
+          <span className="text-lg">⚠️</span>
             <div className="flex flex-col">
               <span className="font-medium" style={{ color: '#CC3F0C' }}>
                 Atención!
               </span>
               <span style={{ color: '#CC3F0C' }}>
                 Tienes {expiredLoans} préstamo(s) vencido(s). Se aplicarán multas automáticamente después de 7 días del vencimiento.
-              </span>
+          </span>
             </div>
-          </AlertDescription>
-        </Alert>
+        </AlertDescription>
+      </Alert>
       )}
 
       <main className="container mx-auto px-8 py-8">
@@ -253,84 +253,84 @@ export default function LoansPage() {
                   loansData.results.map((loan: any) => {
                     const actions = getActions(loan.status);
                     return (
-                      <TableRow key={loan.id} className="hover:bg-gray-50">
-                        {/* Columna Libro */}
-                        <TableCell className="py-4">
-                          <div className="flex items-center gap-4">
-                            <div className="relative w-16 h-20 bg-gray-200 rounded flex items-center justify-center">
+                  <TableRow key={loan.id} className="hover:bg-gray-50">
+                    {/* Columna Libro */}
+                    <TableCell className="py-4">
+                      <div className="flex items-center gap-4">
+                        <div className="relative w-16 h-20 bg-gray-200 rounded flex items-center justify-center">
                               {loan.book.imageUrl ? (
-                                <Image
+                          <Image
                                   src={loan.book.imageUrl}
-                                  alt={loan.book.title}
-                                  width={64}
-                                  height={80}
-                                  className="object-cover rounded"
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.style.display = 'none';
-                                    const nextElement = target.nextElementSibling as HTMLElement;
-                                    if (nextElement) {
-                                      nextElement.style.display = 'flex';
-                                    }
-                                  }}
-                                />
+                            alt={loan.book.title}
+                            width={64}
+                            height={80}
+                            className="object-cover rounded"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const nextElement = target.nextElementSibling as HTMLElement;
+                              if (nextElement) {
+                                nextElement.style.display = 'flex';
+                              }
+                            }}
+                          />
                               ) : null}
                               <div className={`${loan.book.imageUrl ? 'hidden' : 'flex'} w-full h-full bg-gray-200 rounded items-center justify-center text-gray-400 text-xs`}>
-                                Sin imagen
-                              </div>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                              <h3 className="font-semibold text-gray-900 text-sm">
-                                {loan.book.title}
-                              </h3>
-                              <p className="text-gray-600 text-sm">
-                                {loan.author.name} {loan.author.middleName} {loan.author.lastName}
-                              </p>
-                              <p className="text-gray-500 text-xs">
-                                #ISBN: {loan.book.isbn}
-                              </p>
-                            </div>
+                            Sin imagen
                           </div>
-                        </TableCell>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <h3 className="font-semibold text-gray-900 text-sm">
+                            {loan.book.title}
+                          </h3>
+                          <p className="text-gray-600 text-sm">
+                                {loan.author.name} {loan.author.middleName} {loan.author.lastName}
+                          </p>
+                          <p className="text-gray-500 text-xs">
+                            #ISBN: {loan.book.isbn}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
 
-                        {/* Columna Estado */}
-                        <TableCell>
+                    {/* Columna Estado */}
+                    <TableCell>
                           <Badge className={`${getStatusColor(loan.status)} border-0`}>
                             {getStatusText(loan.status)}
-                          </Badge>
-                        </TableCell>
+                      </Badge>
+                    </TableCell>
 
-                        {/* Columna Desde */}
-                        <TableCell className="text-gray-700">
+                    {/* Columna Desde */}
+                    <TableCell className="text-gray-700">
                           {formatDate(loan.createdAt)}
-                        </TableCell>
+                    </TableCell>
 
-                        {/* Columna Hasta */}
-                        <TableCell className="text-gray-700">
+                    {/* Columna Hasta */}
+                    <TableCell className="text-gray-700">
                           {formatDate(loan.endDate)}
-                        </TableCell>
+                    </TableCell>
 
-                        {/* Columna Acciones */}
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
+                    {/* Columna Acciones */}
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
                               variant={actions.primary.variant}
-                              size="sm"
-                              className="text-xs"
+                          size="sm"
+                          className="text-xs"
                               onClick={() => handleViewMore(loan)}
-                            >
+                        >
                               {actions.primary.label}
-                            </Button>
-                            <Button
+                        </Button>
+                        <Button
                               variant={actions.secondary.variant}
-                              size="sm"
-                              className="text-xs"
-                            >
+                          size="sm"
+                          className="text-xs"
+                        >
                               {actions.secondary.label}
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                     );
                   })
                 ) : (
