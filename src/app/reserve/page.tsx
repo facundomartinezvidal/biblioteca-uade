@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Clock, Heart } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, Heart } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { Card, CardContent } from "~/components/ui/card";
@@ -10,36 +10,34 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import { Skeleton } from "~/components/ui/skeleton";
-import ReservationSuccessModal from "~/app/_components/reservation-success-modal";
 
-// Get recommended books from API
+// Obtener libros recomendados desde la API
 
 export default function ReservePage() {
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const searchParams = useSearchParams();
   const bookId = searchParams.get('bookId');
 
-  // Get book data from API
+  // Obtener datos del libro desde la API
   const { data: bookData, isLoading: bookLoading } = api.books.getById.useQuery(
-    { id: bookId ?? "" },
+    { id: bookId || "" },
     { enabled: !!bookId }
   );
 
-  // Get recommended books (excluding current book)
+  // Obtener libros recomendados (excluyendo el libro actual)
   const { data: recommendedBooksData, isLoading: recommendedLoading } = api.books.getAll.useQuery();
   
   const book = bookData?.response?.[0];
   
-  // Filter recommended books (exclude current book and take only some)
+  // Filtrar libros recomendados (excluir el libro actual y tomar solo algunos)
   const recommendedBooks = recommendedBooksData?.response
     ?.filter(recBook => recBook.id !== bookId)
-    ?.slice(0, 2) ?? [];
+    ?.slice(0, 2) || [];
 
-  // Calculate dates
+  // Calcular fechas
   const reservationDate = new Date();
   const returnDate = new Date();
-  returnDate.setDate(reservationDate.getDate() + 7); // 7 days loan period
+  returnDate.setDate(reservationDate.getDate() + 7); // 7 días de préstamo
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('es-ES', {
@@ -69,14 +67,12 @@ export default function ReservePage() {
       return;
     }
     
-    // TODO: Implement real reservation logic
+    // TODO: Implementar lógica de reserva
     console.log("Reserva confirmada para:", book.title);
-    
-    // Show confirmation modal
-    setShowSuccessModal(true);
+    alert("Reserva confirmada exitosamente");
   };
 
-  // Show loading if no data
+  // Mostrar loading si no hay datos
   if (bookLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -466,7 +462,7 @@ export default function ReservePage() {
                         </div>
 
                         <div className="text-xs text-gray-500">
-                          <span className="font-medium">Ubicación:</span> {recBook.location ?? 'No especificada'}
+                          <span className="font-medium">Ubicación:</span> {recBook.location || 'No especificada'}
                         </div>
 
                         <div className="flex items-center justify-between pt-2">
