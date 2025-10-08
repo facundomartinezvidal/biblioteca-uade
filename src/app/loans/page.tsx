@@ -109,7 +109,7 @@ export default function LoansPage() {
     limit: 50,
   });
 
-  // Estado para el modal
+  // State for modal
   const [selectedLoan, setSelectedLoan] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -132,7 +132,7 @@ export default function LoansPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Banner de Alerta - Solo mostrar si hay préstamos vencidos */}
+      {/* Alert Banner - Only show if there are expired loans */}
       {expiredLoans > 0 && (
         <Alert className="bg-white border-[#CC3F0C] rounded-lg border-2" style={{ color: '#CC3F0C' }}>
           <AlertDescription className="flex items-start gap-3">
@@ -171,7 +171,7 @@ export default function LoansPage() {
           </p>
         </div>
 
-        {/* Barra de Búsqueda */}
+        {/* Search Bar */}
         <div className="mb-6">
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -182,7 +182,7 @@ export default function LoansPage() {
           </div>
         </div>
 
-        {/* Tabla de Préstamos */}
+        {/* Loans Table */}
         <Card className="shadow-sm">
           <CardContent className="p-0">
             <Table>
@@ -345,7 +345,7 @@ export default function LoansPage() {
           </CardContent>
         </Card>
 
-        {/* Paginación */}
+        {/* Pagination */}
         <div className="flex items-center justify-between mt-6">
           <div className="text-sm text-gray-600">
             0 of {loansData?.results?.length || 0} row(s) selected.
@@ -361,7 +361,7 @@ export default function LoansPage() {
         </div>
       </main>
 
-      {/* Modal de detalles del préstamo */}
+      {/* Loan details modal */}
       {selectedLoan && (
         <LoanDetailsModal
           isOpen={isModalOpen}

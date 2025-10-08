@@ -78,7 +78,7 @@ export default function ReservationSuccessModal({
       <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header del modal */}
         <div className="relative p-6 pb-4">
-          {/* Botón de cerrar */}
+          {/* Close button */}
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -86,7 +86,7 @@ export default function ReservationSuccessModal({
             <X className="h-5 w-5 text-gray-500" />
           </button>
 
-          {/* Título de éxito */}
+          {/* Success title */}
           <div className="flex items-center justify-center gap-3 mb-2">
             <CheckCircle className="h-8 w-8 text-green-500" />
             <h2 className="text-2xl font-bold text-gray-900">
@@ -101,14 +101,14 @@ export default function ReservationSuccessModal({
 
         {/* Contenido del modal */}
         <div className="px-6 pb-6">
-          {/* Imagen de celebración */}
+          {/* Celebration image */}
           <div className="flex justify-center mb-6">
             <div className="text-6xl">
               🎉
             </div>
           </div>
 
-          {/* Información del libro */}
+          {/* Book information */}
           <div className="bg-gray-50 rounded-xl p-4 mb-6">
             <div className="flex gap-4">
               {/* Portada del libro */}
@@ -161,7 +161,7 @@ export default function ReservationSuccessModal({
             </div>
           </div>
 
-          {/* Información importante */}
+          {/* Important information */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <div className="flex items-start gap-3">
               <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
@@ -171,7 +171,7 @@ export default function ReservationSuccessModal({
             </div>
           </div>
 
-          {/* Botón de acción */}
+          {/* Action button */}
           <Button
             onClick={handleGoHome}
             className="w-full bg-berkeley-blue hover:bg-berkeley-blue/90 text-white font-semibold py-3 rounded-lg"

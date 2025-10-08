@@ -128,7 +128,7 @@ export default function ExampleUsage() {
 
   return (
     <div className="space-y-8">
-      {/* Ejemplo 1: GET con parámetros */}
+      {/* Example 1: GET with parameters */}
       <QueryCard
         method="GET"
         endpoint="users/{id}"
@@ -172,7 +172,7 @@ export default function ExampleUsage() {
         }}
       />
 
-      {/* Ejemplo 3: GET sin parámetros */}
+      {/* Example 3: GET without parameters */}
       <QueryCard
         method="GET"
         endpoint="books"

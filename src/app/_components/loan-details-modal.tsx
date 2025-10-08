@@ -193,7 +193,7 @@ export default function LoanDetailsModal({ isOpen, onClose, loan }: LoanDetailsM
             </Badge>
           </div>
 
-          {/* Información del Libro */}
+          {/* Book Information */}
           <div className="flex gap-4">
             {/* Portada */}
             <div className="flex-shrink-0">
@@ -220,7 +220,7 @@ export default function LoanDetailsModal({ isOpen, onClose, loan }: LoanDetailsM
               </div>
             </div>
 
-            {/* Detalles del libro */}
+            {/* Book details */}
             <div className="flex-1 space-y-2">
               <div className="text-sm text-gray-600">
                 {loan.gender.name}
@@ -237,7 +237,7 @@ export default function LoanDetailsModal({ isOpen, onClose, loan }: LoanDetailsM
             </div>
           </div>
 
-          {/* Fechas */}
+          {/* Dates */}
           <div className="space-y-3">
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-sm font-medium text-gray-600">
@@ -257,7 +257,7 @@ export default function LoanDetailsModal({ isOpen, onClose, loan }: LoanDetailsM
             </div>
           </div>
 
-          {/* Ubicación */}
+          {/* Location */}
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="text-sm font-medium text-gray-600 mb-1">
               Ubicación
@@ -270,7 +270,7 @@ export default function LoanDetailsModal({ isOpen, onClose, loan }: LoanDetailsM
             </div>
           </div>
 
-          {/* Botón de acción */}
+          {/* Action button */}
           <div className="flex gap-3 pt-4">
             <Button
               variant={actionButton.variant}
