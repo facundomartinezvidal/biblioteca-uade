@@ -1,7 +1,7 @@
 export const routes = {
   home: "/",
   documentation: "/documentation",
-  loans: "/prestamos",
+  loans: "/loans",
   penalties: "/multas",
   profile: "/perfil",
   webcampus: "https://www.webcampus.uade.edu.ar/",

@@ -22,7 +22,7 @@ export default function AppNavbar() {
 
   const navLinks = [
     { href: "/", label: "Inicio" },
-    { href: "/prestamos", label: "Préstamos" },
+    { href: "/loans", label: "Préstamos" },
     { href: "/multas", label: "Multas" },
     { href: "/perfil", label: "Perfil" },
   ];

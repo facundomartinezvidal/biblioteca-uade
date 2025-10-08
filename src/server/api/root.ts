@@ -1,5 +1,6 @@
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 import { booksRouter } from "./routers/books";
+import { loansRouter } from "./routers/loans";
 import type {
   inferRouterInputs,
   inferRouterOutputs,
@@ -13,6 +14,7 @@ import { documentationRouter } from "./routers/documentation";
  */
 export const appRouter = createTRPCRouter({
   books: booksRouter,
+  loans: loansRouter,
   documentation: documentationRouter,
 });
 
