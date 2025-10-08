@@ -10,11 +10,13 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import { Skeleton } from "~/components/ui/skeleton";
+import ReservationSuccessModal from "~/app/_components/reservation-success-modal";
 
 // Obtener libros recomendados desde la API
 
 export default function ReservePage() {
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const searchParams = useSearchParams();
   const bookId = searchParams.get('bookId');
 
@@ -67,9 +69,15 @@ export default function ReservePage() {
       return;
     }
     
+<<<<<<< Updated upstream
     // TODO: Implement reservation logic
+=======
+    // TODO: Implementar lógica de reserva real
+>>>>>>> Stashed changes
     console.log("Reserva confirmada para:", book.title);
-    alert("Reserva confirmada exitosamente");
+    
+    // Mostrar modal de confirmación
+    setShowSuccessModal(true);
   };
 
   // Mostrar loading si no hay datos
@@ -501,6 +509,23 @@ export default function ReservePage() {
           )}
         </div>
       </main>
+
+      {/* Modal de confirmación de reserva exitosa */}
+      {book && (
+        <ReservationSuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          book={{
+            title: book.title,
+            author: book.author,
+            authorMiddleName: book.authorMiddleName ?? undefined,
+            authorLastName: book.authorLastName ?? undefined,
+            isbn: book.isbn,
+            gender: book.gender,
+            imageUrl: book.imageUrl ?? undefined,
+          }}
+        />
+      )}
     </div>
   );
 }
