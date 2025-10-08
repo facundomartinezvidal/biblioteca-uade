@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Clock, Calendar, Heart } from "lucide-react";
+import { ArrowLeft, Clock, Heart } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { Card, CardContent } from "~/components/ui/card";
@@ -10,17 +10,19 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import { Skeleton } from "~/components/ui/skeleton";
+import ReservationSuccessModal from "~/app/_components/reservation-success-modal";
 
 // Obtener libros recomendados desde la API
 
 export default function ReservePage() {
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const searchParams = useSearchParams();
   const bookId = searchParams.get('bookId');
 
   // Obtener datos del libro desde la API
   const { data: bookData, isLoading: bookLoading } = api.books.getById.useQuery(
-    { id: bookId || "" },
+    { id: bookId ?? "" },
     { enabled: !!bookId }
   );
 
@@ -32,7 +34,7 @@ export default function ReservePage() {
   // Filtrar libros recomendados (excluir el libro actual y tomar solo algunos)
   const recommendedBooks = recommendedBooksData?.response
     ?.filter(recBook => recBook.id !== bookId)
-    ?.slice(0, 2) || [];
+    ?.slice(0, 2) ?? [];
 
   // Calcular fechas
   const reservationDate = new Date();
@@ -67,9 +69,11 @@ export default function ReservePage() {
       return;
     }
     
-    // TODO: Implementar lógica de reserva
+    // TODO: Implementar lógica de reserva real
     console.log("Reserva confirmada para:", book.title);
-    alert("Reserva confirmada exitosamente");
+    
+    // Mostrar modal de confirmación
+    setShowSuccessModal(true);
   };
 
   // Mostrar loading si no hay datos
@@ -228,7 +232,7 @@ export default function ReservePage() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Ubicación:</span>
-                        <span className="font-medium">{book.location || 'No especificada'}</span>
+                        <span className="font-medium">{book.location ?? 'No especificada'}</span>
                       </div>
                     </div>
 
@@ -462,7 +466,7 @@ export default function ReservePage() {
                         </div>
 
                         <div className="text-xs text-gray-500">
-                          <span className="font-medium">Ubicación:</span> {recBook.location || 'No especificada'}
+                          <span className="font-medium">Ubicación:</span> {recBook.location ?? 'No especificada'}
                         </div>
 
                         <div className="flex items-center justify-between pt-2">
@@ -501,6 +505,23 @@ export default function ReservePage() {
           )}
         </div>
       </main>
+
+      {/* Modal de confirmación de reserva exitosa */}
+      {book && (
+        <ReservationSuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          book={{
+            title: book.title,
+            author: book.author,
+            authorMiddleName: book.authorMiddleName ?? undefined,
+            authorLastName: book.authorLastName ?? undefined,
+            isbn: book.isbn,
+            gender: book.gender,
+            imageUrl: book.imageUrl ?? undefined,
+          }}
+        />
+      )}
     </div>
   );
 }
