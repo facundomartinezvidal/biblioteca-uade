@@ -39,7 +39,7 @@ export default function ReservePage() {
   // Calcular fechas
   const reservationDate = new Date();
   const returnDate = new Date();
-  returnDate.setDate(reservationDate.getDate() + 7); // 7 days loan period
+  returnDate.setDate(reservationDate.getDate() + 7); // 7 días de préstamo
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('es-ES', {
@@ -69,11 +69,7 @@ export default function ReservePage() {
       return;
     }
     
-<<<<<<< Updated upstream
-    // TODO: Implement reservation logic
-=======
     // TODO: Implementar lógica de reserva real
->>>>>>> Stashed changes
     console.log("Reserva confirmada para:", book.title);
     
     // Mostrar modal de confirmación
@@ -132,7 +128,7 @@ export default function ReservePage() {
     );
   }
 
-  // Mostrar error si no se encuentra el libro
+  // Show error if book not found
   if (!book) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -236,7 +232,7 @@ export default function ReservePage() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Ubicación:</span>
-                        <span className="font-medium">{book.location || 'No especificada'}</span>
+                        <span className="font-medium">{book.location ?? 'No especificada'}</span>
                       </div>
                     </div>
 
@@ -510,7 +506,7 @@ export default function ReservePage() {
         </div>
       </main>
 
-      {/* Modal de confirmación de reserva exitosa */}
+      {/* Reservation success confirmation modal */}
       {book && (
         <ReservationSuccessModal
           isOpen={showSuccessModal}

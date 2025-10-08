@@ -220,7 +220,7 @@ export default function LoanDetailsModal({ isOpen, onClose, loan }: LoanDetailsM
               </div>
             </div>
 
-            {/* Detalles del libro */}
+            {/* Book details */}
             <div className="flex-1 space-y-2">
               <div className="text-sm text-gray-600">
                 {loan.gender.name}
@@ -237,7 +237,7 @@ export default function LoanDetailsModal({ isOpen, onClose, loan }: LoanDetailsM
             </div>
           </div>
 
-          {/* Fechas */}
+          {/* Dates */}
           <div className="space-y-3">
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-sm font-medium text-gray-600">

@@ -28,7 +28,7 @@ interface PenaltyDetailsModalProps {
   };
 }
 
-// Function to get badge status
+// Función para obtener el estado del badge
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "PAID":
