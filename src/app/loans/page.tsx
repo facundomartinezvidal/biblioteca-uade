@@ -21,7 +21,7 @@ import { Skeleton } from "~/components/ui/skeleton";
 import LoanDetailsModal from "../_components/loan-details-modal";
 import { useState } from "react";
 
-// Función para obtener el color del estado
+// Function to get status color
 const getStatusColor = (status: string) => {
   switch (status) {
     case "ACTIVE":
@@ -39,7 +39,7 @@ const getStatusColor = (status: string) => {
   }
 };
 
-// Función para obtener el texto del estado
+// Function to get status text
 const getStatusText = (status: string) => {
   switch (status) {
     case "ACTIVE":
@@ -57,7 +57,7 @@ const getStatusText = (status: string) => {
   }
 };
 
-// Función para obtener las acciones según el estado
+// Function to get actions based on status
 const getActions = (status: string) => {
   switch (status) {
     case "ACTIVE":
@@ -89,7 +89,7 @@ const getActions = (status: string) => {
   }
 };
 
-// Función para formatear fechas
+// Function to format dates
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return date.toLocaleDateString('es-ES', {
@@ -100,7 +100,7 @@ const formatDate = (dateString: string) => {
 };
 
 export default function LoansPage() {
-  // TODO: Reemplazar con el ID del usuario real cuando se implemente autenticación
+  // TODO: Replace with real user ID when authentication is implemented
   const userId = "temp-user-id";
   
   const { data: loansData, isLoading } = api.loans.getByUserId.useQuery({
@@ -113,18 +113,18 @@ export default function LoansPage() {
   const [selectedLoan, setSelectedLoan] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Contar préstamos vencidos para la alerta
+  // Count expired loans for alert
   const expiredLoans = loansData?.results && Array.isArray(loansData.results) 
     ? loansData.results.filter((loan: any) => loan.status === "EXPIRED").length 
     : 0;
 
-  // Función para abrir el modal
+  // Function to open modal
   const handleViewMore = (loan: any) => {
     setSelectedLoan(loan);
     setIsModalOpen(true);
   };
 
-  // Función para cerrar el modal
+  // Function to close modal
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedLoan(null);

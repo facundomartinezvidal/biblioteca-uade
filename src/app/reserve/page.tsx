@@ -39,7 +39,7 @@ export default function ReservePage() {
   // Calcular fechas
   const reservationDate = new Date();
   const returnDate = new Date();
-  returnDate.setDate(reservationDate.getDate() + 7); // 7 días de préstamo
+  returnDate.setDate(reservationDate.getDate() + 7); // 7 days loan period
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('es-ES', {
@@ -69,10 +69,10 @@ export default function ReservePage() {
       return;
     }
     
-    // TODO: Implementar lógica de reserva real
+    // TODO: Implement real reservation logic
     console.log("Reserva confirmada para:", book.title);
     
-    // Mostrar modal de confirmación
+    // Show confirmation modal
     setShowSuccessModal(true);
   };
 

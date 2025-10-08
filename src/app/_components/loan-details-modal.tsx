@@ -47,7 +47,7 @@ interface LoanDetailsModalProps {
   };
 }
 
-// Función para obtener el color del estado
+// Function to get status color
 const getStatusColor = (status: string) => {
   switch (status) {
     case "ACTIVE":
@@ -65,7 +65,7 @@ const getStatusColor = (status: string) => {
   }
 };
 
-// Función para obtener el texto del estado
+// Function to get status text
 const getStatusText = (status: string) => {
   switch (status) {
     case "ACTIVE":
@@ -83,7 +83,7 @@ const getStatusText = (status: string) => {
   }
 };
 
-// Función para obtener el texto y variante del botón de acción
+// Function to get action button text and variant
 const getActionButton = (status: string) => {
   switch (status) {
     case "ACTIVE":
@@ -120,7 +120,7 @@ const getActionButton = (status: string) => {
   }
 };
 
-// Función para formatear fechas
+// Function to format dates
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return date.toLocaleDateString('es-ES', {
@@ -141,7 +141,7 @@ export default function LoanDetailsModal({ isOpen, onClose, loan }: LoanDetailsM
 
     if (isOpen) {
       document.addEventListener("keydown", handleEscape);
-      // Prevenir scroll del body cuando el modal está abierto
+      // Prevent body scroll when modal is open
       document.body.style.overflow = "hidden";
     }
 
@@ -276,7 +276,7 @@ export default function LoanDetailsModal({ isOpen, onClose, loan }: LoanDetailsM
               variant={actionButton.variant}
               className="flex-1 h-12"
               onClick={() => {
-                // TODO: Implementar la acción correspondiente
+                // TODO: Implement corresponding action
                 console.log(`Acción: ${actionButton.text} para préstamo ${loan.id}`);
               }}
             >

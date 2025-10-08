@@ -28,7 +28,7 @@ export default function ReservationSuccessModal({
 }: ReservationSuccessModalProps) {
   const router = useRouter();
 
-  // Prevenir scroll del body cuando el modal está abierto
+  // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
