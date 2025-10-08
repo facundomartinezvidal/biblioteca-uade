@@ -124,7 +124,7 @@ export default function ReservePage() {
     );
   }
 
-  // Mostrar error si no se encuentra el libro
+  // Show error if book not found
   if (!book) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -155,7 +155,7 @@ export default function ReservePage() {
 
       <main className="container mx-auto px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Sección izquierda - Información del libro */}
+          {/* Left section - Book information */}
           <div>
             <h2 className="text-2xl font-bold text-berkeley-blue mb-6">
               Información del libro
@@ -189,7 +189,7 @@ export default function ReservePage() {
                     </div>
                   </div>
 
-                  {/* Información del libro */}
+                  {/* Book information */}
                   <div className="flex-1 space-y-4">
                     <div>
                       <h3 className="text-xl font-bold text-gray-900 mb-2">
@@ -228,7 +228,7 @@ export default function ReservePage() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Ubicación:</span>
-                        <span className="font-medium">{book.location || 'No especificada'}</span>
+                        <span className="font-medium">{book.location ?? 'No especificada'}</span>
                       </div>
                     </div>
 
@@ -244,7 +244,7 @@ export default function ReservePage() {
             </Card>
           </div>
 
-          {/* Sección derecha - Detalles de la reserva */}
+          {/* Right section - Reservation details */}
           <div>
             <h2 className="text-2xl font-bold text-berkeley-blue mb-6">
               Detalles de la Reserva
@@ -252,7 +252,7 @@ export default function ReservePage() {
             
             <Card className="shadow-sm">
               <CardContent className="p-6 space-y-6">
-                {/* Período de préstamo */}
+                {/* Loan period */}
                 <div className="bg-gradient-to-r from-berkeley-blue/5 to-berkeley-blue/10 rounded-lg p-4 border border-berkeley-blue/20">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-berkeley-blue/10 rounded-full">
@@ -310,7 +310,7 @@ export default function ReservePage() {
                   </div>
                 </div>
 
-                {/* Términos y condiciones */}
+                {/* Terms and conditions */}
                 <div className="space-y-3">
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input
@@ -333,7 +333,7 @@ export default function ReservePage() {
                   </label>
                 </div>
 
-                {/* Información de retiro */}
+                {/* Pickup information */}
                 <div className="bg-gray-100 rounded-lg p-4">
                   <div className="flex items-start gap-3">
                     <Clock className="h-5 w-5 text-gray-600 mt-0.5" />
@@ -347,7 +347,7 @@ export default function ReservePage() {
                   </div>
                 </div>
 
-                {/* Botón de confirmar */}
+                {/* Confirm button */}
                 <div className="pt-4">
                   <Button
                     onClick={handleReserve}
@@ -367,7 +367,7 @@ export default function ReservePage() {
           </div>
         </div>
 
-        {/* Sección de libros recomendados */}
+        {/* Recommended books section */}
         <div className="mt-12">
           <h2 className="text-2xl font-bold text-berkeley-blue mb-6">
             Podría interesarte...
@@ -429,7 +429,7 @@ export default function ReservePage() {
                         </div>
                       </div>
 
-                      {/* Información */}
+                      {/* Information */}
                       <div className="flex-1 space-y-2">
                         <div className="flex items-start justify-between">
                           <div>
@@ -501,6 +501,23 @@ export default function ReservePage() {
           )}
         </div>
       </main>
+
+      {/* Reservation success confirmation modal */}
+      {book && (
+        <ReservationSuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          book={{
+            title: book.title,
+            author: book.author,
+            authorMiddleName: book.authorMiddleName ?? undefined,
+            authorLastName: book.authorLastName ?? undefined,
+            isbn: book.isbn,
+            gender: book.gender,
+            imageUrl: book.imageUrl ?? undefined,
+          }}
+        />
+      )}
     </div>
   );
 }

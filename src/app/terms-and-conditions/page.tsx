@@ -36,7 +36,7 @@ export default function TermsAndConditionsPage() {
             </CardContent>
           </Card>
 
-          {/* Card 2: Libro dañado - Top Right */}
+          {/* Card 2: Damaged Book - Top Right */}
           <Card className="bg-gray-50 border-0 shadow-sm rounded-lg">
             <CardContent className="p-4 space-y-3">
               <div>
@@ -49,7 +49,7 @@ export default function TermsAndConditionsPage() {
             </CardContent>
           </Card>
 
-          {/* Card 3: Duración del Préstamo - Middle Left */}
+          {/* Card 3: Loan Duration - Middle Left */}
           <Card className="bg-gray-50 border-0 shadow-sm rounded-lg">
             <CardContent className="p-4 space-y-3">
               <div>
@@ -124,7 +124,7 @@ export default function TermsAndConditionsPage() {
             </CardContent>
           </Card>
 
-          {/* Card 5: Duración del Préstamo - Cancelaciones - Bottom Full Width */}
+          {/* Card 5: Loan Duration - Cancellations - Bottom Full Width */}
           <Card className="bg-gray-50 border-0 shadow-sm rounded-lg lg:col-span-2">
             <CardContent className="p-4 space-y-3">
               <div>
