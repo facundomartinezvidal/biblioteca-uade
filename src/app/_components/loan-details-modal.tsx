@@ -159,7 +159,7 @@ export default function LoanDetailsModal({ isOpen, onClose, loan }: LoanDetailsM
     <div 
       className="fixed inset-0 flex items-center justify-center z-[9999] p-4"
       onClick={(e) => {
-        // Cerrar modal si se hace clic en el overlay (fondo)
+        // Close modal 
         if (e.target === e.currentTarget) {
           onClose();
         }
