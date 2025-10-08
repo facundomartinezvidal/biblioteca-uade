@@ -121,7 +121,7 @@ export function Footer() {
               className="h-auto p-0 text-sm text-white/60 underline-offset-4 hover:text-white"
               asChild
             >
-              <Link href="/terminos">Términos y Condiciones</Link>
+              <Link href="/terms-and-conditions">Términos y Condiciones</Link>
             </Button>
             <span className="text-white/30">•</span>
             <Button
