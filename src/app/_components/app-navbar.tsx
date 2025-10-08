@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Bell, Calendar, GraduationCap, LogOut } from "lucide-react";
+import { Bell, GraduationCap, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -16,6 +16,7 @@ import {
 import { Separator } from "~/components/ui/separator";
 import { routes } from "~/lib/routes";
 import { cn } from "~/lib/utils";
+import CalendarPopover from "./calendar-popover";
 
 export default function AppNavbar() {
   const pathname = usePathname();
@@ -125,14 +126,7 @@ export default function AppNavbar() {
               <span className="sr-only">Notifications</span>
             </Button>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 rounded-md text-white hover:bg-white/10 hover:text-white"
-            >
-              <Calendar className="h-5 w-5" />
-              <span className="sr-only">Calendar</span>
-            </Button>
+            <CalendarPopover />
 
             <Button
               variant="ghost"

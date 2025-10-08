@@ -10,11 +10,13 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import { Skeleton } from "~/components/ui/skeleton";
+import ReservationSuccessModal from "~/app/_components/reservation-success-modal";
 
 // Obtener libros recomendados desde la API
 
 export default function ReservePage() {
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const searchParams = useSearchParams();
   const bookId = searchParams.get('bookId');
 
@@ -67,9 +69,11 @@ export default function ReservePage() {
       return;
     }
     
-    // TODO: Implementar lógica de reserva
+    // TODO: Implementar lógica de reserva real
     console.log("Reserva confirmada para:", book.title);
-    alert("Reserva confirmada exitosamente");
+    
+    // Mostrar modal de confirmación
+    setShowSuccessModal(true);
   };
 
   // Mostrar loading si no hay datos

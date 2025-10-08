@@ -141,7 +141,7 @@ export default function LoanDetailsModal({ isOpen, onClose, loan }: LoanDetailsM
 
     if (isOpen) {
       document.addEventListener("keydown", handleEscape);
-      // Prevent body scroll when modal is open
+        // Prevent body scroll when modal is open
       document.body.style.overflow = "hidden";
     }
 

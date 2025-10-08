@@ -9,7 +9,7 @@ interface CodeExampleProps {
 function highlightJSON(obj: Record<string, unknown>): React.ReactElement {
   const jsonString = JSON.stringify(obj, null, 2);
 
-  // Simplified but more effective function to colorize JSON
+  // Simplified but more effective function to color JSON
   const colorizeJSON = (str: string): React.ReactElement => {
     const lines = str.split("\n");
 

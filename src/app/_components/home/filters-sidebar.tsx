@@ -16,10 +16,26 @@ type FiltersSidebarProps = {
   onCancel?: () => void;
   onSubmit?: () => void;
   className?: string;
+  onGenreChange?: (value: string | undefined) => void;
+  onAvailabilityChange?: (value: string | undefined) => void;
+  onLocationChange?: (value: string | undefined) => void;
+  selectedGenre?: string;
+  selectedAvailability?: string;
+  selectedLocation?: string;
 };
 
 export default function FiltersSidebar(props: FiltersSidebarProps) {
-  const { onCancel, onSubmit, className } = props;
+  const { 
+    onCancel, 
+    onSubmit, 
+    className,
+    onGenreChange,
+    onAvailabilityChange,
+    onLocationChange,
+    selectedGenre,
+    selectedAvailability,
+    selectedLocation
+  } = props;
 
   return (
     <Card
@@ -44,7 +60,7 @@ export default function FiltersSidebar(props: FiltersSidebarProps) {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label className="text-sm font-medium">Género</Label>
-            <Select>
+            <Select value={selectedGenre} onValueChange={onGenreChange}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Seleccione el género" />
               </SelectTrigger>
@@ -59,7 +75,7 @@ export default function FiltersSidebar(props: FiltersSidebarProps) {
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">Disponibilidad</Label>
-            <Select>
+            <Select value={selectedAvailability} onValueChange={onAvailabilityChange}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Seleccione la disponibilidad" />
               </SelectTrigger>
@@ -72,14 +88,15 @@ export default function FiltersSidebar(props: FiltersSidebarProps) {
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">Sede</Label>
-            <Select>
+            <Select value={selectedLocation} onValueChange={onLocationChange}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Seleccione la sede" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="sede-central">Sede Central</SelectItem>
-                <SelectItem value="sede-norte">Sede Norte</SelectItem>
-                <SelectItem value="sede-sur">Sede Sur</SelectItem>
+                <SelectItem value="sede-montserrat">Sede Montserrat</SelectItem>
+                <SelectItem value="sede-recoleta">Sede Recoleta</SelectItem>
+                <SelectItem value="sede-belgrano">Sede Belgrano</SelectItem>
+                <SelectItem value="sede-pinamar">Sede Pinamar</SelectItem>
               </SelectContent>
             </Select>
           </div>

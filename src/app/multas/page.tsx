@@ -14,7 +14,7 @@ import { api } from "~/trpc/react";
 import { Skeleton } from "~/components/ui/skeleton";
 import PenaltyDetailsModal from "~/app/_components/penalty-details-modal";
 
-// Datos ficticios para las multas - se generarán dinámicamente basados en los libros disponibles
+// Fictitious data for penalties - will be generated dynamically based on available books
 const generateMockPenalties = (books: any[]) => {
   if (!books || books.length === 0) return [];
   
@@ -42,7 +42,7 @@ export default function PenaltiesPage() {
   // Generar multas ficticias basadas en los libros disponibles
   const mockPenalties = booksData?.response ? generateMockPenalties(booksData.response) : [];
 
-  // Función para obtener el estado del badge
+  // Function to get badge status
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "PAID":
@@ -56,7 +56,7 @@ export default function PenaltiesPage() {
     }
   };
 
-  // Función para formatear fechas
+  // Function to format dates
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('es-ES', {
@@ -66,7 +66,7 @@ export default function PenaltiesPage() {
     });
   };
 
-  // Función para manejar selección de filas
+  // Function to handle row selection
   const handleRowSelection = (penaltyId: string) => {
     setSelectedRows(prev => 
       prev.includes(penaltyId) 
@@ -75,7 +75,7 @@ export default function PenaltiesPage() {
     );
   };
 
-  // Función para abrir el modal
+  // Function to open modal
   const handleViewMore = (penalty: any) => {
     const book = booksData?.response?.find(b => b.id === penalty.bookId);
     if (book) {
@@ -84,7 +84,7 @@ export default function PenaltiesPage() {
     }
   };
 
-  // Función para cerrar el modal
+  // Function to close modal
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedPenalty(null);
@@ -97,7 +97,7 @@ export default function PenaltiesPage() {
       const book = booksData.response.find(b => b.id === penalty.bookId);
       if (!book) return false;
       
-      // Filtro por búsqueda
+      // Filter by search
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
         const matchesSearch = (
@@ -148,7 +148,7 @@ export default function PenaltiesPage() {
       </div>
 
       <main className="container mx-auto px-8 py-8">
-        {/* Alert de atención */}
+        {/* Attention alert */}
         <Alert className="bg-white border-[#CC3F0C] rounded-lg border-2 mb-6" style={{ color: '#CC3F0C' }}>
           <AlertDescription className="flex items-start gap-3">
             <span className="text-lg">⚠️</span>
@@ -163,7 +163,7 @@ export default function PenaltiesPage() {
           </AlertDescription>
         </Alert>
 
-        {/* Título principal */}
+        {/* Main title */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
@@ -178,7 +178,7 @@ export default function PenaltiesPage() {
           </p>
         </div>
 
-        {/* Barra de búsqueda y filtros */}
+        {/* Search bar and filters */}
         <Card className="mb-6">
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
@@ -382,7 +382,7 @@ export default function PenaltiesPage() {
           </CardContent>
         </Card>
 
-        {/* Paginación */}
+        {/* Pagination */}
         <div className="flex items-center justify-between mt-6">
           <div className="text-sm text-gray-600">
             {selectedRows.length} of {filteredAndSortedPenalties.length} row(s) selected.
