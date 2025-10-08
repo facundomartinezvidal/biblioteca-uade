@@ -28,7 +28,7 @@ interface PenaltyDetailsModalProps {
   };
 }
 
-// Función para obtener el estado del badge
+// Function to get badge status
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "PAID":
@@ -58,7 +58,7 @@ const getStatusBadge = (status: string) => {
   }
 };
 
-// Función para formatear fechas
+// Function to format dates
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return date.toLocaleDateString('es-ES', {
@@ -69,7 +69,7 @@ const formatDate = (dateString: string) => {
 };
 
 export default function PenaltyDetailsModal({ isOpen, onClose, penalty, book }: PenaltyDetailsModalProps) {
-  // Cerrar modal con tecla Escape y prevenir scroll del body
+  // Close modal with Escape key and prevent body scroll
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") {

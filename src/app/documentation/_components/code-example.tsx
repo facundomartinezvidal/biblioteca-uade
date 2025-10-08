@@ -9,7 +9,7 @@ interface CodeExampleProps {
 function highlightJSON(obj: Record<string, unknown>): React.ReactElement {
   const jsonString = JSON.stringify(obj, null, 2);
 
-  // Función simplificada pero más efectiva para colorear JSON
+  // Simplified but more effective function to color JSON
   const colorizeJSON = (str: string): React.ReactElement => {
     const lines = str.split("\n");
 
@@ -24,7 +24,7 @@ function highlightJSON(obj: Record<string, unknown>): React.ReactElement {
             );
           }
 
-          // Procesar cada línea
+          // Process each line
           const processLine = (lineText: string): React.ReactElement => {
             // Detectar key-value pairs
             const keyValueMatch = /^(\s*)(".*?")\s*:\s*(.*)$/.exec(lineText);
@@ -57,7 +57,7 @@ function highlightJSON(obj: Record<string, unknown>): React.ReactElement {
           const colorizeValue = (value: string): React.ReactElement => {
             const trimmedValue = value.trim();
 
-            // String values - Verde más oscuro para mejor contraste
+            // String values - Darker green for better contrast
             if (/^".*"[,]?$/.test(trimmedValue)) {
               return (
                 <span className="text-green-600 dark:text-green-400">
@@ -66,7 +66,7 @@ function highlightJSON(obj: Record<string, unknown>): React.ReactElement {
               );
             }
 
-            // Numbers - Azul más oscuro
+            // Numbers - Darker blue
             if (/^\d+\.?\d*[,]?$/.test(trimmedValue)) {
               return (
                 <span className="text-blue-600 dark:text-blue-400">
@@ -75,7 +75,7 @@ function highlightJSON(obj: Record<string, unknown>): React.ReactElement {
               );
             }
 
-            // Booleans - Naranja más oscuro
+            // Booleans - Darker orange
             if (/^(true|false)[,]?$/.test(trimmedValue)) {
               return (
                 <span className="text-orange-600 dark:text-orange-400">
@@ -84,7 +84,7 @@ function highlightJSON(obj: Record<string, unknown>): React.ReactElement {
               );
             }
 
-            // Null - Gris más oscuro
+            // Null - Darker gray
             if (/^null[,]?$/.test(trimmedValue)) {
               return (
                 <span className="text-gray-500 dark:text-gray-400">

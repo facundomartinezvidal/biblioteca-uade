@@ -11,7 +11,7 @@ import { type Parameter, type ResponseField } from "./types";
  */
 
 export default function ExampleUsage() {
-  // Ejemplo 1: GET con parámetros
+  // Example 1: GET with parameters
   const getUserParameters: Parameter[] = [
     {
       field: "id",
@@ -107,7 +107,7 @@ export default function ExampleUsage() {
     },
   ];
 
-  // Ejemplo 3: GET sin parámetros
+  // Example 3: GET without parameters
   const getBooksResponse: ResponseField[] = [
     {
       field: "books",
@@ -128,7 +128,7 @@ export default function ExampleUsage() {
 
   return (
     <div className="space-y-8">
-      {/* Ejemplo 1: GET con parámetros */}
+      {/* Example 1: GET with parameters */}
       <QueryCard
         method="GET"
         endpoint="users/{id}"
@@ -172,12 +172,12 @@ export default function ExampleUsage() {
         }}
       />
 
-      {/* Ejemplo 3: GET sin parámetros */}
+      {/* Example 3: GET without parameters */}
       <QueryCard
         method="GET"
         endpoint="books"
         description="Obtiene la lista de todos los libros disponibles en la biblioteca"
-        parameters={[]} // Sin parámetros
+        parameters={[]} // No parameters
         responseFields={getBooksResponse}
         exampleRequest={null} // Sin request body
         exampleResponse={{

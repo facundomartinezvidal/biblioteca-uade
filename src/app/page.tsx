@@ -13,7 +13,7 @@ export default function HomePage() {
   const router = useRouter();
 
   const handleReserve = (book: any) => {
-    // Navegar a la página de reserva con el ID del libro
+    // Navigate to reserve page with book ID
     router.push(`/reserve?bookId=${book.id}`);
   };
   return (

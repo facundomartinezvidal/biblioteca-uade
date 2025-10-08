@@ -31,7 +31,7 @@ const mockUser = {
   }
 };
 
-// Datos ficticios de préstamos activos con información completa de libros
+// Fictitious data for active loans with complete book information
 const mockActiveLoans = [
   {
     id: "1",
@@ -97,7 +97,7 @@ export default function ProfilePage() {
   // Obtener datos de libros de la base de datos
   const { data: booksData, isLoading } = api.books.getAll.useQuery();
   
-  // Función para formatear fechas
+  // Function to format dates
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('es-ES', {
@@ -107,7 +107,7 @@ export default function ProfilePage() {
     });
   };
 
-  // Función para manejar selección de filas
+  // Function to handle row selection
   const handleRowSelection = (loanId: string) => {
     setSelectedRows(prev => 
       prev.includes(loanId) 
@@ -116,7 +116,7 @@ export default function ProfilePage() {
     );
   };
 
-  // Usar préstamos mock para simular 4 préstamos activos
+  // Use mock loans to simulate 4 active loans
   const activeLoans = mockActiveLoans;
 
   return (
@@ -134,7 +134,7 @@ export default function ProfilePage() {
       </div>
 
       <main className="container mx-auto px-8 py-8">
-        {/* Título principal */}
+        {/* Main title */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -150,7 +150,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Columna izquierda - Información del perfil */}
+          {/* Left column - Profile information */}
           <div className="lg:col-span-1">
             <Card className="shadow-sm">
               <CardContent className="p-6">
@@ -199,7 +199,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  {/* Información académica */}
+                  {/* Academic information */}
                   <div className="w-full space-y-3 mb-6">
                     <h3 className="text-lg font-semibold text-gray-900 text-left">Académico</h3>
                     <div className="flex items-center gap-3">
@@ -211,7 +211,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  {/* Información de contacto */}
+                  {/* Contact information */}
                   <div className="w-full space-y-3">
                     <h3 className="text-lg font-semibold text-gray-900 text-left">Contacto</h3>
                     <div className="space-y-2">
@@ -243,9 +243,9 @@ export default function ProfilePage() {
             </Card>
           </div>
 
-          {/* Columna derecha - Información rápida y préstamos */}
+          {/* Right column - Quick information and loans */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Información rápida */}
+            {/* Quick information */}
             <Card className="shadow-sm">
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Información rápida</h3>
@@ -274,7 +274,7 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
 
-            {/* Préstamos actuales */}
+            {/* Current loans */}
             <Card className="shadow-sm">
               <CardContent className="p-6">
                 <div className="flex items-center gap-2 mb-4">

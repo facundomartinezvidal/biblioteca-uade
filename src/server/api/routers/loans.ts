@@ -2,7 +2,7 @@ import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { z } from "zod";
 import { randomUUID } from "crypto";
 
-// Datos mock para préstamos mientras se configura la base de datos
+// Mock data for loans while database is being configured
 const mockLoansData = [
   {
     id: randomUUID(),
@@ -124,7 +124,7 @@ export const loansRouter = createTRPCRouter({
       })
     )
     .query(async ({ input }) => {
-      // Filtrar por userId y aplicar paginación
+      // Filter by userId and apply pagination
       const userLoans = mockLoansData.filter(loan => loan.userId === input.userId);
       const offset = (input.page - 1) * input.limit;
       const paginatedLoans = userLoans.slice(offset, offset + input.limit);
