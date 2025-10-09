@@ -69,11 +69,7 @@ export default function ReservePage() {
       return;
     }
     
-<<<<<<< Updated upstream
     // TODO: Implement reservation logic
-=======
-    // TODO: Implementar lógica de reserva real
->>>>>>> Stashed changes
     console.log("Reserva confirmada para:", book.title);
     
     // Mostrar modal de confirmación
