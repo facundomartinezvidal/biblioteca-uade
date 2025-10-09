@@ -28,18 +28,11 @@ export default function ReservationSuccessModal({
 }: ReservationSuccessModalProps) {
   const router = useRouter();
 
-  // Prevenir scroll del body cuando el modal está abierto
+  // Close modal when clicking outside (optional)
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
+      // Optional: Add any modal-specific logic here
     }
-
-    // Cleanup function
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
   }, [isOpen]);
 
   // Cerrar modal con tecla Escape
@@ -68,14 +61,11 @@ export default function ReservationSuccessModal({
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-[9999] p-4">
-      {/* Overlay con fondo semi-transparente */}
-      <div 
-        className="fixed inset-0 bg-black bg-opacity-30"
-        onClick={onClose}
-      />
-      
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div 
+        className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header del modal */}
         <div className="relative p-6 pb-4">
           {/* Botón de cerrar */}
