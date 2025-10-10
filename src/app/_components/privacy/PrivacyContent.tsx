@@ -9,14 +9,13 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
-import { Button } from "~/components/ui/button";
 
 export const metadata = {
   title: "Política de Privacidad - Biblioteca UADE",
   description: "Política de privacidad y manejo de datos personales de Biblioteca UADE",
 };
 
-export default function PrivacyPage() {
+export default function PrivacyContent() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-16 pt-8">
       <div className="mb-6 flex items-center gap-3 text-sm text-muted-foreground">
