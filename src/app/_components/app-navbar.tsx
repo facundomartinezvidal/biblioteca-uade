@@ -25,7 +25,7 @@ export default function AppNavbar() {
     { href: "/", label: "Inicio" },
     { href: "/loans", label: "Préstamos" },
     { href: "/multas", label: "Multas" },
-    { href: "/perfil", label: "Perfil" },
+    { href: "/profile", label: "Perfil" },
   ];
 
   const isActive = (href: string) => {
@@ -94,24 +94,27 @@ export default function AppNavbar() {
           <Separator orientation="vertical" className="h-8 bg-white/20" />
 
           <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8 border-2 border-white/20">
-              <AvatarImage src="" alt="Eva Menendez" />
+            <Avatar className="h-8 w-8 border-white/20">
+              <AvatarImage
+                src="/fmartinezvidal-profile.jpeg"
+                alt="Facundo Martinez Vidal"
+              />
               <AvatarFallback className="bg-white/20 text-xs font-semibold">
-                EM
+                FM
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col gap-0.5">
-              <span className="text-xs leading-none font-medium">
-                Eva Menendez
+              <span className="text-sm leading-none font-medium">
+                Facundo Martinez Vidal
               </span>
-              <Badge
-                variant="secondary"
-                className="w-fit bg-white/20 px-1.5 py-0 text-xs text-white hover:bg-white/30"
-              >
-                <GraduationCap className="h-3 w-3" />
-                Estudiante
-              </Badge>
             </div>
+            <Badge
+              variant="secondary"
+              className="w-fit bg-white/20 px-1.5 py-0 text-sm text-white hover:bg-white/30"
+            >
+              <GraduationCap className="h-4 w-4" />
+              Estudiante
+            </Badge>
           </div>
 
           <Separator orientation="vertical" className="h-8 bg-white/20" />
