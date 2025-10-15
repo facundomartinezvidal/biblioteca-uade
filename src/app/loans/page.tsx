@@ -71,7 +71,7 @@ const getStatusColor = (status: string) => {
     case "ACTIVE":
       return "bg-berkeley-blue text-white";
     case "RESERVED":
-      return "bg-berkeley-blue/80 text-white";
+      return "bg-berkeley-blue/10 text-berkeley-blue";
     case "FINISHED":
       return "bg-gray-600 text-white";
     case "EXPIRED":

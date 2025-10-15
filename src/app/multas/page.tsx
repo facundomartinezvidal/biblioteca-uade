@@ -101,11 +101,7 @@ const getStatusBadge = (status: PenaltyStatus) => {
         </Badge>
       );
     case "PENDING":
-      return (
-        <Badge className="border-0 bg-red-100 text-sm text-red-800">
-          Pendiente
-        </Badge>
-      );
+      return <Badge className="border-0 bg-red-600 text-sm">Pendiente</Badge>;
     case "RESERVED":
       return (
         <Badge className="bg-berkeley-blue border-0 text-sm text-white">
