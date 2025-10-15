@@ -1,410 +1,363 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowLeft, Search, ChevronsUpDown, AlertTriangle } from "lucide-react";
-import { Button } from "~/components/ui/button";
-import { Badge } from "~/components/ui/badge";
-import { Card, CardContent } from "~/components/ui/card";
-import { Input } from "~/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
-import { Alert, AlertDescription } from "~/components/ui/alert";
-import Image from "next/image";
+import { AlertCircle, AlertTriangle, Search } from "lucide-react";
 import { useState } from "react";
-import { api } from "~/trpc/react";
-import { Skeleton } from "~/components/ui/skeleton";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Badge } from "~/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "~/components/ui/table";
+import { Card, CardContent } from "~/components/ui/card";
+import Image from "next/image";
 import PenaltyDetailsModal from "~/app/_components/penalty-details-modal";
+import PaginationControls from "../_components/home/pagination-controls";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 
-// Fictitious data for penalties - will be generated dynamically based on available books
-const generateMockPenalties = (books: any[]) => {
-  if (!books || books.length === 0) return [];
-  
-  return books.slice(0, 3).map((book, index) => ({
-    id: `penalty-${index + 1}`,
-    bookId: book.id,
-    status: index === 0 ? "PAID" : index === 1 ? "PENDING" : "RESERVED",
-    fromDate: "2024-08-13T00:00:00.000Z",
-    toDate: "2024-08-16T00:00:00.000Z",
+// Local types for mock penalties
+type PenaltyStatus = "PAID" | "PENDING" | "RESERVED";
+type PenaltyItem = {
+  id: string;
+  book: {
+    id: string;
+    title: string;
+    author: string;
+    isbn: string;
+    imageUrl: string;
+    gender: string;
+  };
+  status: PenaltyStatus;
+  fromDate: string;
+  toDate: string;
+  amount: number;
+};
+
+// Mock penalties (UI-only)
+const mockPenalties: PenaltyItem[] = [
+  {
+    id: "p1",
+    book: {
+      id: "b1",
+      title: "Cien años de soledad",
+      author: "Gabriel José García Márquez",
+      isbn: "",
+      imageUrl: "/covers/cien-anos-soledad.jpg",
+      gender: "Ficción",
+    },
+    status: "PENDING",
+    fromDate: "2024-02-01T00:00:00.000Z",
+    toDate: "2024-02-08T00:00:00.000Z",
+    amount: 500,
+  },
+  {
+    id: "p2",
+    book: {
+      id: "b2",
+      title: "La ciudad y los perros",
+      author: "Mario Vargas Llosa",
+      isbn: "",
+      imageUrl: "/covers/ciudad-perros.jpg",
+      gender: "Ficción",
+    },
+    status: "PAID",
+    fromDate: "2024-01-10T00:00:00.000Z",
+    toDate: "2024-01-15T00:00:00.000Z",
     amount: 300,
-  }));
+  },
+  {
+    id: "p3",
+    book: {
+      id: "b3",
+      title: "Rayuela",
+      author: "Julio Cortázar",
+      isbn: "",
+      imageUrl: "/covers/rayuela.jpeg",
+      gender: "Ficción",
+    },
+    status: "RESERVED",
+    fromDate: "2024-03-01T00:00:00.000Z",
+    toDate: "2024-03-04T00:00:00.000Z",
+    amount: 200,
+  },
+];
+
+const getStatusBadge = (status: PenaltyStatus) => {
+  switch (status) {
+    case "PAID":
+      return (
+        <Badge className="bg-berkeley-blue/10 text-berkeley-blue border-0 text-sm">
+          Pagada
+        </Badge>
+      );
+    case "PENDING":
+      return (
+        <Badge className="border-0 bg-red-100 text-sm text-red-800">
+          Pendiente
+        </Badge>
+      );
+    case "RESERVED":
+      return (
+        <Badge className="bg-berkeley-blue border-0 text-sm text-white">
+          Reservado
+        </Badge>
+      );
+    default:
+      return <Badge variant="secondary">Desconocido</Badge>;
+  }
+};
+
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("es-ES", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 };
 
 export default function PenaltiesPage() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedRows, setSelectedRows] = useState<string[]>([]);
-  const [selectedPenalty, setSelectedPenalty] = useState<any>(null);
+  // Pagination state (UI mock)
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+
+  // Filters and search
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | PenaltyStatus>(
+    "all",
+  );
+
+  // Modal state
+  const [selectedPenalty, setSelectedPenalty] = useState<PenaltyItem | null>(
+    null,
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const [sortBy, setSortBy] = useState<string>("DATE_DESC");
 
-  // Obtener datos de libros de la base de datos
-  const { data: booksData, isLoading } = api.books.getAll.useQuery();
-  
-  // Generar multas ficticias basadas en los libros disponibles
-  const mockPenalties = booksData?.response ? generateMockPenalties(booksData.response) : [];
+  // Data and pagination derived values
+  const results = mockPenalties;
+  const total = results.length;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const hasNextPage = page < totalPages;
+  const hasPreviousPage = page > 1;
 
-  // Function to get badge status
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "PAID":
-        return <Badge className="bg-blue-100 text-blue-800 border-0">Pagada</Badge>;
-      case "PENDING":
-        return <Badge className="bg-red-100 text-red-800 border-0">Pendiente</Badge>;
-      case "RESERVED":
-        return <Badge className="bg-purple-100 text-purple-800 border-0">Reservado</Badge>;
-      default:
-        return <Badge variant="secondary">Desconocido</Badge>;
-    }
+  // Apply simple client-side filters
+  const displayedResults = results.filter((p) => {
+    const matchesStatus =
+      statusFilter === "all" ? true : p.status === statusFilter;
+    const q = search.trim().toLowerCase();
+    const matchesSearch = q
+      ? p.book.title.toLowerCase().includes(q) ||
+        p.book.author.toLowerCase().includes(q) ||
+        (p.book.isbn ?? "").toLowerCase().includes(q)
+      : true;
+    return matchesStatus && matchesSearch;
+  });
+
+  const handleViewMore = (p: PenaltyItem) => {
+    setSelectedPenalty(p);
+    setIsModalOpen(true);
   };
 
-  // Function to format dates
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
-
-  // Function to handle row selection
-  const handleRowSelection = (penaltyId: string) => {
-    setSelectedRows(prev => 
-      prev.includes(penaltyId) 
-        ? prev.filter(id => id !== penaltyId)
-        : [...prev, penaltyId]
-    );
-  };
-
-  // Function to open modal
-  const handleViewMore = (penalty: any) => {
-    const book = booksData?.response?.find(b => b.id === penalty.bookId);
-    if (book) {
-      setSelectedPenalty({ penalty, book });
-      setIsModalOpen(true);
-    }
-  };
-
-  // Function to close modal
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedPenalty(null);
   };
 
-  // Filtrar y ordenar multas
-  const filteredAndSortedPenalties = mockPenalties
-    .filter(penalty => {
-      if (!booksData?.response) return false;
-      const book = booksData.response.find(b => b.id === penalty.bookId);
-      if (!book) return false;
-      
-      // Filter by search
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
-        const matchesSearch = (
-          book.title.toLowerCase().includes(searchLower) ||
-          book.author.toLowerCase().includes(searchLower) ||
-          book.isbn.toLowerCase().includes(searchLower)
-        );
-        if (!matchesSearch) return false;
-      }
-      
-      // Filtro por estado
-      if (statusFilter !== "ALL" && penalty.status !== statusFilter) {
-        return false;
-      }
-      
-      return true;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case "DATE_ASC":
-          return new Date(a.fromDate).getTime() - new Date(b.fromDate).getTime();
-        case "DATE_DESC":
-          return new Date(b.fromDate).getTime() - new Date(a.fromDate).getTime();
-        case "AMOUNT_ASC":
-          return a.amount - b.amount;
-        case "AMOUNT_DESC":
-          return b.amount - a.amount;
-        default:
-          return 0;
-      }
-    });
-
-  // Contar multas vencidas (simulado)
-  const expiredPenalties = 1;
-
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-8 py-4">
-          <Button variant="ghost" asChild className="text-berkeley-blue hover:text-berkeley-blue/80">
-            <Link href="/" className="flex items-center gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Volver al Inicio
-            </Link>
-          </Button>
-        </div>
-      </div>
-
       <main className="container mx-auto px-8 py-8">
-        {/* Attention alert */}
-        <Alert className="bg-white border-[#CC3F0C] rounded-lg border-2 mb-6" style={{ color: '#CC3F0C' }}>
-          <AlertDescription className="flex items-start gap-3">
-            <span className="text-lg">⚠️</span>
-            <div className="flex flex-col">
-              <span className="font-medium" style={{ color: '#CC3F0C' }}>
-                Atención!
-              </span>
-              <span style={{ color: '#CC3F0C' }}>
-                Tienes {expiredPenalties} préstamo(s) vencido(s). Se aplicarán multas automáticamente después de 7 días del vencimiento.
-              </span>
-            </div>
-          </AlertDescription>
-        </Alert>
-
-        {/* Main title */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-              <AlertTriangle className="h-6 w-6 text-red-600" />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-6 w-6" />
+            <h1 className="text-2xl font-semibold tracking-tight">
               Multas y Sanciones
             </h1>
           </div>
-          <p className="text-gray-600 text-lg">
-            Las sanciones y multas se aplican a préstamos vencidos después de 7 días de la fecha limite
-          </p>
+        </div>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Visualizá tus multas y sanciones. Podés filtrar y buscar por libro o
+          estado.
+        </p>
+
+        {/* Search + Filters */}
+        <div className="mt-6 mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          {/* Search */}
+          <div className="relative w-full max-w-md">
+            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+            <Input
+              placeholder="Buscar por título, autor, etc..."
+              className="pl-10"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm font-medium text-gray-700">
+              Filtrar por:
+            </span>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as "all" | PenaltyStatus)}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="PENDING">Pendiente</SelectItem>
+                <SelectItem value="PAID">Pagada</SelectItem>
+                <SelectItem value="RESERVED">Reservado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        {/* Search bar and filters */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Buscar por título, autor, etc..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <div className="flex gap-2">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-berkeley-blue focus:border-transparent"
-                >
-                  <option value="ALL">Todos los estados</option>
-                  <option value="PAID">Pagada</option>
-                  <option value="PENDING">Pendiente</option>
-                  <option value="RESERVED">Reservado</option>
-                </select>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-berkeley-blue focus:border-transparent"
-                >
-                  <option value="DATE_DESC">Fecha (más reciente)</option>
-                  <option value="DATE_ASC">Fecha (más antigua)</option>
-                  <option value="AMOUNT_DESC">Monto (mayor)</option>
-                  <option value="AMOUNT_ASC">Monto (menor)</option>
-                </select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Tabla de multas */}
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <input type="checkbox" className="rounded border-gray-300" />
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-2">
-                      Libro
-                      <ChevronsUpDown className="h-4 w-4 text-gray-400" />
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-2">
-                      Estado
-                      <ChevronsUpDown className="h-4 w-4 text-gray-400" />
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-2">
-                      Desde
-                      <ChevronsUpDown className="h-4 w-4 text-gray-400" />
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-2">
-                      Hasta
-                      <ChevronsUpDown className="h-4 w-4 text-gray-400" />
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-2">
-                      Monto
-                      <ChevronsUpDown className="h-4 w-4 text-gray-400" />
-                    </div>
-                  </TableHead>
-                  <TableHead>Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  // Skeleton loading
-                  Array.from({ length: 3 }).map((_, index) => (
-                    <TableRow key={index}>
-                      <TableCell>
-                        <Skeleton className="h-4 w-4 rounded" />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-4">
-                          <Skeleton className="w-12 h-16 rounded" />
-                          <div className="space-y-2">
-                            <Skeleton className="h-4 w-48" />
-                            <Skeleton className="h-3 w-32" />
-                            <Skeleton className="h-3 w-24" />
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-6 w-20 rounded-full" />
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-4 w-20" />
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-4 w-20" />
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-4 w-16" />
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-8 w-20" />
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : filteredAndSortedPenalties.length > 0 ? (
-                  filteredAndSortedPenalties.map((penalty) => {
-                    const book = booksData?.response?.find(b => b.id === penalty.bookId);
-                    if (!book) return null;
-
-                    return (
-                      <TableRow key={penalty.id} className="hover:bg-gray-50">
+        {/* Penalties Table (styled like loans) */}
+        <Card className="shadow-sm">
+          <CardContent className="px-6 py-4">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Libro</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="min-w-[120px]">Desde</TableHead>
+                    <TableHead className="min-w-[120px]">Hasta</TableHead>
+                    <TableHead className="min-w-[120px]">Monto</TableHead>
+                    <TableHead className="w-[240px] text-center">
+                      Acciones
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {displayedResults.length > 0 ? (
+                    displayedResults.map((penalty) => (
+                      <TableRow key={penalty.id}>
                         <TableCell>
-                          <input
-                            type="checkbox"
-                            checked={selectedRows.includes(penalty.id)}
-                            onChange={() => handleRowSelection(penalty.id)}
-                            className="rounded border-gray-300 text-berkeley-blue focus:ring-berkeley-blue"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-4">
-                            <div className="relative w-12 h-16 bg-gray-200 rounded overflow-hidden">
-                              {book.imageUrl ? (
+                          <div className="flex items-center gap-3">
+                            <div className="relative h-14 w-10 flex-shrink-0 overflow-hidden rounded bg-gray-200">
+                              {penalty.book.imageUrl ? (
                                 <Image
-                                  src={book.imageUrl}
-                                  alt={book.title}
+                                  src={penalty.book.imageUrl}
+                                  alt={penalty.book.title}
                                   fill
                                   className="object-cover"
                                   onError={(e) => {
                                     const target = e.target as HTMLImageElement;
-                                    target.style.display = 'none';
-                                    const nextElement = target.nextElementSibling as HTMLElement;
-                                    if (nextElement) {
-                                      nextElement.style.display = 'flex';
-                                    }
+                                    target.style.display = "none";
                                   }}
                                 />
                               ) : null}
-                              <div className={`${book.imageUrl ? 'hidden' : 'flex'} w-full h-full bg-gray-200 items-center justify-center text-gray-400 text-xs`}>
-                                Sin imagen
-                              </div>
                             </div>
-                            <div className="space-y-1">
-                              <h3 className="font-semibold text-gray-900 text-sm">
-                                {book.title}
-                              </h3>
-                              <p className="text-gray-600 text-sm">
-                                {book.author}
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-gray-900">
+                                {penalty.book.title}
                               </p>
-                              <p className="text-gray-500 text-xs">
-                                #ISBN: {book.isbn}
+                              <p className="truncate text-sm text-gray-600">
+                                {penalty.book.author}
                               </p>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          {getStatusBadge(penalty.status)}
-                        </TableCell>
-                        <TableCell className="text-gray-700">
+
+                        <TableCell>{getStatusBadge(penalty.status)}</TableCell>
+
+                        <TableCell className="text-sm text-gray-600">
                           {formatDate(penalty.fromDate)}
                         </TableCell>
-                        <TableCell className="text-gray-700">
+
+                        <TableCell className="text-sm text-gray-600">
                           {formatDate(penalty.toDate)}
                         </TableCell>
-                        <TableCell className="text-gray-700 font-semibold">
+
+                        <TableCell className="text-sm text-gray-600">
                           ${penalty.amount}
                         </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            className="bg-berkeley-blue hover:bg-berkeley-blue/90 text-white"
-                            onClick={() => handleViewMore(penalty)}
-                          >
-                            Ver Más
-                          </Button>
+
+                        <TableCell className="w-[240px] text-right">
+                          <div className="ml-auto flex w-[240px] items-center justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-24"
+                              onClick={() => handleViewMore(penalty)}
+                            >
+                              Ver Más
+                            </Button>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="bg-berkeley-blue w-28 text-white"
+                            >
+                              Pagar
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
-                    );
-                  })
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                      No se encontraron multas
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell
+                        colSpan={6}
+                        className="py-8 text-center text-gray-500"
+                      >
+                        No se encontraron multas
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Pagination */}
-        <div className="flex items-center justify-between mt-6">
-          <div className="text-sm text-gray-600">
-            {selectedRows.length} of {filteredAndSortedPenalties.length} row(s) selected.
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" disabled>
-              Previous
-            </Button>
-            <Button variant="outline">
-              Next
-            </Button>
-          </div>
-        </div>
+        {/* Bottom Pagination */}
+        <PaginationControls
+          className="mt-6"
+          currentPage={page}
+          totalPages={totalPages}
+          hasNextPage={hasNextPage}
+          hasPreviousPage={hasPreviousPage}
+          onPageChange={(p) => {
+            if (p >= 1 && p <= totalPages) setPage(p);
+          }}
+        />
       </main>
 
-      {/* Modal de detalles de multa */}
+      {/* Penalty details modal */}
       {selectedPenalty && (
         <PenaltyDetailsModal
           isOpen={isModalOpen}
           onClose={handleCloseModal}
-          penalty={selectedPenalty.penalty}
-          book={selectedPenalty.book}
+          penalty={{
+            id: selectedPenalty.id,
+            bookId: selectedPenalty.book.id,
+            status: selectedPenalty.status,
+            fromDate: selectedPenalty.fromDate,
+            toDate: selectedPenalty.toDate,
+            amount: selectedPenalty.amount,
+          }}
+          book={{
+            id: selectedPenalty.book.id,
+            title: selectedPenalty.book.title,
+            author: selectedPenalty.book.author,
+            isbn: selectedPenalty.book.isbn ?? "",
+            gender: selectedPenalty.book.gender ?? "Desconocido",
+            imageUrl: selectedPenalty.book.imageUrl ?? "",
+          }}
         />
       )}
     </div>
