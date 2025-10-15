@@ -92,47 +92,122 @@ export default function ReservePage() {
   if (bookLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="border-b bg-white">
-          <div className="container mx-auto px-8 py-4">
-            <Skeleton className="h-6 w-32" />
-          </div>
-        </div>
-        <main className="container mx-auto px-8 py-8">
+        <main className="container mx-auto py-8">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-            <div>
-              <Skeleton className="mb-6 h-8 w-48" />
-              <Card className="shadow-sm">
-                <CardContent className="p-6">
+            {/* Left section - Book information skeleton */}
+            <div className="flex flex-col">
+              <h2 className="text-berkeley-blue mb-6 text-xl font-semibold">
+                Información del libro
+              </h2>
+
+              <Card className="flex-1 shadow-sm">
+                <CardContent className="flex h-full flex-col">
                   <div className="flex gap-6">
-                    <Skeleton className="h-48 w-32 rounded" />
-                    <div className="flex-1 space-y-4">
-                      <Skeleton className="h-6 w-3/4" />
-                      <Skeleton className="h-4 w-1/2" />
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-full" />
+                    {/* Portada skeleton */}
+                    <div className="flex-shrink-0">
+                      <Skeleton className="h-64 w-44 rounded" />
+                    </div>
+
+                    {/* Book information skeleton */}
+                    <div className="flex flex-1 flex-col space-y-6">
+                      <div>
+                        <Skeleton className="mb-1 h-8 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
                       </div>
+
+                      <div className="flex flex-1 flex-col justify-between">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-6">
+                          <div className="space-y-1">
+                            <Skeleton className="h-4 w-12" />
+                            <Skeleton className="h-4 w-full" />
+                          </div>
+                          <div className="space-y-1">
+                            <Skeleton className="h-4 w-16" />
+                            <Skeleton className="h-4 w-full" />
+                          </div>
+                          <div className="space-y-1">
+                            <Skeleton className="h-4 w-10" />
+                            <Skeleton className="h-4 w-full" />
+                          </div>
+                          <div className="space-y-1">
+                            <Skeleton className="h-4 w-20" />
+                            <Skeleton className="h-4 w-full" />
+                          </div>
+                          <div className="space-y-1">
+                            <Skeleton className="h-4 w-12" />
+                            <Skeleton className="h-4 w-full" />
+                          </div>
+                          <div className="space-y-1">
+                            <Skeleton className="h-4 w-20" />
+                            <Skeleton className="h-4 w-full" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sinopsis skeleton */}
+                  <div className="pt-3">
+                    <Skeleton className="mb-2 h-5 w-20" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-3/4" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
-            <div>
-              <Skeleton className="mb-6 h-8 w-48" />
-              <Card className="shadow-sm">
-                <CardContent className="p-6">
-                  <div className="space-y-6">
-                    <Skeleton className="h-16 w-full rounded-lg" />
-                    <div className="space-y-4">
-                      <Skeleton className="h-12 w-full" />
-                      <Skeleton className="h-12 w-full" />
+
+            {/* Right section - Reservation details skeleton */}
+            <div className="flex flex-col">
+              <h2 className="text-berkeley-blue mb-6 text-xl font-semibold">
+                Detalles de la Reserva
+              </h2>
+
+              <Card className="flex-1 shadow-sm">
+                <CardContent className="flex h-full flex-col space-y-3">
+                  {/* Loan period skeleton */}
+                  <Skeleton className="h-14 w-full rounded-lg" />
+
+                  {/* Fechas skeleton */}
+                  <div className="space-y-1.5">
+                    <div>
+                      <Skeleton className="mb-0.5 h-4 w-16" />
+                      <Skeleton className="h-16 w-full rounded-lg" />
                     </div>
-                    <Skeleton className="h-20 w-full rounded-lg" />
-                    <Skeleton className="h-12 w-full" />
+                    <div>
+                      <Skeleton className="mb-0.5 h-4 w-16" />
+                      <Skeleton className="h-16 w-full rounded-lg" />
+                    </div>
+                  </div>
+
+                  {/* Information box skeleton */}
+                  <Skeleton className="h-20 w-full rounded-lg" />
+
+                  {/* Checkbox skeleton */}
+                  <Skeleton className="h-6 w-full" />
+
+                  {/* Pickup information skeleton */}
+                  <Skeleton className="h-20 w-full rounded-lg" />
+
+                  {/* Confirm button skeleton */}
+                  <div className="mt-auto pt-1">
+                    <Skeleton className="h-9 w-full rounded-lg" />
                   </div>
                 </CardContent>
               </Card>
+            </div>
+          </div>
+
+          {/* Recommended books skeleton */}
+          <div className="mt-12">
+            <h2 className="text-berkeley-blue mb-6 text-xl font-semibold">
+              Podría interesarte...
+            </h2>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <BookCardSkeleton />
+              <BookCardSkeleton />
             </div>
           </div>
         </main>
@@ -161,32 +236,16 @@ export default function ReservePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header con botón Volver */}
-      <div className="bg-white py-4">
-        <div className="container mx-auto px-8">
-          <Button
-            variant="ghost"
-            asChild
-            className="text-berkeley-blue hover:text-berkeley-blue/80 -ml-2"
-          >
-            <Link href="/" className="flex items-center gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Volver al Inicio
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-      <main className="container mx-auto px-8 py-8">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-start">
+      <main className="container mx-auto py-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           {/* Left section - Book information */}
-          <div>
+          <div className="flex flex-col">
             <h2 className="text-berkeley-blue mb-6 text-xl font-semibold">
               Infromación del libro
             </h2>
 
-            <Card className="h-full shadow-sm">
-              <CardContent className="p-6">
+            <Card className="flex-1 shadow-sm">
+              <CardContent className="flex h-full flex-col">
                 <div className="flex gap-6">
                   {/* Portada del libro */}
                   <div className="flex-shrink-0">
@@ -217,7 +276,7 @@ export default function ReservePage() {
                   </div>
 
                   {/* Book information */}
-                  <div className="flex-1 space-y-3">
+                  <div className="flex flex-1 flex-col space-y-6">
                     <div>
                       <h3 className="mb-1 text-2xl font-bold text-gray-900">
                         {book.title}
@@ -228,8 +287,8 @@ export default function ReservePage() {
                       </p>
                     </div>
 
-                    <div className="space-y-2 text-sm">
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                    <div className="flex flex-1 flex-col justify-between text-sm">
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-6">
                         <div>
                           <span className="font-semibold text-gray-700">
                             ISBN
@@ -254,92 +313,87 @@ export default function ReservePage() {
                           </span>
                           <p className="text-gray-600">{book.editorial}</p>
                         </div>
+                        <div>
+                          <span className="font-semibold text-gray-700">
+                            Sede
+                          </span>
+                          <p className="text-gray-600">
+                            {book.location ?? "No especificada"}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-700">
+                            Ubicación
+                          </span>
+                          <p className="text-gray-600">
+                            {book.location
+                              ? book.location
+                                  .split(",")
+                                  .slice(1)
+                                  .join(",")
+                                  .trim() || book.location
+                              : "No especificada"}
+                          </p>
+                        </div>
                       </div>
-
-                      <div className="pt-2">
-                        <span className="font-semibold text-gray-700">
-                          Sede
-                        </span>
-                        <p className="text-gray-600">
-                          {book.location ?? "No especificada"}
-                        </p>
-                      </div>
-
-                      <div className="pt-2">
-                        <span className="font-semibold text-gray-700">
-                          Ubicación
-                        </span>
-                        <p className="text-gray-600">
-                          {book.location
-                            ? book.location
-                                .split(",")
-                                .slice(1)
-                                .join(",")
-                                .trim() || book.location
-                            : "No especificada"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="pt-2">
-                      <h4 className="mb-2 font-semibold text-gray-900">
-                        Sinopsis
-                      </h4>
-                      <p className="text-sm leading-relaxed text-gray-600">
-                        {book.description}
-                      </p>
                     </div>
                   </div>
+                </div>
+
+                {/* Sinopsis fuera del flex de la imagen */}
+                <div className="pt-3">
+                  <h4 className="mb-2 font-semibold text-gray-900">Sinopsis</h4>
+                  <p className="text-sm leading-relaxed text-gray-600">
+                    {book.description}
+                  </p>
                 </div>
               </CardContent>
             </Card>
           </div>
 
           {/* Right section - Reservation details */}
-          <div>
+          <div className="flex flex-col">
             <h2 className="text-berkeley-blue mb-6 text-xl font-semibold">
               Detalles de la Reserva
             </h2>
 
-            <Card className="h-full shadow-sm">
-              <CardContent className="space-y-6 p-6">
+            <Card className="flex-1 shadow-sm">
+              <CardContent className="flex h-full flex-col space-y-3">
                 {/* Loan period */}
-                <div className="rounded-lg bg-blue-50 p-4">
-                  <div className="flex items-start gap-3">
-                    <Clock className="mt-0.5 h-5 w-5 text-blue-600" />
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">
-                        Período de préstamo: 7 días (no modificable)
-                      </p>
-                    </div>
+                <div className="rounded-lg bg-blue-50 p-2.5">
+                  <div className="flex items-start gap-2">
+                    <Clock className="text-berkeley-blue mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+                    <p className="text-sm leading-tight font-semibold text-gray-900">
+                      Período de préstamo: 7 días (no modificable)
+                    </p>
                   </div>
                 </div>
 
                 {/* Fechas */}
-                <div className="space-y-3">
+                <div className="space-y-1.5">
                   <div>
-                    <p className="mb-1 text-xs font-medium text-gray-500">
+                    <p className="mb-0.5 text-sm font-medium text-gray-500">
                       Desde
                     </p>
-                    <div className="rounded-lg border border-gray-200 bg-white p-3">
+                    <div className="rounded-lg border border-gray-200 bg-white p-1.5">
                       <p className="text-sm font-semibold text-gray-900">
                         {formatDate(reservationDate)}
                       </p>
-                      <p className="text-xs text-gray-500 capitalize">
+                      <p className="text-sm leading-tight text-gray-500 capitalize">
                         {formatDateFull(reservationDate)}
                       </p>
                     </div>
                   </div>
 
                   <div>
-                    <p className="mb-1 text-xs font-medium text-gray-500">
+                    <p className="mb-0.5 text-sm font-medium text-gray-500">
                       Hasta
                     </p>
-                    <div className="rounded-lg border border-gray-200 bg-white p-3">
+                    <div className="rounded-lg border border-gray-200 bg-white p-1.5">
                       <p className="text-sm font-semibold text-gray-900">
                         {formatDate(returnDate)}
                       </p>
-                      <p className="text-xs text-gray-500 capitalize">
+                      <p className="text-sm leading-tight text-gray-500 capitalize">
                         {formatDateFull(returnDate)}
                       </p>
                     </div>
@@ -347,8 +401,8 @@ export default function ReservePage() {
                 </div>
 
                 {/* Information box */}
-                <div className="rounded-lg bg-orange-50 p-4">
-                  <p className="text-xs leading-relaxed text-gray-700">
+                <div className="rounded-lg bg-orange-50 p-2.5">
+                  <p className="text-[11px] leading-tight text-gray-700">
                     Al realizar esta reserva, acepto cumplir con las normas de
                     la biblioteca, devolver el libro en la fecha establecida y
                     hacerme responsable por cualquier daño o pérdida del
@@ -363,23 +417,23 @@ export default function ReservePage() {
                 </div>
 
                 {/* Checkbox para aceptar términos */}
-                <div className="space-y-3">
-                  <label className="flex cursor-pointer items-start gap-3">
+                <div>
+                  <label className="flex cursor-pointer items-start gap-2">
                     <input
                       type="checkbox"
                       checked={termsAccepted}
                       onChange={(e) => setTermsAccepted(e.target.checked)}
-                      className="text-berkeley-blue focus:ring-berkeley-blue mt-1 h-4 w-4 cursor-pointer rounded border-gray-300"
+                      className="text-berkeley-blue focus:ring-berkeley-blue mt-0.5 h-3.5 w-3.5 cursor-pointer rounded border-gray-300"
                     />
-                    <span className="text-sm leading-relaxed text-gray-700">
+                    <span className="text-[11px] leading-tight text-gray-700">
                       Acepto los términos y condiciones
                     </span>
                   </label>
                 </div>
 
                 {/* Pickup information */}
-                <div className="rounded-lg bg-gray-50 p-4">
-                  <p className="text-xs leading-relaxed text-gray-700">
+                <div className="rounded-lg bg-gray-50 p-2.5">
+                  <p className="text-[11px] leading-tight text-gray-700">
                     Una vez confirmada la reserva, tu libro estará disponible
                     por 24 horas para su retiro en la sede correspondiente. En
                     caso de no ser retirado, el préstamo será cancelado (Podrían
@@ -388,23 +442,23 @@ export default function ReservePage() {
                 </div>
 
                 {/* Confirm button */}
-                <div className="pt-2">
+                <div className="mt-auto pt-1">
                   <Button
                     onClick={handleReserve}
                     disabled={!termsAccepted || book.status !== "AVAILABLE"}
-                    className="bg-berkeley-blue hover:bg-berkeley-blue/90 h-12 w-full text-base font-semibold text-white shadow-sm transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="bg-berkeley-blue hover:bg-berkeley-blue/90 h-9 w-full text-sm font-semibold text-white shadow-sm transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {book.status !== "AVAILABLE"
                       ? "Libro No Disponible"
                       : "Confirmar Reserva"}
                   </Button>
                   {book.status !== "AVAILABLE" && (
-                    <p className="mt-2 text-center text-xs text-red-600">
+                    <p className="mt-1.5 text-center text-[10px] text-red-600">
                       Este libro no está disponible para reserva
                     </p>
                   )}
                   {!termsAccepted && book.status === "AVAILABLE" && (
-                    <p className="mt-2 text-center text-xs text-gray-500">
+                    <p className="mt-1.5 text-center text-[10px] text-gray-500">
                       Debes aceptar los términos y condiciones para continuar
                     </p>
                   )}
@@ -469,6 +523,7 @@ export default function ReservePage() {
           book={{
             title: book.title,
             author: book.author,
+            editor: book.editorial ?? "",
             authorMiddleName: book.authorMiddleName ?? undefined,
             authorLastName: book.authorLastName ?? undefined,
             isbn: book.isbn,
