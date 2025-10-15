@@ -9,6 +9,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "~/components/ui/pagination";
+import { cn } from "~/lib/utils";
 
 interface PaginationControlsProps {
   currentPage: number;
@@ -16,6 +17,7 @@ interface PaginationControlsProps {
   onPageChange: (page: number) => void;
   hasNextPage: boolean;
   hasPreviousPage: boolean;
+  className?: string;
 }
 
 export default function PaginationControls({
@@ -24,6 +26,7 @@ export default function PaginationControls({
   onPageChange,
   hasNextPage,
   hasPreviousPage,
+  className,
 }: PaginationControlsProps) {
   const generatePageNumbers = () => {
     const pages = [];
@@ -60,10 +63,12 @@ export default function PaginationControls({
     return pages;
   };
 
-  if (totalPages <= 1) return null;
+  // Only hide the pagination when there are no pages (totalPages === 0).
+  // Keep the controls visible for a single page so the UI shows disabled prev/next.
+  if (totalPages === 0) return null;
 
   return (
-    <Pagination className="mt-8">
+    <Pagination className={cn("mt-8", className)}>
       <PaginationContent>
         <PaginationItem>
           <PaginationPrevious

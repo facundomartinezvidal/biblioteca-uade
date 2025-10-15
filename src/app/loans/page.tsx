@@ -1,8 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowLeft, RotateCcw, Search, ChevronsUpDown } from "lucide-react";
-import { Alert, AlertDescription } from "~/components/ui/alert";
+import { History, Search } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Badge } from "~/components/ui/badge";
@@ -13,21 +11,67 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableHead as TableHeadCell,
 } from "~/components/ui/table";
 import { Card, CardContent } from "~/components/ui/card";
 import Image from "next/image";
-import { api } from "~/trpc/react";
-import { Skeleton } from "~/components/ui/skeleton";
 import LoanDetailsModal from "../_components/loan-details-modal";
 import { useState } from "react";
+import PaginationControls from "../_components/home/pagination-controls";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
+
+// Local type to mirror the shape expected by LoanDetailsModal
+type LoanStatus = "ACTIVE" | "RESERVED" | "FINISHED" | "EXPIRED" | "CANCELLED";
+type LoanItem = {
+  id: string;
+  userId: string;
+  endDate: string;
+  status: LoanStatus;
+  createdAt: string;
+  book: {
+    id: string;
+    title: string;
+    description: string;
+    isbn: string;
+    status: string;
+    year: number;
+    editorial: string;
+    imageUrl: string | null;
+    createdAt: string;
+  };
+  author: {
+    id: string;
+    name: string;
+    middleName: string;
+    lastName: string;
+    createdAt: string;
+  };
+  gender: {
+    id: string;
+    name: string;
+    createdAt: string;
+  };
+  location: {
+    id: string;
+    address: string;
+    campus: string;
+    createdAt: string;
+  };
+};
 
 // Function to get status color
 const getStatusColor = (status: string) => {
   switch (status) {
     case "ACTIVE":
-      return "bg-blue-600 text-white";
+      return "bg-berkeley-blue text-white";
     case "RESERVED":
-      return "bg-blue-500 text-white";
+      return "bg-berkeley-blue/80 text-white";
     case "FINISHED":
       return "bg-gray-600 text-white";
     case "EXPIRED":
@@ -57,34 +101,49 @@ const getStatusText = (status: string) => {
   }
 };
 
+type ButtonVariant =
+  | "link"
+  | "outline"
+  | "destructive"
+  | "default"
+  | "secondary"
+  | "ghost"
+  | null
+  | undefined;
+type Action = { label: string; variant: ButtonVariant; className?: string };
+
 // Function to get actions based on status
-const getActions = (status: string) => {
+const getActions = (status: string): { primary: Action; secondary: Action } => {
   switch (status) {
     case "ACTIVE":
       return {
         primary: { label: "Ver Más", variant: "outline" as const },
-        secondary: { label: "Cancelar", variant: "destructive" as const }
+        secondary: { label: "Cancelar", variant: "destructive" as const },
       };
     case "RESERVED":
       return {
         primary: { label: "Ver Más", variant: "outline" as const },
-        secondary: { label: "Cancelar", variant: "destructive" as const }
+        secondary: { label: "Cancelar", variant: "destructive" as const },
       };
     case "FINISHED":
       return {
         primary: { label: "Ver Más", variant: "outline" as const },
-        secondary: { label: "Renovar ↻", variant: "default" as const }
+        secondary: { label: "Renovar", variant: "default" as const },
       };
     case "EXPIRED":
     case "CANCELLED":
       return {
-        primary: { label: "Ver Más", variant: "outline" as const },
-        secondary: { label: "Reservar →", variant: "default" as const }
+        primary: { label: "Ver Más", variant: "outline", className: undefined },
+        secondary: {
+          label: "Reservar ",
+          variant: "default",
+          className: "bg-berkeley-blue text-white",
+        },
       };
     default:
       return {
-        primary: { label: "Ver Más", variant: "outline" as const },
-        secondary: { label: "Acción", variant: "default" as const }
+        primary: { label: "Ver Más", variant: "outline" },
+        secondary: { label: "Acción", variant: "default" },
       };
   }
 };
@@ -92,34 +151,161 @@ const getActions = (status: string) => {
 // Function to format dates
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
-  return date.toLocaleDateString('es-ES', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric'
+  return date.toLocaleDateString("es-ES", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
   });
 };
 
 export default function LoansPage() {
-  // TODO: Replace with real user ID when authentication is implemented
-  const userId = "temp-user-id";
-  
-  const { data: loansData, isLoading } = api.loans.getByUserId.useQuery({
-    userId,
-    page: 1,
-    limit: 50,
-  });
+  // Pagination state (kept for UI mock behaviour)
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+
+  // Mocked loan data for the UI mockup
+  const mockLoans: LoanItem[] = [
+    {
+      id: "1",
+      userId: "temp-user-id",
+      endDate: "2024-02-14T00:00:00.000Z",
+      status: "ACTIVE",
+      createdAt: "2024-01-14T00:00:00.000Z",
+      book: {
+        id: "b1",
+        title: "Cien años de soledad",
+        description: "",
+        isbn: "",
+        status: "",
+        year: 1967,
+        editorial: "",
+        imageUrl: "/covers/cien-anos-soledad.jpg",
+        createdAt: "2023-01-01T00:00:00.000Z",
+      },
+      author: {
+        id: "a1",
+        name: "Gabriel",
+        middleName: "José",
+        lastName: "García Márquez",
+        createdAt: "2023-01-01T00:00:00.000Z",
+      },
+      gender: {
+        id: "g1",
+        name: "Ficción",
+        createdAt: "2023-01-01T00:00:00.000Z",
+      },
+      location: {
+        id: "l1",
+        address: "Av. Ejemplo 123",
+        campus: "Central",
+        createdAt: "2023-01-01T00:00:00.000Z",
+      },
+    },
+    {
+      id: "2",
+      userId: "temp-user-id",
+      endDate: "2024-02-19T00:00:00.000Z",
+      status: "RESERVED",
+      createdAt: "2024-01-19T00:00:00.000Z",
+      book: {
+        id: "b2",
+        title: "La ciudad y los perros",
+        description: "",
+        isbn: "",
+        status: "",
+        year: 1963,
+        editorial: "",
+        imageUrl: "/covers/ciudad-perros.jpg",
+        createdAt: "2023-01-01T00:00:00.000Z",
+      },
+      author: {
+        id: "a2",
+        name: "Mario",
+        middleName: "",
+        lastName: "Vargas Llosa",
+        createdAt: "2023-01-01T00:00:00.000Z",
+      },
+      gender: {
+        id: "g2",
+        name: "Ficción",
+        createdAt: "2023-01-01T00:00:00.000Z",
+      },
+      location: {
+        id: "l1",
+        address: "Av. Ejemplo 123",
+        campus: "Central",
+        createdAt: "2023-01-01T00:00:00.000Z",
+      },
+    },
+    {
+      id: "3",
+      userId: "temp-user-id",
+      endDate: "2024-01-09T00:00:00.000Z",
+      status: "EXPIRED",
+      createdAt: "2023-12-09T00:00:00.000Z",
+      book: {
+        id: "b3",
+        title: "Rayuela",
+        description: "",
+        isbn: "",
+        status: "",
+        year: 1963,
+        editorial: "",
+        imageUrl: "/covers/rayuela.jpeg",
+        createdAt: "2023-01-01T00:00:00.000Z",
+      },
+      author: {
+        id: "a3",
+        name: "Julio",
+        middleName: "",
+        lastName: "Cortázar",
+        createdAt: "2023-01-01T00:00:00.000Z",
+      },
+      gender: {
+        id: "g3",
+        name: "Ficción",
+        createdAt: "2023-01-01T00:00:00.000Z",
+      },
+      location: {
+        id: "l1",
+        address: "Av. Ejemplo 123",
+        campus: "Central",
+        createdAt: "2023-01-01T00:00:00.000Z",
+      },
+    },
+  ];
 
   // State for modal
-  const [selectedLoan, setSelectedLoan] = useState<any>(null);
+  const [selectedLoan, setSelectedLoan] = useState<LoanItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Filters & search
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | LoanStatus>("all");
 
-  // Count expired loans for alert
-  const expiredLoans = loansData?.results && Array.isArray(loansData.results) 
-    ? loansData.results.filter((loan: any) => loan.status === "EXPIRED").length 
-    : 0;
+  // Use mock results for the UI mockup
+  const results = mockLoans;
+  const total = mockLoans.length;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const hasNextPage = page < totalPages;
+  const hasPreviousPage = page > 1;
+
+  // Apply client-side filters (current page only)
+  const displayedResults = results.filter((loan) => {
+    const matchesStatus =
+      statusFilter === "all" ? true : loan.status === statusFilter;
+    const query = search.trim().toLowerCase();
+    const matchesSearch = query
+      ? loan.book.title.toLowerCase().includes(query) ||
+        `${loan.author.name} ${loan.author.middleName} ${loan.author.lastName}`
+          .toLowerCase()
+          .includes(query) ||
+        (loan.book.isbn ?? "").toLowerCase().includes(query)
+      : true;
+    return matchesStatus && matchesSearch;
+  });
 
   // Function to open modal
-  const handleViewMore = (loan: any) => {
+  const handleViewMore = (loan: LoanItem) => {
     setSelectedLoan(loan);
     setIsModalOpen(true);
   };
@@ -132,233 +318,177 @@ export default function LoansPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Alert Banner - Only show if there are expired loans */}
-      {expiredLoans > 0 && (
-        <Alert className="bg-white border-[#CC3F0C] rounded-lg border-2" style={{ color: '#CC3F0C' }}>
-          <AlertDescription className="flex items-start gap-3">
-          <span className="text-lg">⚠️</span>
-            <div className="flex flex-col">
-              <span className="font-medium" style={{ color: '#CC3F0C' }}>
-                Atención!
-              </span>
-              <span style={{ color: '#CC3F0C' }}>
-                Tienes {expiredLoans} préstamo(s) vencido(s). Se aplicarán multas automáticamente después de 7 días del vencimiento.
-          </span>
-            </div>
-        </AlertDescription>
-      </Alert>
-      )}
-
       <main className="container mx-auto px-8 py-8">
-        {/* Volver al Inicio */}
-        <div className="mb-6">
-          <Button variant="ghost" asChild className="text-berkeley-blue hover:text-berkeley-blue/80">
-            <Link href="/" className="flex items-center gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Volver al Inicio
-            </Link>
-          </Button>
-        </div>
-
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-berkeley-blue mb-2 flex items-center gap-3">
-            <RotateCcw className="h-8 w-8" />
-            Historial de Préstamos
-          </h1>
-          <p className="text-lg text-gray-600">
-            Estos son todos tus préstamos hasta hoy
-          </p>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <History className="h-6 w-6" />
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Historial de Préstamos
+            </h1>
+          </div>
         </div>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Encontrá el libro que estás buscando de la forma más rápida
+        </p>
 
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+        {/* Search + Filters */}
+        <div className="mt-6 mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          {/* Search */}
+          <div className="relative w-full max-w-md">
+            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
             <Input
               placeholder="Buscar por título, autor, etc..."
               className="pl-10"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm font-medium text-gray-700">
+              Filtrar por:
+            </span>
+
+            {/* Status filter */}
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as LoanStatus | "all")}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="ACTIVE">Activo</SelectItem>
+                <SelectItem value="RESERVED">Reservado</SelectItem>
+                <SelectItem value="FINISHED">Finalizado</SelectItem>
+                <SelectItem value="EXPIRED">Vencido</SelectItem>
+                <SelectItem value="CANCELLED">Cancelado</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
-        {/* Loans Table */}
+        {/* Loans Table (styled like profile table) */}
         <Card className="shadow-sm">
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-b">
-                  <TableHead className="font-semibold text-berkeley-blue">
-                    <div className="flex items-center gap-2">
-                      Libro
-                      <ChevronsUpDown className="h-4 w-4" />
-                    </div>
-                  </TableHead>
-                  <TableHead className="font-semibold text-berkeley-blue">
-                    <div className="flex items-center gap-2">
-                      Estado
-                      <ChevronsUpDown className="h-4 w-4" />
-                    </div>
-                  </TableHead>
-                  <TableHead className="font-semibold text-berkeley-blue">
-                    <div className="flex items-center gap-2">
-                      Desde
-                      <ChevronsUpDown className="h-4 w-4" />
-                    </div>
-                  </TableHead>
-                  <TableHead className="font-semibold text-berkeley-blue">
-                    <div className="flex items-center gap-2">
-                      Hasta
-                      <ChevronsUpDown className="h-4 w-4" />
-                    </div>
-                  </TableHead>
-                  <TableHead className="font-semibold text-berkeley-blue">
-                    Acciones
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  // Skeleton loading state
-                  Array.from({ length: 5 }).map((_, index) => (
-                    <TableRow key={index} className="hover:bg-gray-50">
-                      <TableCell className="py-4">
-                        <div className="flex items-center gap-4">
-                          <Skeleton className="w-16 h-20 rounded" />
-                          <div className="flex flex-col gap-2">
-                            <Skeleton className="h-4 w-48" />
-                            <Skeleton className="h-3 w-32" />
-                            <Skeleton className="h-3 w-24" />
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-6 w-20 rounded-full" />
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-4 w-24" />
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-4 w-24" />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Skeleton className="h-8 w-16" />
-                          <Skeleton className="h-8 w-20" />
-                        </div>
+          <CardContent className="px-6 py-4">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Libro</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="min-w-[120px]">Desde</TableHead>
+                    <TableHead className="min-w-[120px]">Hasta</TableHead>
+                    <TableHead className="w-[240px] text-center">
+                      Acciones
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {displayedResults.length > 0 ? (
+                    displayedResults.map((loan) => {
+                      const actions = getActions(loan.status);
+                      const primaryClass = actions.primary.className ?? "";
+                      const secondaryClass = actions.secondary.className ?? "";
+                      return (
+                        <TableRow key={loan.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="relative h-14 w-10 flex-shrink-0 overflow-hidden rounded bg-gray-200">
+                                {loan.book.imageUrl ? (
+                                  <Image
+                                    src={loan.book.imageUrl}
+                                    alt={loan.book.title}
+                                    fill
+                                    className="object-cover"
+                                    onError={(e) => {
+                                      const target =
+                                        e.target as HTMLImageElement;
+                                      target.style.display = "none";
+                                    }}
+                                  />
+                                ) : null}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-medium text-gray-900">
+                                  {loan.book.title}
+                                </p>
+                                <p className="truncate text-sm text-gray-600">
+                                  {loan.author.name} {loan.author.middleName}{" "}
+                                  {loan.author.lastName}
+                                </p>
+                              </div>
+                            </div>
+                          </TableCell>
+
+                          <TableCell>
+                            <Badge
+                              className={`${getStatusColor(loan.status)} border-0 text-sm font-medium`}
+                            >
+                              {getStatusText(loan.status)}
+                            </Badge>
+                          </TableCell>
+
+                          <TableCell className="text-sm text-gray-600">
+                            {formatDate(loan.createdAt)}
+                          </TableCell>
+
+                          <TableCell className="text-sm text-gray-600">
+                            {formatDate(loan.endDate)}
+                          </TableCell>
+
+                          <TableCell className="w-[240px] text-right">
+                            <div className="ml-auto flex w-[240px] items-center justify-end gap-2">
+                              <Button
+                                variant={actions.primary.variant}
+                                size="sm"
+                                className={`w-24 ${primaryClass}`}
+                                onClick={() => handleViewMore(loan)}
+                              >
+                                {actions.primary.label}
+                              </Button>
+                              <Button
+                                variant={actions.secondary.variant}
+                                size="sm"
+                                className={`w-28 ${secondaryClass}`}
+                              >
+                                {actions.secondary.label}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell
+                        colSpan={5}
+                        className="py-8 text-center text-gray-500"
+                      >
+                        No tienes préstamos registrados
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : loansData?.results && Array.isArray(loansData.results) && loansData.results.length > 0 ? (
-                  loansData.results.map((loan: any) => {
-                    const actions = getActions(loan.status);
-                    return (
-                  <TableRow key={loan.id} className="hover:bg-gray-50">
-                    {/* Columna Libro */}
-                    <TableCell className="py-4">
-                      <div className="flex items-center gap-4">
-                        <div className="relative w-16 h-20 bg-gray-200 rounded flex items-center justify-center">
-                              {loan.book.imageUrl ? (
-                          <Image
-                                  src={loan.book.imageUrl}
-                            alt={loan.book.title}
-                            width={64}
-                            height={80}
-                            className="object-cover rounded"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              const nextElement = target.nextElementSibling as HTMLElement;
-                              if (nextElement) {
-                                nextElement.style.display = 'flex';
-                              }
-                            }}
-                          />
-                              ) : null}
-                              <div className={`${loan.book.imageUrl ? 'hidden' : 'flex'} w-full h-full bg-gray-200 rounded items-center justify-center text-gray-400 text-xs`}>
-                            Sin imagen
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <h3 className="font-semibold text-gray-900 text-sm">
-                            {loan.book.title}
-                          </h3>
-                          <p className="text-gray-600 text-sm">
-                                {loan.author.name} {loan.author.middleName} {loan.author.lastName}
-                          </p>
-                          <p className="text-gray-500 text-xs">
-                            #ISBN: {loan.book.isbn}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-
-                    {/* Columna Estado */}
-                    <TableCell>
-                          <Badge className={`${getStatusColor(loan.status)} border-0`}>
-                            {getStatusText(loan.status)}
-                      </Badge>
-                    </TableCell>
-
-                    {/* Columna Desde */}
-                    <TableCell className="text-gray-700">
-                          {formatDate(loan.createdAt)}
-                    </TableCell>
-
-                    {/* Columna Hasta */}
-                    <TableCell className="text-gray-700">
-                          {formatDate(loan.endDate)}
-                    </TableCell>
-
-                    {/* Columna Acciones */}
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                              variant={actions.primary.variant}
-                          size="sm"
-                          className="text-xs"
-                              onClick={() => handleViewMore(loan)}
-                        >
-                              {actions.primary.label}
-                        </Button>
-                        <Button
-                              variant={actions.secondary.variant}
-                          size="sm"
-                          className="text-xs"
-                        >
-                              {actions.secondary.label}
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                    );
-                  })
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                      No tienes préstamos registrados
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Pagination */}
-        <div className="flex items-center justify-between mt-6">
-          <div className="text-sm text-gray-600">
-            0 of {loansData?.results?.length || 0} row(s) selected.
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled>
-              Previous
-            </Button>
-            <Button variant="outline" size="sm">
-              Next
-            </Button>
-          </div>
-        </div>
+        {/* Bottom Pagination */}
+        <PaginationControls
+          className="mt-6"
+          currentPage={page}
+          totalPages={totalPages}
+          hasNextPage={hasNextPage}
+          hasPreviousPage={hasPreviousPage}
+          onPageChange={(p) => {
+            if (p >= 1 && p <= totalPages) setPage(p);
+          }}
+        />
       </main>
 
       {/* Loan details modal */}

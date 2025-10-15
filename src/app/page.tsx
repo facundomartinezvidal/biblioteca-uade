@@ -257,10 +257,11 @@ export default function HomePage() {
         Encontrá el libro que estás buscando de la forma más rápida
       </p>
 
-      <div className="mt-6 flex gap-6">
-        <div className="flex-1">
+      <div className="mt-6">
+        {/* Search Bar and Filters Row */}
+        <div className="mb-6 flex flex-wrap items-start gap-3">
           {/* Search Bar */}
-          <div className="relative">
+          <div className="relative min-w-[250px] flex-1">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
               placeholder="Buscar por título, autor, etc..."
@@ -278,156 +279,7 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
-            <TabsList className="w-full">
-              <TabsTrigger value="all" className="flex-1">
-                Todos ({pagination?.totalCount ?? 0})
-              </TabsTrigger>
-              <TabsTrigger value="favorites" className="flex-1">
-                Favoritos
-              </TabsTrigger>
-              <TabsTrigger value="recomended" className="flex-1">
-                Recomendados
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="all" className="mt-6">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {isLoading ? (
-                  Array.from({ length: pageSize }).map((_, index) => (
-                    <BookCardSkeleton key={index} />
-                  ))
-                ) : books.length > 0 ? (
-                  books.map((book) => (
-                    <BookCard
-                      key={book.id}
-                      title={book.title}
-                      authorFirstName={book.author}
-                      authorMiddleName={book.authorMiddleName ?? ""}
-                      authorLastName={book.authorLastName ?? ""}
-                      editorial={book.editorial}
-                      year={book.year}
-                      category={book.gender}
-                      description={book.description}
-                      isbn={book.isbn}
-                      location={book.location ?? ""}
-                      available={book.status === "AVAILABLE"}
-                      coverUrl={book.imageUrl}
-                      onReserve={() => handleReserve(book)}
-                      onViewMore={() => handleViewMore(book)}
-                    />
-                  ))
-                ) : (
-                  <div className="col-span-2 py-12 text-center">
-                    <p className="text-lg text-gray-500">
-                      No se encontraron libros que coincidan con los filtros.
-                    </p>
-                    <button
-                      onClick={clearFilters}
-                      className="text-berkeley-blue mt-4 hover:underline"
-                    >
-                      Limpiar filtros
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Pagination Controls */}
-              {pagination && pagination.totalPages > 1 && (
-                <PaginationControls
-                  currentPage={pagination.page}
-                  totalPages={pagination.totalPages}
-                  onPageChange={handlePageChange}
-                  hasNextPage={pagination.hasNextPage}
-                  hasPreviousPage={pagination.hasPreviousPage}
-                />
-              )}
-            </TabsContent>
-
-            <TabsContent value="favorites" className="mt-6">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {isLoading ? (
-                  Array.from({ length: 4 }).map((_, index) => (
-                    <BookCardSkeleton key={index} />
-                  ))
-                ) : favoriteBooks.length > 0 ? (
-                  favoriteBooks.map((book) => (
-                    <BookCard
-                      key={book.id}
-                      title={book.title}
-                      authorFirstName={book.author}
-                      authorMiddleName={book.authorMiddleName ?? ""}
-                      authorLastName={book.authorLastName ?? ""}
-                      editorial={book.editorial}
-                      year={book.year}
-                      category={book.gender}
-                      description={book.description}
-                      isbn={book.isbn}
-                      location={book.location ?? ""}
-                      available={book.status === "AVAILABLE"}
-                      coverUrl={book.imageUrl}
-                      isFavorite
-                      onReserve={() => handleReserve(book)}
-                      onViewMore={() => handleViewMore(book)}
-                    />
-                  ))
-                ) : (
-                  <div className="col-span-2 flex items-center justify-center py-12">
-                    <ComingSoon
-                      icon={<Clock className="h-6 w-6" />}
-                      title="Favoritos"
-                      subtitle="Próximamente"
-                      description="Podrás marcar libros como favoritos y acceder rápidamente a tus lecturas preferidas desde aquí."
-                    />
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="recomended" className="mt-6">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {isLoading ? (
-                  Array.from({ length: 4 }).map((_, index) => (
-                    <BookCardSkeleton key={index} />
-                  ))
-                ) : recommendedBooks.length > 0 ? (
-                  recommendedBooks.map((book) => (
-                    <BookCard
-                      key={book.id}
-                      title={book.title}
-                      authorFirstName={book.author}
-                      authorMiddleName={book.authorMiddleName ?? ""}
-                      authorLastName={book.authorLastName ?? ""}
-                      editorial={book.editorial}
-                      year={book.year}
-                      category={book.gender}
-                      description={book.description}
-                      isbn={book.isbn}
-                      location={book.location ?? ""}
-                      available={book.status === "AVAILABLE"}
-                      coverUrl={book.imageUrl}
-                      onReserve={() => handleReserve(book)}
-                      onViewMore={() => handleViewMore(book)}
-                    />
-                  ))
-                ) : (
-                  <div className="col-span-2 flex items-center justify-center py-12">
-                    <ComingSoon
-                      icon={<Clock className="h-6 w-6" />}
-                      title="Recomendados"
-                      subtitle="Próximamente"
-                      description="Estamos trabajando en recomendaciones personalizadas para sugerirte lecturas basadas en tus intereses."
-                    />
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Improved Filters Sidebar */}
-        <div className="hidden lg:block">
+          {/* Filters */}
           <ImprovedFiltersSidebar
             key={filterKey}
             onGenreChange={handleGenreChange}
@@ -444,6 +296,153 @@ export default function HomePage() {
             selectedYearTo={formYearTo}
           />
         </div>
+
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-0">
+          <TabsList className="w-full">
+            <TabsTrigger value="all" className="flex-1">
+              Todos ({pagination?.totalCount ?? 0})
+            </TabsTrigger>
+            <TabsTrigger value="favorites" className="flex-1">
+              Favoritos
+            </TabsTrigger>
+            <TabsTrigger value="recomended" className="flex-1">
+              Recomendados
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="all" className="mt-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {isLoading ? (
+                Array.from({ length: pageSize }).map((_, index) => (
+                  <BookCardSkeleton key={index} />
+                ))
+              ) : books.length > 0 ? (
+                books.map((book) => (
+                  <BookCard
+                    key={book.id}
+                    title={book.title}
+                    authorFirstName={book.author}
+                    authorMiddleName={book.authorMiddleName ?? ""}
+                    authorLastName={book.authorLastName ?? ""}
+                    editorial={book.editorial}
+                    year={book.year}
+                    category={book.gender}
+                    description={book.description}
+                    isbn={book.isbn}
+                    location={book.location ?? ""}
+                    available={book.status === "AVAILABLE"}
+                    coverUrl={book.imageUrl}
+                    onReserve={() => handleReserve(book)}
+                    onViewMore={() => handleViewMore(book)}
+                  />
+                ))
+              ) : (
+                <div className="col-span-2 py-12 text-center">
+                  <p className="text-lg text-gray-500">
+                    No se encontraron libros que coincidan con los filtros.
+                  </p>
+                  <button
+                    onClick={clearFilters}
+                    className="text-berkeley-blue mt-4 hover:underline"
+                  >
+                    Limpiar filtros
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Pagination Controls */}
+            {pagination && pagination.totalPages > 1 && (
+              <PaginationControls
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                onPageChange={handlePageChange}
+                hasNextPage={pagination.hasNextPage}
+                hasPreviousPage={pagination.hasPreviousPage}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="favorites" className="mt-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {isLoading ? (
+                Array.from({ length: 4 }).map((_, index) => (
+                  <BookCardSkeleton key={index} />
+                ))
+              ) : favoriteBooks.length > 0 ? (
+                favoriteBooks.map((book) => (
+                  <BookCard
+                    key={book.id}
+                    title={book.title}
+                    authorFirstName={book.author}
+                    authorMiddleName={book.authorMiddleName ?? ""}
+                    authorLastName={book.authorLastName ?? ""}
+                    editorial={book.editorial}
+                    year={book.year}
+                    category={book.gender}
+                    description={book.description}
+                    isbn={book.isbn}
+                    location={book.location ?? ""}
+                    available={book.status === "AVAILABLE"}
+                    coverUrl={book.imageUrl}
+                    isFavorite
+                    onReserve={() => handleReserve(book)}
+                    onViewMore={() => handleViewMore(book)}
+                  />
+                ))
+              ) : (
+                <div className="col-span-2 flex items-center justify-center py-12">
+                  <ComingSoon
+                    icon={<Clock className="h-6 w-6" />}
+                    title="Favoritos"
+                    subtitle="Próximamente"
+                    description="Podrás marcar libros como favoritos y acceder rápidamente a tus lecturas preferidas desde aquí."
+                  />
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="recomended" className="mt-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {isLoading ? (
+                Array.from({ length: 4 }).map((_, index) => (
+                  <BookCardSkeleton key={index} />
+                ))
+              ) : recommendedBooks.length > 0 ? (
+                recommendedBooks.map((book) => (
+                  <BookCard
+                    key={book.id}
+                    title={book.title}
+                    authorFirstName={book.author}
+                    authorMiddleName={book.authorMiddleName ?? ""}
+                    authorLastName={book.authorLastName ?? ""}
+                    editorial={book.editorial}
+                    year={book.year}
+                    category={book.gender}
+                    description={book.description}
+                    isbn={book.isbn}
+                    location={book.location ?? ""}
+                    available={book.status === "AVAILABLE"}
+                    coverUrl={book.imageUrl}
+                    onReserve={() => handleReserve(book)}
+                    onViewMore={() => handleViewMore(book)}
+                  />
+                ))
+              ) : (
+                <div className="col-span-2 flex items-center justify-center py-12">
+                  <ComingSoon
+                    icon={<Clock className="h-6 w-6" />}
+                    title="Recomendados"
+                    subtitle="Próximamente"
+                    description="Estamos trabajando en recomendaciones personalizadas para sugerirte lecturas basadas en tus intereses."
+                  />
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Pop-up modal for book details */}
