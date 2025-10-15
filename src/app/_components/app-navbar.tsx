@@ -36,28 +36,28 @@ export default function AppNavbar() {
   };
 
   return (
-    <nav className="bg-berkeley-blue border-b border-white/10 px-8 py-4 text-white">
+    <nav className="bg-berkeley-blue border-b border-white/10 px-6 py-2 text-white">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-6">
           <Link
             href={routes.home}
             className="flex items-center transition-opacity hover:opacity-80"
           >
-            <div className="relative flex h-12 w-30 items-center overflow-visible">
+            <div className="relative flex h-8 w-20 items-center overflow-visible">
               <Image
                 src="/favicon.png"
                 alt="UADE Logo"
-                width={160}
-                height={160}
+                width={120}
+                height={120}
                 className="object-contain"
               />
             </div>
           </Link>
 
-          <Separator orientation="vertical" className="h-8 bg-white/20" />
+          <Separator orientation="vertical" className="h-6 bg-white/20" />
 
           <NavigationMenu>
-            <NavigationMenuList className="gap-2">
+            <NavigationMenuList className="gap-1">
               {navLinks.map((link) => {
                 const active = isActive(link.href);
                 return (
@@ -66,7 +66,7 @@ export default function AppNavbar() {
                       <Link
                         href={link.href}
                         className={cn(
-                          "group inline-flex h-9 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-white/10 hover:text-white focus:bg-white/10 focus:text-white focus:outline-none disabled:pointer-events-none disabled:opacity-50",
+                          "group inline-flex h-8 w-max items-center justify-center rounded-md px-3 py-1 text-sm font-medium transition-colors hover:bg-white/10 hover:text-white focus:bg-white/10 focus:text-white focus:outline-none disabled:pointer-events-none disabled:opacity-50",
                           active ? "bg-white/20 text-white" : "text-white/70",
                         )}
                       >
@@ -80,49 +80,49 @@ export default function AppNavbar() {
           </NavigationMenu>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="relative flex h-12 w-16 items-center justify-center overflow-visible">
+        <div className="flex items-center gap-3">
+          <div className="relative flex h-8 w-12 items-center justify-center overflow-visible">
             <Image
               src="/booky.png"
               alt="Booky mascot"
-              width={80}
-              height={80}
+              width={60}
+              height={60}
               className="object-contain"
             />
           </div>
 
-          <Separator orientation="vertical" className="h-10 bg-white/20" />
+          <Separator orientation="vertical" className="h-8 bg-white/20" />
 
-          <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10 border-2 border-white/20">
+          <div className="flex items-center gap-2">
+            <Avatar className="h-8 w-8 border-2 border-white/20">
               <AvatarImage src="" alt="Eva Menendez" />
-              <AvatarFallback className="bg-white/20 text-sm font-semibold">
+              <AvatarFallback className="bg-white/20 text-xs font-semibold">
                 EM
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col gap-0.5">
-              <span className="text-sm leading-none font-medium">
+              <span className="text-xs leading-none font-medium">
                 Eva Menendez
               </span>
               <Badge
                 variant="secondary"
-                className="w-fit bg-white/20 px-2 py-0 text-xs text-white hover:bg-white/30"
+                className="w-fit bg-white/20 px-1.5 py-0 text-xs text-white hover:bg-white/30"
               >
-                <GraduationCap className="h-4 w-4" />
+                <GraduationCap className="h-3 w-3" />
                 Estudiante
               </Badge>
             </div>
           </div>
 
-          <Separator orientation="vertical" className="h-10 bg-white/20" />
+          <Separator orientation="vertical" className="h-8 bg-white/20" />
 
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-md text-white hover:bg-white/10 hover:text-white"
+              className="h-8 w-8 rounded-md text-white hover:bg-white/10 hover:text-white"
             >
-              <Bell className="h-5 w-5" />
+              <Bell className="h-4 w-4" />
               <span className="sr-only">Notifications</span>
             </Button>
 
@@ -131,9 +131,9 @@ export default function AppNavbar() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-md text-white hover:bg-white/10 hover:text-white"
+              className="h-8 w-8 rounded-md text-white hover:bg-white/10 hover:text-white"
             >
-              <LogOut className="h-5 w-5" />
+              <LogOut className="h-4 w-4" />
               <span className="sr-only">Logout</span>
             </Button>
           </div>

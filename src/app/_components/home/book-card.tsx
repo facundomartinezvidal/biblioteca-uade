@@ -4,12 +4,16 @@ import Image from "next/image";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
-import { Hash, Heart, MapPin, Tag, UserRound } from "lucide-react";
+import { BookOpen, Calendar, Hash, MapPin, Tag, UserRound } from "lucide-react";
 
 type BookCardProps = {
   coverUrl?: string | null;
   title: string;
-  author: string;
+  authorFirstName: string;
+  authorMiddleName: string;
+  authorLastName: string;
+  editorial: string;
+  year: number;
   category: string;
   description: string;
   isbn: string;
@@ -26,7 +30,11 @@ export default function BookCard(props: BookCardProps) {
   const {
     coverUrl,
     title,
-    author,
+    authorFirstName,
+    authorMiddleName,
+    authorLastName,
+    editorial,
+    year,
     category,
     description,
     isbn,
@@ -39,107 +47,127 @@ export default function BookCard(props: BookCardProps) {
     className,
   } = props;
 
+  const fullAuthorName =
+    `${authorFirstName} ${authorMiddleName} ${authorLastName}`.trim();
+
   return (
     <div className={["flex", className].filter(Boolean).join(" ")}>
       {/* Image container */}
-      <div className="bg-muted/20 border-muted/20 relative aspect-[2/3] w-[180px] flex-shrink-0 overflow-hidden rounded-l-lg border border-r-0">
+      <div className="bg-muted/20 border-muted/20 relative aspect-[2/3] w-[160px] flex-shrink-0 overflow-hidden rounded-l-lg border border-r-0">
         {coverUrl && (
           <Image
             src={coverUrl}
             alt={title}
             fill
             className="object-cover"
-            sizes="120px"
+            sizes="160px"
             priority={false}
           />
         )}
         {!coverUrl && (
           <div className="bg-muted/10 flex h-full w-full items-center justify-center">
-            <span className="text-muted-foreground/70 text-xs">Sin imagen</span>
+            <BookOpen className="text-muted-foreground/50 h-12 w-12" />
           </div>
         )}
       </div>
 
       {/* Content container */}
-      <Card className="bg-card relative flex-1 overflow-hidden rounded-l-none border-0 p-4">
-        <div className="flex flex-1 flex-col">
-          <div className="flex items-start justify-between gap-4">
-            {/* Title and author */}
-            <div className="flex-1 space-y-2">
-              <h3 className="text-lg leading-tight font-semibold tracking-tight">
+      <Card className="bg-card relative flex-1 overflow-hidden rounded-l-none border-0 p-5">
+        <div className="flex h-full flex-col">
+          {/* Header with title, availability and favorite */}
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-foreground mb-2 line-clamp-2 text-xl font-bold tracking-tight">
                 {title}
               </h3>
-              <div className="text-muted-foreground flex items-center gap-1 text-sm">
-                <UserRound className="h-4 w-4" />
-                <span>{author}</span>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2">
+              <Badge
+                className={`${
+                  available
+                    ? "border-emerald-200 bg-emerald-100 text-emerald-800 hover:bg-emerald-100"
+                    : "border-rose-200 bg-rose-100 text-rose-800 hover:bg-rose-100"
+                } rounded-full border px-2.5 py-1 text-xs font-semibold`}
+                variant="outline"
+              >
+                {available ? "Disponible" : "No disponible"}
+              </Badge>
+
+              {/* <Button
+                variant="ghost"
+                size="icon"
+                aria-label={
+                  isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"
+                }
+                onClick={onToggleFavorite}
+                className="h-8 w-8 shrink-0"
+              >
+                <Heart
+                  className={`h-4 w-4 ${isFavorite ? "fill-current text-rose-600" : ""}`}
+                />
+              </Button> */}
+            </div>
+          </div>
+
+          {/* Metadata in two rows of three */}
+          <div className="mb-3 space-y-2">
+            {/* First row: Author, Category, Editorial */}
+            <div className="flex items-center gap-x-4">
+              <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
+                <UserRound className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="truncate font-medium">{fullAuthorName}</span>
               </div>
-              <div className="text-muted-foreground flex items-center gap-1 text-sm">
-                <Tag className="h-4 w-4" />
-                <span>{category}</span>
+              <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
+                <Tag className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="truncate font-medium">{category}</span>
+              </div>
+              <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
+                <BookOpen className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="truncate font-medium">{editorial}</span>
               </div>
             </div>
 
-            {/* Favorite button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={
-                isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"
-              }
-              onClick={onToggleFavorite}
-              className="shrink-0"
-            >
-              <Heart
-                className={`h-5 w-5 ${isFavorite ? "fill-current text-rose-600" : ""}`}
-              />
-            </Button>
+            {/* Second row: Year, Location, ISBN */}
+            <div className="flex items-center gap-x-4">
+              <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
+                <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
+                <span>{year}</span>
+              </div>
+              <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
+                <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="truncate font-medium">
+                  {location.trim() || "No especificada"}
+                </span>
+              </div>
+              <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
+                <Hash className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="truncate font-medium">{isbn}</span>
+              </div>
+            </div>
           </div>
 
           {/* Description */}
-          <p className="text-muted-foreground mt-3 line-clamp-2 text-sm">
+          <p className="text-muted-foreground mb-4 line-clamp-2 flex-1 text-sm leading-relaxed">
             {description}
           </p>
 
-          {/* ISBN and location */}
-          <div className="text-muted-foreground mt-3 space-y-1 text-sm">
-            <div className="flex items-center gap-2">
-              <Hash className="h-4 w-4" />
-              <span className="font-medium">ISBN:</span>
-              <span>{isbn}</span>
+          {/* Bottom section */}
+          <div className="space-y-3">
+            {/* Actions */}
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={onViewMore}>
+                Ver más
+              </Button>
+              <Button
+                size="sm"
+                className="bg-berkeley-blue hover:bg-berkeley-blue/90 text-white"
+                onClick={onReserve}
+                disabled={!available}
+              >
+                Reservar
+              </Button>
             </div>
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
-              <span>{location}</span>
-            </div>
-          </div>
-
-          {/* Availability */}
-          <div className="mt-3 flex items-center justify-between">
-            <Badge
-              className={`${available ? "bg-emerald-600/90 text-white hover:bg-emerald-600" : "bg-rose-600/90 text-white"} rounded-full px-3 py-1 text-xs font-medium`}
-            >
-              {available ? "Disponible" : "No disponible"}
-            </Badge>
-          </div>
-
-          {/* Buttons */}
-          <div className="mt-4 flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1"
-              onClick={onViewMore}
-            >
-              Ver más
-            </Button>
-            <Button
-              size="sm"
-              className="bg-berkeley-blue flex-1 text-white"
-              onClick={onReserve}
-              disabled={!available}
-            >
-              Reservar
-            </Button>
           </div>
         </div>
       </Card>
