@@ -2,7 +2,6 @@ import { integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { bookStatusEnum } from "../enums";
 import { authors } from "./authors";
 import { genders } from "./genders";
-import { locations } from "./locations";
 
 export const books = pgTable("books", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -18,9 +17,7 @@ export const books = pgTable("books", {
   genderId: uuid("gender_id")
     .notNull()
     .references(() => genders.id),
-  locationId: uuid("location_id")
-    .notNull()
-    .references(() => locations.id),
+  locationId: text("location_id"),
   imageUrl: text("image_url"),
   createdAt: text("created_at").notNull(),
 });
