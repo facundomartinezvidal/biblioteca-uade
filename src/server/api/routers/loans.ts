@@ -13,7 +13,8 @@ const mockLoansData = [
     book: {
       id: randomUUID(),
       title: "Cien años de soledad",
-      description: "Una novela épica que narra la historia de la familia Buendía a lo largo de siete generaciones en el pueblo ficticio de Macondo.",
+      description:
+        "Una novela épica que narra la historia de la familia Buendía a lo largo de siete generaciones en el pueblo ficticio de Macondo.",
       isbn: "978-84-376-0494-7",
       status: "NOT_AVAILABLE",
       year: 1967,
@@ -49,7 +50,8 @@ const mockLoansData = [
     book: {
       id: randomUUID(),
       title: "La ciudad y los perros",
-      description: "Una novela que narra la vida de los cadetes en el Colegio Militar Leoncio Prado y sus experiencias de violencia y amistad.",
+      description:
+        "Una novela que narra la vida de los cadetes en el Colegio Militar Leoncio Prado y sus experiencias de violencia y amistad.",
       isbn: "978-84-376-0495-4",
       status: "NOT_AVAILABLE",
       year: 1963,
@@ -85,7 +87,8 @@ const mockLoansData = [
     book: {
       id: randomUUID(),
       title: "Rayuela",
-      description: "Una novela experimental que puede leerse de múltiples maneras, explorando temas como el amor, la búsqueda de sentido y la vida bohemia en París.",
+      description:
+        "Una novela experimental que puede leerse de múltiples maneras, explorando temas como el amor, la búsqueda de sentido y la vida bohemia en París.",
       isbn: "978-84-376-0496-1",
       status: "AVAILABLE",
       year: 1963,
@@ -121,11 +124,13 @@ export const loansRouter = createTRPCRouter({
         userId: z.string(),
         page: z.number().min(1).default(1),
         limit: z.number().min(1).max(100).default(10),
-      })
+      }),
     )
     .query(async ({ input }) => {
       // Filter by userId and apply pagination
-      const userLoans = mockLoansData.filter(loan => loan.userId === input.userId);
+      const userLoans = mockLoansData.filter(
+        (loan) => loan.userId === input.userId,
+      );
       const offset = (input.page - 1) * input.limit;
       const paginatedLoans = userLoans.slice(offset, offset + input.limit);
 
@@ -141,11 +146,11 @@ export const loansRouter = createTRPCRouter({
     .input(
       z.object({
         userId: z.string(),
-      })
+      }),
     )
     .query(async ({ input }) => {
       const activeLoans = mockLoansData.filter(
-        loan => loan.userId === input.userId && loan.status === "ACTIVE"
+        (loan) => loan.userId === input.userId && loan.status === "ACTIVE",
       );
 
       return {
@@ -157,7 +162,7 @@ export const loansRouter = createTRPCRouter({
   getById: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      const loan = mockLoansData.find(loan => loan.id === input.id);
-      return loan || null;
+      const loan = mockLoansData.find((loan) => loan.id === input.id);
+      return loan ?? null;
     }),
 });

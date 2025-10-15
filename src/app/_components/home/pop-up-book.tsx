@@ -225,7 +225,7 @@ export default function PopUpBook({
                 if (onReserve) {
                   onReserve(book.id);
                 } else {
-                  router.push(`/reserve?bookId=${book.id}`);
+                  router.push(`/reserve/${book.id}`);
                 }
               }}
             >

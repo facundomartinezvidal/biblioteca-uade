@@ -138,7 +138,7 @@ export default function HomePage() {
   ]);
 
   const handleReserve = (book: { id: string }) => {
-    router.push(`/reserve?bookId=${book.id}`);
+    router.push(`/reserve/${book.id}`);
   };
 
   const handleViewMore = (book: BookSummary) => {
@@ -154,7 +154,7 @@ export default function HomePage() {
   const handlePopUpReserve = (bookId: string) => {
     // close modal then navigate
     handleClosePopUp();
-    router.push(`/reserve?bookId=${bookId}`);
+    router.push(`/reserve/${bookId}`);
   };
 
   const handlePopUpToggleFavorite = (bookId: string) => {
