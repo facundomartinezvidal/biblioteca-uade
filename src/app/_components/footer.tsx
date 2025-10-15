@@ -129,7 +129,7 @@ export function Footer() {
               className="h-auto p-0 text-sm text-white/60 underline-offset-4 hover:text-white"
               asChild
             >
-              <Link href="/privacidad">Política de Privacidad</Link>
+              <Link href="/privacy-policy">Política de Privacidad</Link>
             </Button>
             <span className="text-white/30">•</span>
             <Button
@@ -137,7 +137,7 @@ export function Footer() {
               className="h-auto p-0 text-sm text-white/60 underline-offset-4 hover:text-white"
               asChild
             >
-              <Link href="/ayuda">Ayuda</Link>
+              <Link href="/help">Ayuda</Link>
             </Button>
           </div>
         </div>

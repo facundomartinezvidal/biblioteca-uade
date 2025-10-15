@@ -1,4 +1,4 @@
-import HelpClient from "./HelpClient";
+import HelpClient from "../_components/help/help-client";
 
 export const metadata = {
   title: "Ayuda - Biblioteca UADE",
