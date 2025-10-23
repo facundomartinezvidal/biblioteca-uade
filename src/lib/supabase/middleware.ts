@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
+  console.log("🔥 MIDDLEWARE EJECUTÁNDOSE en:", request.nextUrl.pathname);
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -40,22 +41,23 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  console.log("user", user);
+  const publicRoutes = [
+    "/auth",
+    "/auth/login",
+    "/privacy-policy",
+    "/terms-and-conditions",
+  ];
 
-  // TODO: Authentication middleware disabled for demo purposes
-  // Uncomment and implement auth pages when ready for production
-  /*
-  if (
-    request.nextUrl.pathname !== '/' &&
-    !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/auth')
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  const isPublicRoute = publicRoutes.some((route) =>
+    request.nextUrl.pathname.startsWith(route),
+  );
+
+  if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = '/auth/login';
+    url.pathname = "/auth/login";
     return NextResponse.redirect(url);
   }
-  */
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.
   // If you're creating a new response object with NextResponse.next() make sure to:
