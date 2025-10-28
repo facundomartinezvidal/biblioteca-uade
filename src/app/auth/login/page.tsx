@@ -11,24 +11,38 @@ import {
 } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { supabase } from "~/lib/supabase/client";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
+  const router = useRouter();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // TODO: implement auth logic
-      console.log("Login:", { email, password });
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) {
+        toast.error(
+          error.message.includes("Invalid login credentials")
+            ? "Credenciales incorrectas"
+            : "Error al iniciar sesión",
+        );
+        setIsLoading(false);
+        return;
+      }
+      toast.success("Inicio de sesión exitoso");
+      router.push("/");
     } catch (error) {
-      console.error("Login error:", error);
-    } finally {
-      setIsLoading(false);
+      toast.error((error as Error).message ?? "Error al iniciar sesión");
     }
   };
 
@@ -56,16 +70,8 @@ export default function AuthPage() {
               />
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Contraseña</Label>
-                <a
-                  href="#"
-                  className="text-primary text-sm hover:underline"
-                  tabIndex={-1}
-                >
-                  ¿Olvidaste tu contraseña?
-                </a>
-              </div>
+              <Label htmlFor="password">Contraseña</Label>
+
               <Input
                 id="password"
                 type="password"
@@ -76,16 +82,21 @@ export default function AuthPage() {
                 disabled={isLoading}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
+            <Button
+              type="submit"
+              className="bg-berkeley-blue hover:bg-berkeley-blue/90 w-full"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 animate-spin" size={16} />
+                  Iniciando sesión...
+                </>
+              ) : (
+                "Iniciar Sesión"
+              )}
             </Button>
           </form>
-          <div className="text-muted-foreground mt-4 text-center text-sm">
-            ¿No tienes una cuenta?{" "}
-            <a href="#" className="text-primary hover:underline">
-              Regístrate
-            </a>
-          </div>
         </CardContent>
       </Card>
     </div>

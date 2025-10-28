@@ -1,6 +1,7 @@
 import { integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { bookStatusEnum } from "../enums";
 import { authors } from "./authors";
+import { editorials } from "./editorials";
 import { genders } from "./genders";
 
 export const books = pgTable("books", {
@@ -10,7 +11,9 @@ export const books = pgTable("books", {
   isbn: text("isbn").notNull().unique(),
   status: bookStatusEnum("book_status").notNull().default("AVAILABLE"),
   year: integer("year").notNull(),
-  editorial: text("editorial").notNull(),
+  editorialId: uuid("editorial_id")
+    .notNull()
+    .references(() => editorials.id),
   authorId: uuid("author_id")
     .notNull()
     .references(() => authors.id),

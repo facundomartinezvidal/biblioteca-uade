@@ -2,7 +2,6 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
-  console.log("🔥 MIDDLEWARE EJECUTÁNDOSE en:", request.nextUrl.pathname);
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -41,7 +40,6 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  console.log("user", user);
   const publicRoutes = [
     "/auth",
     "/auth/login",
