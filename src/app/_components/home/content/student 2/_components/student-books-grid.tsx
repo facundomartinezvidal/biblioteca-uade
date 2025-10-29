@@ -26,9 +26,7 @@ interface StudentBooksGridProps {
   skeletonCount?: number;
   onReserve: (book: Book) => void;
   onViewMore: (book: Book) => void;
-  favoriteIds?: string[];
-  onToggleFavorite?: (bookId: string) => void;
-  favoriteLoadingIds?: Set<string>;
+  isFavorite?: boolean;
 }
 
 export function StudentBooksGrid({
@@ -38,9 +36,7 @@ export function StudentBooksGrid({
   skeletonCount = 6,
   onReserve,
   onViewMore,
-  favoriteIds = [],
-  onToggleFavorite,
-  favoriteLoadingIds,
+  isFavorite = false,
 }: StudentBooksGridProps) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -64,13 +60,9 @@ export function StudentBooksGrid({
                 location={book.location ?? ""}
                 available={book.status === "AVAILABLE"}
                 coverUrl={book.imageUrl}
-                isFavorite={favoriteIds.includes(book.id)}
-                isLoadingFavorite={favoriteLoadingIds?.has(book.id) ?? false}
+                isFavorite={isFavorite}
                 onReserve={() => onReserve(book)}
                 onViewMore={() => onViewMore(book)}
-                onToggleFavorite={
-                  onToggleFavorite ? () => onToggleFavorite(book.id) : undefined
-                }
               />
             ))
           : emptyMessage}

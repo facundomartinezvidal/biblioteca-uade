@@ -1,7 +1,17 @@
 "use client";
 
 import Image from "next/image";
-import { X, User, Tag, Calendar, Building2, Hash, MapPin } from "lucide-react";
+import {
+  X,
+  User,
+  Tag,
+  Calendar,
+  Building2,
+  Hash,
+  MapPin,
+  Heart,
+  Loader2,
+} from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { useEffect } from "react";
@@ -27,6 +37,8 @@ interface PopUpBookProps {
   } | null;
   onReserve?: (bookId: string) => void;
   onToggleFavorite?: (bookId: string) => void;
+  isFavorite?: boolean;
+  isLoadingFavorite?: boolean;
 }
 
 const getAvailabilityBadge = (status?: string) => {
@@ -51,6 +63,8 @@ export default function PopUpBook({
   book,
   onReserve,
   onToggleFavorite,
+  isFavorite = false,
+  isLoadingFavorite = false,
 }: PopUpBookProps) {
   const router = useRouter();
   // Close modal with Escape key and prevent body scroll
@@ -206,19 +220,25 @@ export default function PopUpBook({
 
           {/* Action buttons */}
           <div className="mt-6 flex gap-3">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => {
-                if (onToggleFavorite) {
+            {onToggleFavorite && (
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
                   onToggleFavorite(book.id);
-                } else {
-                  console.log(`Toggle favorite for ${book.id} (no handler)`);
-                }
-              }}
-            >
-              Añadir a Favoritos
-            </Button>
+                }}
+                disabled={isLoadingFavorite}
+              >
+                {isLoadingFavorite ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Heart
+                    className={`mr-2 h-4 w-4 ${isFavorite ? "fill-current text-rose-600" : ""}`}
+                  />
+                )}
+                {isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
+              </Button>
+            )}
             <Button
               className="bg-berkeley-blue hover:bg-berkeley-blue/90 flex-1 text-white"
               onClick={() => {
@@ -228,6 +248,7 @@ export default function PopUpBook({
                   router.push(`/reserve/${book.id}`);
                 }
               }}
+              disabled={book.status !== "AVAILABLE"}
             >
               Reservar
             </Button>
