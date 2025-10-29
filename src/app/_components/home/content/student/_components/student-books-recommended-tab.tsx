@@ -25,6 +25,7 @@ interface StudentBooksRecommendedTabProps {
   isLoading: boolean;
   onReserve: (book: Book) => void;
   onViewMore: (book: Book) => void;
+  reserveLoadingIds?: Set<string>;
 }
 
 export function StudentBooksRecommendedTab({
@@ -32,6 +33,7 @@ export function StudentBooksRecommendedTab({
   isLoading,
   onReserve,
   onViewMore,
+  reserveLoadingIds = new Set(),
 }: StudentBooksRecommendedTabProps) {
   const emptyMessage = (
     <div className="col-span-2 flex items-center justify-center py-12">
@@ -51,6 +53,7 @@ export function StudentBooksRecommendedTab({
       emptyMessage={emptyMessage}
       skeletonCount={4}
       onReserve={onReserve}
+      reserveLoadingIds={reserveLoadingIds}
       onViewMore={onViewMore}
     />
   );

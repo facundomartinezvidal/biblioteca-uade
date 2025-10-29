@@ -31,12 +31,15 @@ interface StudentBooksAllTabProps {
   isLoading: boolean;
   pagination?: Pagination;
   onReserve: (book: Book) => void;
+  reserveLoadingIds: Set<string>;
   onViewMore: (book: Book) => void;
   onPageChange: (page: number) => void;
   onClearFilters: () => void;
   favoriteIds?: string[];
   onToggleFavorite?: (bookId: string) => void;
   favoriteLoadingIds?: Set<string>;
+  userReservedBookIds?: string[];
+  userActiveBookIds?: string[];
 }
 
 export function StudentBooksAllTab({
@@ -44,12 +47,15 @@ export function StudentBooksAllTab({
   isLoading,
   pagination,
   onReserve,
+  reserveLoadingIds,
   onViewMore,
   onPageChange,
   onClearFilters,
   favoriteIds = [],
   onToggleFavorite,
   favoriteLoadingIds,
+  userReservedBookIds = [],
+  userActiveBookIds = [],
 }: StudentBooksAllTabProps) {
   const emptyMessage = (
     <div className="col-span-2 py-12 text-center">
@@ -72,10 +78,13 @@ export function StudentBooksAllTab({
         isLoading={isLoading}
         emptyMessage={emptyMessage}
         onReserve={onReserve}
+        reserveLoadingIds={reserveLoadingIds}
         onViewMore={onViewMore}
         favoriteIds={favoriteIds}
         onToggleFavorite={onToggleFavorite}
         favoriteLoadingIds={favoriteLoadingIds}
+        userReservedBookIds={userReservedBookIds}
+        userActiveBookIds={userActiveBookIds}
       />
 
       {/* Pagination Controls */}

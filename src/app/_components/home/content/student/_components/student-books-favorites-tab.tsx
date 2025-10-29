@@ -28,6 +28,9 @@ interface StudentBooksFavoritesTabProps {
   favoriteIds?: string[];
   onToggleFavorite?: (bookId: string) => void;
   favoriteLoadingIds?: Set<string>;
+  reserveLoadingIds?: Set<string>;
+  userReservedBookIds?: string[];
+  userActiveBookIds?: string[];
 }
 
 export function StudentBooksFavoritesTab({
@@ -38,6 +41,9 @@ export function StudentBooksFavoritesTab({
   favoriteIds = [],
   onToggleFavorite,
   favoriteLoadingIds,
+  reserveLoadingIds = new Set(),
+  userReservedBookIds = [],
+  userActiveBookIds = [],
 }: StudentBooksFavoritesTabProps) {
   const emptyMessage = (
     <div className="col-span-2 flex items-center justify-center py-12">
@@ -59,10 +65,13 @@ export function StudentBooksFavoritesTab({
       emptyMessage={emptyMessage}
       skeletonCount={4}
       onReserve={onReserve}
+      reserveLoadingIds={reserveLoadingIds}
       onViewMore={onViewMore}
       favoriteIds={favoriteIds}
       onToggleFavorite={onToggleFavorite}
       favoriteLoadingIds={favoriteLoadingIds}
+      userReservedBookIds={userReservedBookIds}
+      userActiveBookIds={userActiveBookIds}
     />
   );
 }

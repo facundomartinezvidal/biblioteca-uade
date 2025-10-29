@@ -1,7 +1,8 @@
 import { createTRPCRouter, publicProcedure } from "../trpc";
 import type { RouterInput, RouterOutput } from "../root";
 import { authors, books, editorials, genders } from "~/server/db/schemas";
-import { eq, or, ilike, and, count, gte, lte } from "drizzle-orm";
+import { loans } from "~/server/db/schemas/loans";
+import { eq, or, ilike, and, count, gte, lte, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 export type getAllBooksInput = RouterInput["books"]["getAll"];
@@ -60,7 +61,58 @@ export const booksRouter = createTRPCRouter({
         conditions.push(ilike(genders.name, `%${genre}%`));
       }
 
-      if (status) {
+      // Filtro especial para RESERVED: solo mostrar libros reservados por el usuario actual
+      if (status === "RESERVED") {
+        if (!ctx.user) {
+          // Si no hay usuario autenticado, no mostrar resultados
+          return {
+            success: true,
+            method: "GET",
+            response: [],
+            pagination: {
+              page,
+              limit,
+              totalCount: 0,
+              totalPages: 0,
+              hasNextPage: false,
+              hasPreviousPage: false,
+            },
+          };
+        }
+
+        // Obtener IDs de libros reservados por el usuario
+        const userReservedLoans = await ctx.db
+          .select({ bookId: loans.bookId })
+          .from(loans)
+          .where(
+            and(
+              eq(loans.userId, ctx.user.id),
+              or(eq(loans.status, "RESERVED"), eq(loans.status, "ACTIVE")),
+            ),
+          );
+
+        const reservedBookIds = userReservedLoans.map((loan) => loan.bookId);
+
+        if (reservedBookIds.length === 0) {
+          // Usuario no tiene libros reservados
+          return {
+            success: true,
+            method: "GET",
+            response: [],
+            pagination: {
+              page,
+              limit,
+              totalCount: 0,
+              totalPages: 0,
+              hasNextPage: false,
+              hasPreviousPage: false,
+            },
+          };
+        }
+
+        // Agregar condición para filtrar solo por estos IDs
+        conditions.push(inArray(books.id, reservedBookIds));
+      } else if (status) {
         conditions.push(eq(books.status, status));
       }
 

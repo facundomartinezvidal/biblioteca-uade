@@ -10,6 +10,6 @@ export const loans = pgTable("loans", {
     .references(() => books.id),
   userId: uuid("user_id").notNull(),
   endDate: text("end_date").notNull(),
-  status: loanStatusEnum("loan_status").notNull().default("RESERVED"),
+  status: loanStatusEnum("status").notNull().default("RESERVED"),
   createdAt: text("created_at").notNull(),
 });

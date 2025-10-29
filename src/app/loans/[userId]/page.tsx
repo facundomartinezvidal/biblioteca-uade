@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   Eye,
   X,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -27,9 +28,10 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Card, CardContent } from "~/components/ui/card";
+import { Skeleton } from "~/components/ui/skeleton";
 import Image from "next/image";
 import { useState } from "react";
-import PaginationControls from "../_components/home/pagination-controls";
+import PaginationControls from "../../_components/home/pagination-controls";
 import {
   Select,
   SelectContent,
@@ -38,10 +40,10 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { api } from "~/trpc/react";
-import { useRouter } from "next/navigation";
-import LoansTableSkeleton from "./_components/loans-table-skeleton";
-import LoanDetailsPopup from "./_components/loan-details-popup";
-import CancelReservationModal from "./_components/cancel-reservation-modal";
+import { useRouter, useParams } from "next/navigation";
+import LoansTableSkeleton from "../_components/loans-table-skeleton";
+import LoanDetailsPopup from "../_components/loan-details-popup";
+import CancelReservationModal from "../_components/cancel-reservation-modal";
 
 type LoanStatus = "ACTIVE" | "RESERVED" | "FINISHED" | "EXPIRED" | "CANCELLED";
 type LoanItem = {
@@ -80,7 +82,6 @@ type LoanItem = {
   } | null;
 };
 
-// Function to get status color
 const getStatusColor = (status: string) => {
   switch (status) {
     case "ACTIVE":
@@ -98,7 +99,6 @@ const getStatusColor = (status: string) => {
   }
 };
 
-// Function to get status text
 const getStatusText = (status: string) => {
   switch (status) {
     case "ACTIVE":
@@ -116,7 +116,6 @@ const getStatusText = (status: string) => {
   }
 };
 
-// Function to format dates
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return date.toLocaleDateString("es-ES", {
@@ -126,8 +125,10 @@ const formatDate = (dateString: string) => {
   });
 };
 
-export default function LoansPage() {
+export default function LoanUserDetailsPage() {
   const router = useRouter();
+  const params = useParams();
+  const userId = params.userId as string;
   const utils = api.useUtils();
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
@@ -142,7 +143,14 @@ export default function LoansPage() {
   } | null>(null);
   const [loadingReserveId, setLoadingReserveId] = useState<string | null>(null);
 
-  const { data, isLoading, refetch } = api.loans.getByUserId.useQuery({
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const { data: studentData, isLoading: isLoadingStudent } =
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    api.user.getStudentById.useQuery({ userId });
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+  const { data, isLoading, refetch } = api.loans.getByUserIdAdmin.useQuery({
+    userId,
     page,
     limit,
     status: statusFilter === "all" ? undefined : statusFilter,
@@ -150,6 +158,7 @@ export default function LoansPage() {
 
   const cancelMutation = api.loans.cancelReservation.useMutation({
     onSuccess: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await refetch();
       await utils.books.getAll.invalidate();
       await utils.books.getById.invalidate();
@@ -158,13 +167,16 @@ export default function LoansPage() {
     },
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
   const results = data?.results ?? [];
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const hasNextPage = page < totalPages;
   const hasPreviousPage = page > 1;
 
-  const displayedResults = results.filter((loan) => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+  const displayedResults = results.filter((loan: LoanItem) => {
     const query = search.trim().toLowerCase();
     if (!query) return true;
     const authorName = loan.author
@@ -203,25 +215,36 @@ export default function LoansPage() {
     router.push(`/reserve/${bookId}`);
   };
 
+  const studentName = studentData
+    ? // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      `${studentData.nombre} ${studentData.apellido}`
+    : "";
+
   return (
     <div className="min-h-screen bg-white">
       <main className="container mx-auto px-8 py-8">
-        {/* Header */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <History className="h-6 w-6" />
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Historial de Préstamos
-            </h1>
+            {isLoadingStudent ? (
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-semibold tracking-tight">
+                  Préstamos de
+                </h1>
+                <Skeleton className="h-8 w-[200px]" />
+              </div>
+            ) : (
+              <h1 className="text-2xl font-semibold tracking-tight">
+                Préstamos de {studentName}
+              </h1>
+            )}
           </div>
         </div>
         <p className="text-muted-foreground mt-1 text-sm">
-          Encontrá el libro que estás buscando de la forma más rápida
+          Historial completo de préstamos del estudiante
         </p>
 
-        {/* Search + Filters */}
         <div className="mt-6 mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          {/* Search */}
           <div className="relative w-full max-w-md">
             <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
             <Input
@@ -232,13 +255,11 @@ export default function LoansPage() {
             />
           </div>
 
-          {/* Filters */}
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-sm font-medium text-gray-700">
               Filtrar por:
             </span>
 
-            {/* Status filter */}
             <Select
               value={statusFilter}
               onValueChange={(v) => setStatusFilter(v as LoanStatus | "all")}
@@ -277,8 +298,10 @@ export default function LoansPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+                    {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access */}
                     {displayedResults.length > 0 ? (
-                      displayedResults.map((loan) => {
+                      /* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
+                      displayedResults.map((loan: LoanItem) => {
                         const canCancel = loan.status === "RESERVED";
                         const canReserve =
                           loan.status === "FINISHED" ||
@@ -399,7 +422,7 @@ export default function LoansPage() {
                           colSpan={5}
                           className="py-8 text-center text-gray-500"
                         >
-                          No tienes préstamos registrados
+                          Este estudiante no tiene préstamos registrados
                         </TableCell>
                       </TableRow>
                     )}
@@ -410,7 +433,6 @@ export default function LoansPage() {
           </Card>
         )}
 
-        {/* Bottom Pagination */}
         <PaginationControls
           className="mt-6"
           currentPage={page}

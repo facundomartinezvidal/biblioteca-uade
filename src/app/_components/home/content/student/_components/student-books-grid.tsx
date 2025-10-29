@@ -25,10 +25,13 @@ interface StudentBooksGridProps {
   emptyMessage?: React.ReactNode;
   skeletonCount?: number;
   onReserve: (book: Book) => void;
+  reserveLoadingIds: Set<string>;
   onViewMore: (book: Book) => void;
   favoriteIds?: string[];
   onToggleFavorite?: (bookId: string) => void;
   favoriteLoadingIds?: Set<string>;
+  userReservedBookIds?: string[];
+  userActiveBookIds?: string[];
 }
 
 export function StudentBooksGrid({
@@ -37,10 +40,13 @@ export function StudentBooksGrid({
   emptyMessage,
   skeletonCount = 6,
   onReserve,
+  reserveLoadingIds,
   onViewMore,
   favoriteIds = [],
   onToggleFavorite,
   favoriteLoadingIds,
+  userReservedBookIds = [],
+  userActiveBookIds = [],
 }: StudentBooksGridProps) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -63,9 +69,19 @@ export function StudentBooksGrid({
                 isbn={book.isbn ?? ""}
                 location={book.location ?? ""}
                 available={book.status === "AVAILABLE"}
+                status={
+                  book.status as
+                    | "AVAILABLE"
+                    | "NOT_AVAILABLE"
+                    | "RESERVED"
+                    | undefined
+                }
+                isReservedByCurrentUser={userReservedBookIds.includes(book.id)}
+                isActiveByCurrentUser={userActiveBookIds.includes(book.id)}
                 coverUrl={book.imageUrl}
                 isFavorite={favoriteIds.includes(book.id)}
                 isLoadingFavorite={favoriteLoadingIds?.has(book.id) ?? false}
+                isLoadingReserve={reserveLoadingIds.has(book.id)}
                 onReserve={() => onReserve(book)}
                 onViewMore={() => onViewMore(book)}
                 onToggleFavorite={
