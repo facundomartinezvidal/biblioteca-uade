@@ -30,10 +30,10 @@ export function AdminBooksFilters({
     <div className="mt-6 mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       {/* Search */}
       <div className="relative w-full max-w-md">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
         <Input
           placeholder="Buscar por título, autor, etc..."
-          className="pl-10 pr-10"
+          className="pr-10 pl-10"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
         />
@@ -41,7 +41,7 @@ export function AdminBooksFilters({
           <Button
             variant="ghost"
             size="icon"
-            className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 transform rounded-full hover:bg-gray-100"
+            className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 transform rounded-full hover:bg-gray-100"
             onClick={() => onSearchChange("")}
           >
             <X className="h-4 w-4 text-gray-500" />
