@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { api } from "~/trpc/react";
 import { ProfileHeader } from "./_components/profile-header";
 import { StatsGrid } from "./_components/stats-grid";
@@ -9,70 +11,112 @@ import { Settings } from "lucide-react";
 import { ProfileHeaderSkeleton } from "./_components/profile-header-skeleton";
 import { StatsGridSkeleton } from "./_components/stats-grid-skeleton";
 import { LoansTableSkeleton } from "./_components/loans-table-skeleton";
+import LoanDetailsPopup from "../loans/_components/loan-details-popup";
+import CancelReservationModal from "../loans/_components/cancel-reservation-modal";
 
-const mockActiveLoans = [
-  {
-    id: "1",
-    bookId: "1",
-    status: "ACTIVE",
-    fromDate: "2024-08-13T00:00:00.000Z",
-    toDate: "2024-08-16T00:00:00.000Z",
-    book: {
-      id: "1",
-      title: "Ciudad de los Perros",
-      author: "Mario Vargas Llosa",
-      isbn: "978-84-322-0002-4",
-      imageUrl: "/covers/ciudad-perros.jpg",
-    },
-  },
-  {
-    id: "2",
-    bookId: "2",
-    status: "ACTIVE",
-    fromDate: "2024-08-13T00:00:00.000Z",
-    toDate: "2024-08-16T00:00:00.000Z",
-    book: {
-      id: "2",
-      title: "Cien Años de Soledad",
-      author: "Gabriel García Márquez",
-      isbn: "978-84-376-0494-7",
-      imageUrl: "/covers/cien-anos-soledad.jpg",
-    },
-  },
-  {
-    id: "3",
-    bookId: "3",
-    status: "ACTIVE",
-    fromDate: "2024-08-13T00:00:00.000Z",
-    toDate: "2024-08-16T00:00:00.000Z",
-    book: {
-      id: "3",
-      title: "El Laberinto de la Soledad",
-      author: "Octavio Paz",
-      isbn: "9780140399103",
-      imageUrl: "/covers/el-laberinto-soledad.jpg",
-    },
-  },
-  {
-    id: "4",
-    bookId: "4",
-    status: "ACTIVE",
-    fromDate: "2024-08-13T00:00:00.000Z",
-    toDate: "2024-08-16T00:00:00.000Z",
-    book: {
-      id: "4",
-      title: "Rayuela",
-      author: "Julio Cortázar",
-      isbn: "978-84-376-0313-1",
-      imageUrl: "/covers/rayuela.jpeg",
-    },
-  },
-];
+type LoanStatus = "RESERVED" | "ACTIVE" | "FINISHED" | "EXPIRED" | "CANCELLED";
+
+interface LoanItem {
+  id: string;
+  userId: string;
+  endDate: string;
+  status: LoanStatus;
+  createdAt: string;
+  book: {
+    id: string;
+    title: string;
+    description: string | null;
+    isbn: string | null;
+    status: string | null;
+    year: number | null;
+    imageUrl: string | null;
+    createdAt: string;
+    editorial: string;
+  };
+  author: {
+    id: string;
+    name: string;
+    middleName: string | null;
+    lastName: string | null;
+    createdAt: string;
+  } | null;
+  gender: {
+    id: string;
+    name: string;
+    createdAt: string;
+  } | null;
+  location: {
+    id: string;
+    address: string;
+    campus: string;
+  } | null;
+  editorial: string | null;
+}
 
 export default function ProfilePage() {
-  const { data: user, isLoading } = api.user.getUser.useQuery();
+  const router = useRouter();
+  const utils = api.useUtils();
+  const { data: user, isLoading: isLoadingUser } = api.user.getUser.useQuery();
+  const { data: stats, isLoading: isLoadingStats } =
+    api.loans.getStats.useQuery(undefined, {
+      enabled: user?.role === "estudiante",
+    });
+  const {
+    data: activeLoansData,
+    isLoading: isLoadingLoans,
+    refetch,
+  } = api.loans.getByUserId.useQuery(
+    { page: 1, limit: 100 },
+    {
+      enabled: user?.role === "estudiante",
+    },
+  );
 
-  if (isLoading) {
+  const [selectedLoan, setSelectedLoan] = useState<LoanItem | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [loanToCancel, setLoanToCancel] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+
+  const cancelMutation = api.loans.cancelReservation.useMutation({
+    onSuccess: async () => {
+      await refetch();
+      await utils.books.getAll.invalidate();
+      await utils.books.getById.invalidate();
+      await utils.loans.getStats.invalidate();
+      setIsCancelModalOpen(false);
+      setLoanToCancel(null);
+    },
+  });
+
+  const handleViewMore = (loan: LoanItem) => {
+    setSelectedLoan(loan);
+    setIsDetailsOpen(true);
+  };
+
+  const handleOpenCancelModal = (loanId: string, bookTitle: string) => {
+    setLoanToCancel({ id: loanId, title: bookTitle });
+    setIsCancelModalOpen(true);
+  };
+
+  const handleConfirmCancel = () => {
+    if (loanToCancel) {
+      cancelMutation.mutate({ loanId: loanToCancel.id });
+    }
+  };
+
+  const handleReserveAgain = (bookId: string) => {
+    router.push(`/reserve/${bookId}`);
+  };
+
+  const activeLoans =
+    activeLoansData?.results.filter(
+      (loan) => loan.status === "ACTIVE" || loan.status === "RESERVED",
+    ) ?? [];
+
+  if (isLoadingUser) {
     return (
       <div className="min-h-screen bg-white">
         <div className="container mx-auto px-8 py-8">
@@ -114,17 +158,60 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {user?.role === "estudiante" && <StatsGrid />}
           {user?.role === "estudiante" && (
-            <div className="flex flex-col gap-4">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Préstamos activos
-              </h2>
-              <LoansTable loans={mockActiveLoans} />
-            </div>
+            <>
+              {isLoadingStats ? (
+                <StatsGridSkeleton />
+              ) : (
+                <StatsGrid
+                  activeLoans={stats?.activeLoans ?? 0}
+                  finishedLoans={stats?.finishedLoans ?? 0}
+                  pendingFines={stats?.pendingFines ?? 0}
+                  upcomingDue={stats?.upcomingDue ?? 0}
+                />
+              )}
+
+              <div className="flex flex-col gap-4">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Préstamos activos
+                </h2>
+                {isLoadingLoans ? (
+                  <LoansTableSkeleton />
+                ) : (
+                  <LoansTable
+                    loans={activeLoans}
+                    onViewMore={handleViewMore}
+                    onCancel={handleOpenCancelModal}
+                    onReserve={handleReserveAgain}
+                    isLoadingCancel={cancelMutation.isPending}
+                    isLoadingReserve={false}
+                  />
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>
+
+      {selectedLoan && (
+        <LoanDetailsPopup
+          loan={selectedLoan}
+          isOpen={isDetailsOpen}
+          onClose={() => setIsDetailsOpen(false)}
+          onCancel={handleOpenCancelModal}
+          onReserve={handleReserveAgain}
+          isLoadingCancel={cancelMutation.isPending}
+          isLoadingReserve={false}
+        />
+      )}
+
+      <CancelReservationModal
+        isOpen={isCancelModalOpen}
+        onClose={() => setIsCancelModalOpen(false)}
+        bookTitle={loanToCancel?.title ?? ""}
+        onConfirm={handleConfirmCancel}
+        isLoading={cancelMutation.isPending}
+      />
     </div>
   );
 }

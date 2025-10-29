@@ -1,36 +1,72 @@
+"use client";
+
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
 import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
 import { LoanRow } from "./loan-row";
 
+type LoanStatus = "RESERVED" | "ACTIVE" | "FINISHED" | "EXPIRED" | "CANCELLED";
+
 interface Loan {
   id: string;
-  bookId: string;
-  status: string;
-  fromDate: string;
-  toDate: string;
+  userId: string;
+  endDate: string;
+  status: LoanStatus;
+  createdAt: string;
   book: {
     id: string;
     title: string;
-    author: string;
-    isbn: string;
-    imageUrl: string;
+    description: string | null;
+    isbn: string | null;
+    status: string | null;
+    year: number | null;
+    imageUrl: string | null;
+    createdAt: string;
+    editorial: string;
   };
+  author: {
+    id: string;
+    name: string;
+    middleName: string | null;
+    lastName: string | null;
+    createdAt: string;
+  } | null;
+  gender: {
+    id: string;
+    name: string;
+    createdAt: string;
+  } | null;
+  location: {
+    id: string;
+    address: string;
+    campus: string;
+  } | null;
+  editorial: string | null;
 }
 
 interface LoansTableProps {
   loans: Loan[];
+  onViewMore: (loan: Loan) => void;
+  onCancel: (loanId: string, bookTitle: string) => void;
+  onReserve: (bookId: string) => void;
+  isLoadingCancel: boolean;
+  isLoadingReserve: boolean;
 }
 
-export function LoansTable({ loans }: LoansTableProps) {
+export function LoansTable({
+  loans,
+  onViewMore,
+  onCancel,
+  onReserve,
+  isLoadingCancel,
+  isLoadingReserve,
+}: LoansTableProps) {
   return (
     <Card className="shadow-sm">
       <CardContent className="p-6">
@@ -50,15 +86,25 @@ export function LoansTable({ loans }: LoansTableProps) {
                 <TableRow>
                   <TableHead>Libro</TableHead>
                   <TableHead className="min-w-[120px]">ISBN</TableHead>
-                  <TableHead className="min-w-[120px]">Desde</TableHead>
-                  <TableHead className="min-w-[120px]">Hasta</TableHead>
+                  <TableHead className="min-w-[120px]">Fecha Reserva</TableHead>
+                  <TableHead className="min-w-[120px]">Vencimiento</TableHead>
                   <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead className="w-[80px] text-right">
+                    Acciones
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loans.map((loan) => (
-                  <LoanRow key={loan.id} loan={loan} />
+                  <LoanRow
+                    key={loan.id}
+                    loan={loan}
+                    onViewMore={onViewMore}
+                    onCancel={onCancel}
+                    onReserve={onReserve}
+                    isLoadingCancel={isLoadingCancel}
+                    isLoadingReserve={isLoadingReserve}
+                  />
                 ))}
               </TableBody>
             </Table>

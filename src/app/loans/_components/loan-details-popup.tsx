@@ -30,8 +30,8 @@ interface LoanDetailsPopupProps {
       id: string;
       title: string;
       description: string | null;
-      isbn: string;
-      status: string;
+      isbn: string | null;
+      status: string | null;
       year: number | null;
       editorial: string;
       imageUrl: string | null;
@@ -41,7 +41,7 @@ interface LoanDetailsPopupProps {
       id: string;
       name: string;
       middleName: string | null;
-      lastName: string;
+      lastName: string | null;
       createdAt: string;
     } | null;
     gender: {
@@ -55,7 +55,7 @@ interface LoanDetailsPopupProps {
       campus: string;
     } | null;
   } | null;
-  onCancel?: (loanId: string) => void;
+  onCancel?: (loanId: string, bookTitle: string) => void;
   onReserve?: (bookId: string) => void;
   isLoadingCancel?: boolean;
   isLoadingReserve?: boolean;
@@ -288,7 +288,7 @@ export default function LoanDetailsPopup({
               <Button
                 variant="destructive"
                 className="flex-1"
-                onClick={() => onCancel(loan.id)}
+                onClick={() => onCancel(loan.id, loan.book.title)}
                 disabled={isLoadingCancel}
               >
                 {isLoadingCancel ? (

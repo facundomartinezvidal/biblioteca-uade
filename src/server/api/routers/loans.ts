@@ -294,4 +294,38 @@ export const loansRouter = createTRPCRouter({
 
       return { success: true, loan: newLoan[0] };
     }),
+
+  getStats: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.user.id;
+
+    const allLoans = await ctx.db
+      .select()
+      .from(loans)
+      .where(eq(loans.userId, userId));
+
+    const activeLoans = allLoans.filter(
+      (loan) => loan.status === "ACTIVE" || loan.status === "RESERVED",
+    ).length;
+
+    const finishedLoans = allLoans.filter(
+      (loan) => loan.status === "FINISHED",
+    ).length;
+
+    const now = new Date();
+    const twoDaysFromNow = new Date(now);
+    twoDaysFromNow.setDate(now.getDate() + 2);
+
+    const upcomingDue = allLoans.filter((loan) => {
+      if (loan.status !== "ACTIVE" && loan.status !== "RESERVED") return false;
+      const endDate = new Date(loan.endDate);
+      return endDate >= now && endDate <= twoDaysFromNow;
+    }).length;
+
+    return {
+      activeLoans,
+      finishedLoans,
+      pendingFines: 0,
+      upcomingDue,
+    };
+  }),
 });

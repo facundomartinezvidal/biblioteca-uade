@@ -1,13 +1,25 @@
 import { BookOpen, CheckCircle, AlertTriangle, Clock } from "lucide-react";
 import { StatCard } from "./stat-card";
 
-export function StatsGrid() {
+interface StatsGridProps {
+  activeLoans: number;
+  finishedLoans: number;
+  pendingFines: number;
+  upcomingDue: number;
+}
+
+export function StatsGrid({
+  activeLoans,
+  finishedLoans,
+  pendingFines,
+  upcomingDue,
+}: StatsGridProps) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       <StatCard
         icon={BookOpen}
         label="Préstamos activos"
-        value="10"
+        value={activeLoans.toString()}
         sublabel="en curso"
         ariaLabel="Préstamos activos"
         title="Préstamos activos en curso"
@@ -17,7 +29,7 @@ export function StatsGrid() {
       <StatCard
         icon={CheckCircle}
         label="Libros leídos"
-        value="10"
+        value={finishedLoans.toString()}
         sublabel="total"
         ariaLabel="Libros leídos"
         title="Total de libros leídos"
@@ -27,7 +39,7 @@ export function StatsGrid() {
       <StatCard
         icon={AlertTriangle}
         label="Multas pendientes"
-        value="10"
+        value={pendingFines.toString()}
         sublabel="por pagar"
         ariaLabel="Multas pendientes"
         title="Multas pendientes de pago"
@@ -37,7 +49,7 @@ export function StatsGrid() {
       <StatCard
         icon={Clock}
         label="Vencimientos próximos"
-        value="10"
+        value={upcomingDue.toString()}
         sublabel="próximos días"
         ariaLabel="Vencimientos próximos"
         title="Préstamos que vencen pronto"
