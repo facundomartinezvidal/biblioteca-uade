@@ -23,7 +23,6 @@ export const authRouter = createTRPCRouter({
       .from(users)
       .where(eq(users.id, ctx.user.id))
       .innerJoin(roles, eq(users.id_rol, roles.id_rol));
-    console.log(userData);
 
     if (!userData) {
       throw new TRPCError({
