@@ -383,7 +383,7 @@ export const loansRouter = createTRPCRouter({
             ilike(authors.name, `%${searchTerm}%`),
             ilike(authors.middleName, `%${searchTerm}%`),
             ilike(authors.lastName, `%${searchTerm}%`),
-          ),
+          )!,
         );
       }
 

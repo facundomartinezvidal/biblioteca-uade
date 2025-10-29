@@ -14,7 +14,7 @@ export const books = pgTable("books", {
   editorialId: uuid("editorial_id").references(() => editorials.id),
   authorId: uuid("author_id").references(() => authors.id),
   genderId: uuid("gender_id").references(() => genders.id),
-  locationId: uuid("location_id").references(() => locations.id),
+  locationId: text("location_id"),
   imageUrl: text("image_url"),
   createdAt: text("created_at").notNull(),
 });
