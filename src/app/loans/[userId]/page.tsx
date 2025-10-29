@@ -8,7 +8,6 @@ import {
   MoreHorizontal,
   Eye,
   X,
-  ArrowLeft,
 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -30,7 +29,7 @@ import {
 import { Card, CardContent } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PaginationControls from "../../_components/home/pagination-controls";
 import {
   Select,
@@ -143,22 +142,19 @@ export default function LoanUserDetailsPage() {
   } | null>(null);
   const [loadingReserveId, setLoadingReserveId] = useState<string | null>(null);
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const { data: studentData, isLoading: isLoadingStudent } =
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     api.user.getStudentById.useQuery({ userId });
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   const { data, isLoading, refetch } = api.loans.getByUserIdAdmin.useQuery({
     userId,
     page,
     limit,
     status: statusFilter === "all" ? undefined : statusFilter,
+    search: search.trim() || undefined,
   });
 
   const cancelMutation = api.loans.cancelReservation.useMutation({
     onSuccess: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await refetch();
       await Promise.all([
         utils.books.getAll.invalidate(),
@@ -172,27 +168,16 @@ export default function LoanUserDetailsPage() {
     },
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
   const results = data?.results ?? [];
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const hasNextPage = page < totalPages;
   const hasPreviousPage = page > 1;
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-  const displayedResults = results.filter((loan: LoanItem) => {
-    const query = search.trim().toLowerCase();
-    if (!query) return true;
-    const authorName = loan.author
-      ? `${loan.author.name} ${loan.author.middleName ?? ""} ${loan.author.lastName}`
-      : "";
-    return (
-      loan.book.title.toLowerCase().includes(query) ||
-      authorName.toLowerCase().includes(query) ||
-      (loan.book.isbn ?? "").toLowerCase().includes(query)
-    );
-  });
+  // Reset to first page when search or status filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter]);
 
   const handleViewMore = (loan: LoanItem) => {
     setSelectedLoan(loan);
@@ -221,8 +206,7 @@ export default function LoanUserDetailsPage() {
   };
 
   const studentName = studentData
-    ? // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      `${studentData.nombre} ${studentData.apellido}`
+    ? `${studentData.nombre} ${studentData.apellido}`
     : "";
 
   return (
@@ -303,10 +287,8 @@ export default function LoanUserDetailsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access */}
-                    {displayedResults.length > 0 ? (
-                      /* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
-                      displayedResults.map((loan: LoanItem) => {
+                    {results.length > 0 ? (
+                      results.map((loan: LoanItem) => {
                         const canCancel = loan.status === "RESERVED";
                         const canReserve =
                           loan.status === "FINISHED" ||
@@ -369,6 +351,7 @@ export default function LoanUserDetailsPage() {
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8"
+                                    disabled
                                   >
                                     <MoreHorizontal className="h-4 w-4" />
                                     <span className="sr-only">Abrir menú</span>

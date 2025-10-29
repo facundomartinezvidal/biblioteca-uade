@@ -25,7 +25,7 @@ export default function UsersTableSkeleton() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {[...Array(5)].map((_, i) => (
+              {[...Array(5).keys()].map((i) => (
                 <TableRow key={i}>
                   <TableCell>
                     <Skeleton className="h-4 w-[200px]" />

@@ -82,9 +82,9 @@ export const userRouter = createTRPCRouter({
 
       const studentRoleId = studentRole[0].id_rol;
 
-      let whereConditions = [eq(users.id_rol, studentRoleId)];
+      const whereConditions = [eq(users.id_rol, studentRoleId)];
 
-      if (input.search && input.search.trim()) {
+      if (input.search?.trim()) {
         const searchTerm = `%${input.search.trim()}%`;
         whereConditions.push(
           or(

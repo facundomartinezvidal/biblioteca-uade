@@ -12,7 +12,7 @@ import { locations } from "~/server/db/schemas/locations";
 import { editorials } from "~/server/db/schemas/editorials";
 import { users } from "~/server/db/schemas/users";
 import { roles } from "~/server/db/schemas/roles";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, or, ilike } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 // Middleware para verificar rol de admin
@@ -362,14 +362,32 @@ export const loansRouter = createTRPCRouter({
         status: z
           .enum(["RESERVED", "ACTIVE", "FINISHED", "EXPIRED", "CANCELLED"])
           .optional(),
+        search: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
       const offset = (input.page - 1) * input.limit;
 
-      const whereConditions = input.status
-        ? and(eq(loans.userId, input.userId), eq(loans.status, input.status))
-        : eq(loans.userId, input.userId);
+      const conditions = [eq(loans.userId, input.userId)];
+
+      if (input.status) {
+        conditions.push(eq(loans.status, input.status));
+      }
+
+      if (input.search) {
+        const searchTerm = input.search.trim();
+        conditions.push(
+          or(
+            ilike(books.title, `%${searchTerm}%`),
+            ilike(books.isbn, `%${searchTerm}%`),
+            ilike(authors.name, `%${searchTerm}%`),
+            ilike(authors.middleName, `%${searchTerm}%`),
+            ilike(authors.lastName, `%${searchTerm}%`),
+          ),
+        );
+      }
+
+      const whereConditions = and(...conditions);
 
       const results = await ctx.db
         .select({
@@ -421,6 +439,8 @@ export const loansRouter = createTRPCRouter({
       const totalResults = await ctx.db
         .select({ count: loans.id })
         .from(loans)
+        .innerJoin(books, eq(loans.bookId, books.id))
+        .leftJoin(authors, eq(books.authorId, authors.id))
         .where(whereConditions);
 
       const formattedResults = results.map((result) => ({
