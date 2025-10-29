@@ -28,6 +28,8 @@ type BookCardProps = {
   isbn: string;
   location: string;
   available?: boolean;
+  status?: "AVAILABLE" | "NOT_AVAILABLE" | "RESERVED";
+  isReservedByCurrentUser?: boolean;
   isFavorite?: boolean;
   isLoadingFavorite?: boolean;
   isLoadingReserve?: boolean;
@@ -51,6 +53,8 @@ export default function BookCard(props: BookCardProps) {
     isbn,
     location,
     available = true,
+    status,
+    isReservedByCurrentUser = false,
     isFavorite = false,
     isLoadingFavorite = false,
     isLoadingReserve = false,
@@ -62,6 +66,28 @@ export default function BookCard(props: BookCardProps) {
 
   const fullAuthorName =
     `${authorFirstName} ${authorMiddleName} ${authorLastName}`.trim();
+
+  const getStatusBadge = () => {
+    if (status === "RESERVED" && isReservedByCurrentUser) {
+      return (
+        <Badge className="bg-berkeley-blue/10 text-berkeley-blue border-0">
+          Reservado por ti
+        </Badge>
+      );
+    }
+    if (status === "RESERVED" || !available) {
+      return (
+        <Badge className="border-0 bg-rose-100 text-rose-800">
+          No disponible
+        </Badge>
+      );
+    }
+    return (
+      <Badge className="border-0 bg-emerald-100 text-emerald-800">
+        Disponible
+      </Badge>
+    );
+  };
 
   return (
     <div className={["flex", className].filter(Boolean).join(" ")}>
@@ -96,16 +122,7 @@ export default function BookCard(props: BookCardProps) {
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
-              <Badge
-                className={`${
-                  available
-                    ? "border-emerald-200 bg-emerald-100 text-emerald-800 hover:bg-emerald-100"
-                    : "border-rose-200 bg-rose-100 text-rose-800 hover:bg-rose-100"
-                } rounded-full border px-2.5 py-1 text-xs font-semibold`}
-                variant="outline"
-              >
-                {available ? "Disponible" : "No disponible"}
-              </Badge>
+              {getStatusBadge()}
 
               {onToggleFavorite && (
                 <Button

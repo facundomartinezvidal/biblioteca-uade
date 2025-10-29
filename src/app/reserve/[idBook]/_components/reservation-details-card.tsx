@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Clock } from "lucide-react";
+import { Clock, Loader2 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
 
@@ -10,6 +10,7 @@ interface ReservationDetailsCardProps {
   termsAccepted: boolean;
   onTermsChange: (accepted: boolean) => void;
   onConfirmReservation: () => void;
+  isLoading?: boolean;
 }
 
 export function ReservationDetailsCard({
@@ -17,6 +18,7 @@ export function ReservationDetailsCard({
   termsAccepted,
   onTermsChange,
   onConfirmReservation,
+  isLoading = false,
 }: ReservationDetailsCardProps) {
   const reservationDate = new Date();
   const returnDate = new Date();
@@ -39,6 +41,47 @@ export function ReservationDetailsCard({
     });
   };
 
+  const getStatusMessage = () => {
+    switch (bookStatus) {
+      case "AVAILABLE":
+        return {
+          type: "success",
+          message: "Este libro está disponible para reserva",
+          bgColor: "bg-emerald-50",
+          textColor: "text-emerald-700",
+          borderColor: "border-emerald-100",
+        };
+      case "RESERVED":
+        return {
+          type: "warning",
+          message:
+            "Este libro ya está reservado por otro usuario. Podrás reservarlo cuando esté disponible nuevamente.",
+          bgColor: "bg-amber-50",
+          textColor: "text-amber-700",
+          borderColor: "border-amber-100",
+        };
+      case "NOT_AVAILABLE":
+        return {
+          type: "error",
+          message:
+            "Este libro no está disponible en este momento. Podría estar prestado o en mantenimiento.",
+          bgColor: "bg-red-50",
+          textColor: "text-red-700",
+          borderColor: "border-red-100",
+        };
+      default:
+        return {
+          type: "error",
+          message: "Estado del libro no disponible para reserva",
+          bgColor: "bg-gray-50",
+          textColor: "text-gray-700",
+          borderColor: "border-gray-100",
+        };
+    }
+  };
+
+  const statusInfo = getStatusMessage();
+
   return (
     <div className="flex flex-col">
       <h2 className="text-berkeley-blue mb-6 text-xl font-semibold">
@@ -47,6 +90,58 @@ export function ReservationDetailsCard({
 
       <Card className="flex-1 shadow-sm">
         <CardContent className="flex h-full flex-col space-y-3">
+          {/* Book availability status */}
+          <div
+            className={`rounded-lg border p-3 ${statusInfo.bgColor} ${statusInfo.borderColor}`}
+          >
+            <div className="flex items-start gap-2">
+              {statusInfo.type === "success" ? (
+                <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500">
+                  <svg
+                    className="h-3 w-3 text-white"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path d="M5 13l4 4L19 7"></path>
+                  </svg>
+                </div>
+              ) : statusInfo.type === "warning" ? (
+                <svg
+                  className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+              ) : (
+                <svg
+                  className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-500"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              )}
+              <p
+                className={`text-sm leading-tight font-medium ${statusInfo.textColor}`}
+              >
+                {statusInfo.message}
+              </p>
+            </div>
+          </div>
+
           {/* Loan period */}
           <div className="rounded-lg bg-blue-50 p-2.5">
             <div className="flex items-start gap-2">
@@ -128,16 +223,32 @@ export function ReservationDetailsCard({
           <div className="mt-auto pt-1">
             <Button
               onClick={onConfirmReservation}
-              disabled={!termsAccepted || bookStatus !== "AVAILABLE"}
+              disabled={
+                !termsAccepted || bookStatus !== "AVAILABLE" || isLoading
+              }
               className="bg-berkeley-blue hover:bg-berkeley-blue/90 h-9 w-full text-sm font-semibold text-white shadow-sm transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {bookStatus !== "AVAILABLE"
-                ? "Libro No Disponible"
-                : "Confirmar Reserva"}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Reservando...
+                </>
+              ) : bookStatus === "RESERVED" ? (
+                "Ya Reservado"
+              ) : bookStatus !== "AVAILABLE" ? (
+                "No Disponible"
+              ) : (
+                "Confirmar Reserva"
+              )}
             </Button>
-            {bookStatus !== "AVAILABLE" && (
+            {bookStatus === "RESERVED" && (
+              <p className="mt-1.5 text-center text-[10px] text-amber-600">
+                Este libro ya está reservado por otro usuario
+              </p>
+            )}
+            {bookStatus !== "AVAILABLE" && bookStatus !== "RESERVED" && (
               <p className="mt-1.5 text-center text-[10px] text-red-600">
-                Este libro no está disponible para reserva
+                Este libro no está disponible para reserva en este momento
               </p>
             )}
             {!termsAccepted && bookStatus === "AVAILABLE" && (

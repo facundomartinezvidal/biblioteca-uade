@@ -40,29 +40,27 @@ export default function ReservePage() {
   );
   const [selectedBook, setSelectedBook] = useState<BookSummary | null>(null);
   const [showPopUp, setShowPopUp] = useState(false);
+  const [isReserving, setIsReserving] = useState(false);
   const params = useParams();
   const router = useRouter();
   const bookId = params.idBook as string;
 
-  // Get book data from the API
   const { data: bookData, isLoading: bookLoading } = api.books.getById.useQuery(
     { id: bookId },
     { enabled: !!bookId },
   );
 
-  // Get recommended books (excluding the current book)
   const { data: recommendedBooksData, isLoading: recommendedLoading } =
     api.books.getAll.useQuery({
       page: 1,
       limit: 10,
     });
 
-  // Get favorites
   const { data: favoriteIds } = api.favorites.getFavoriteIds.useQuery();
 
-  // Mutations for favorites
   const addFavoriteMutation = api.favorites.addFavorite.useMutation();
   const removeFavoriteMutation = api.favorites.removeFavorite.useMutation();
+  const createReservationMutation = api.loans.createReservation.useMutation();
   const utils = api.useUtils();
 
   const book = bookData?.response?.[0];
@@ -73,7 +71,7 @@ export default function ReservePage() {
       ?.filter((recBook) => recBook.id !== bookId)
       ?.slice(0, 2) ?? [];
 
-  const handleReserve = () => {
+  const handleReserve = async () => {
     if (!termsAccepted) {
       alert("Debes aceptar los términos y condiciones para continuar");
       return;
@@ -88,11 +86,22 @@ export default function ReservePage() {
       alert("Este libro no está disponible para reserva");
       return;
     }
-    // TODO: Implement real reservation logic
-    console.log("Reserva confirmada para:", book.title);
 
-    // Show confirmation modal
-    setShowSuccessModal(true);
+    setIsReserving(true);
+
+    try {
+      await createReservationMutation.mutateAsync({ bookId: book.id });
+      await utils.books.getById.invalidate({ id: bookId });
+      setShowSuccessModal(true);
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Error al crear la reserva. Por favor, intenta nuevamente.",
+      );
+    } finally {
+      setIsReserving(false);
+    }
   };
 
   const handleReserveRecommended = (recBook: { id: string }) => {
@@ -156,6 +165,7 @@ export default function ReservePage() {
             termsAccepted={termsAccepted}
             onTermsChange={setTermsAccepted}
             onConfirmReservation={handleReserve}
+            isLoading={isReserving}
           />
         </div>
 

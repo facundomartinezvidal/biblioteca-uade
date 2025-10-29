@@ -252,4 +252,46 @@ export const loansRouter = createTRPCRouter({
 
       return { success: true };
     }),
+
+  createReservation: protectedProcedure
+    .input(z.object({ bookId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.user.id;
+
+      const book = await ctx.db
+        .select()
+        .from(books)
+        .where(eq(books.id, input.bookId))
+        .limit(1);
+
+      if (book.length === 0) {
+        throw new Error("Libro no encontrado");
+      }
+
+      if (book[0]!.status !== "AVAILABLE") {
+        throw new Error("El libro no está disponible para reserva");
+      }
+
+      const now = new Date();
+      const endDate = new Date(now);
+      endDate.setDate(endDate.getDate() + 7);
+
+      const newLoan = await ctx.db
+        .insert(loans)
+        .values({
+          bookId: input.bookId,
+          userId: userId,
+          status: "RESERVED",
+          createdAt: now.toISOString(),
+          endDate: endDate.toISOString(),
+        })
+        .returning();
+
+      await ctx.db
+        .update(books)
+        .set({ status: "RESERVED" })
+        .where(eq(books.id, input.bookId));
+
+      return { success: true, loan: newLoan[0] };
+    }),
 });

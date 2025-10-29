@@ -137,6 +137,22 @@ export function HomeStudentContent() {
     api.favorites.getFavorites.useQuery();
   const { data: favoriteIds } = api.favorites.getFavoriteIds.useQuery();
 
+  // Fetch user reservations (both RESERVED and ACTIVE) to check which books are reserved by current user
+  const { data: userActiveLoansData } = api.loans.getActive.useQuery();
+  const { data: userReservedLoansData } = api.loans.getByUserId.useQuery({
+    page: 1,
+    limit: 100,
+    status: "RESERVED",
+  });
+
+  const userReservedBookIds = useMemo(() => {
+    const activeBookIds =
+      userActiveLoansData?.results.map((loan) => loan.book.id) ?? [];
+    const reservedBookIds =
+      userReservedLoansData?.results.map((loan) => loan.book.id) ?? [];
+    return [...activeBookIds, ...reservedBookIds];
+  }, [userActiveLoansData, userReservedLoansData]);
+
   // Mutations para favoritos
   const addFavoriteMutation = api.favorites.addFavorite.useMutation();
   const removeFavoriteMutation = api.favorites.removeFavorite.useMutation();
@@ -294,6 +310,7 @@ export function HomeStudentContent() {
               favoriteIds={favoriteIds ?? []}
               onToggleFavorite={handleToggleFavorite}
               favoriteLoadingIds={favoriteLoadingIds}
+              userReservedBookIds={userReservedBookIds}
             />
           </TabsContent>
 
@@ -307,6 +324,7 @@ export function HomeStudentContent() {
               onToggleFavorite={handleToggleFavorite}
               favoriteLoadingIds={favoriteLoadingIds}
               reserveLoadingIds={reserveLoadingIds}
+              userReservedBookIds={userReservedBookIds}
             />
           </TabsContent>
 

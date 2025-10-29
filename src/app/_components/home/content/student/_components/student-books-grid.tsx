@@ -30,6 +30,7 @@ interface StudentBooksGridProps {
   favoriteIds?: string[];
   onToggleFavorite?: (bookId: string) => void;
   favoriteLoadingIds?: Set<string>;
+  userReservedBookIds?: string[];
 }
 
 export function StudentBooksGrid({
@@ -43,6 +44,7 @@ export function StudentBooksGrid({
   favoriteIds = [],
   onToggleFavorite,
   favoriteLoadingIds,
+  userReservedBookIds = [],
 }: StudentBooksGridProps) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -65,6 +67,14 @@ export function StudentBooksGrid({
                 isbn={book.isbn ?? ""}
                 location={book.location ?? ""}
                 available={book.status === "AVAILABLE"}
+                status={
+                  book.status as
+                    | "AVAILABLE"
+                    | "NOT_AVAILABLE"
+                    | "RESERVED"
+                    | undefined
+                }
+                isReservedByCurrentUser={userReservedBookIds.includes(book.id)}
                 coverUrl={book.imageUrl}
                 isFavorite={favoriteIds.includes(book.id)}
                 isLoadingFavorite={favoriteLoadingIds?.has(book.id) ?? false}

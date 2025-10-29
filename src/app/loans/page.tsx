@@ -128,6 +128,7 @@ const formatDate = (dateString: string) => {
 
 export default function LoansPage() {
   const router = useRouter();
+  const utils = api.useUtils();
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [search, setSearch] = useState("");
@@ -148,8 +149,10 @@ export default function LoansPage() {
   });
 
   const cancelMutation = api.loans.cancelReservation.useMutation({
-    onSuccess: () => {
-      void refetch();
+    onSuccess: async () => {
+      await refetch();
+      await utils.books.getAll.invalidate();
+      await utils.books.getById.invalidate();
       setIsCancelModalOpen(false);
       setLoanToCancel(null);
     },

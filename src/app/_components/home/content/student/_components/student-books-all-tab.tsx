@@ -38,6 +38,7 @@ interface StudentBooksAllTabProps {
   favoriteIds?: string[];
   onToggleFavorite?: (bookId: string) => void;
   favoriteLoadingIds?: Set<string>;
+  userReservedBookIds?: string[];
 }
 
 export function StudentBooksAllTab({
@@ -52,6 +53,7 @@ export function StudentBooksAllTab({
   favoriteIds = [],
   onToggleFavorite,
   favoriteLoadingIds,
+  userReservedBookIds = [],
 }: StudentBooksAllTabProps) {
   const emptyMessage = (
     <div className="col-span-2 py-12 text-center">
@@ -79,6 +81,7 @@ export function StudentBooksAllTab({
         favoriteIds={favoriteIds}
         onToggleFavorite={onToggleFavorite}
         favoriteLoadingIds={favoriteLoadingIds}
+        userReservedBookIds={userReservedBookIds}
       />
 
       {/* Pagination Controls */}
