@@ -31,6 +31,7 @@ interface StudentBooksAllTabProps {
   isLoading: boolean;
   pagination?: Pagination;
   onReserve: (book: Book) => void;
+  reserveLoadingIds: Set<string>;
   onViewMore: (book: Book) => void;
   onPageChange: (page: number) => void;
   onClearFilters: () => void;
@@ -44,6 +45,7 @@ export function StudentBooksAllTab({
   isLoading,
   pagination,
   onReserve,
+  reserveLoadingIds,
   onViewMore,
   onPageChange,
   onClearFilters,
@@ -72,6 +74,7 @@ export function StudentBooksAllTab({
         isLoading={isLoading}
         emptyMessage={emptyMessage}
         onReserve={onReserve}
+        reserveLoadingIds={reserveLoadingIds}
         onViewMore={onViewMore}
         favoriteIds={favoriteIds}
         onToggleFavorite={onToggleFavorite}

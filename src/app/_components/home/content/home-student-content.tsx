@@ -65,6 +65,10 @@ export function HomeStudentContent() {
     undefined,
   );
 
+  const [reserveLoadingIds, setReserveLoadingIds] = useState<Set<string>>(
+    new Set(),
+  );
+
   const [activeTab, setActiveTab] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(6);
@@ -151,6 +155,7 @@ export function HomeStudentContent() {
   ]);
 
   const handleReserve = (book: { id: string }) => {
+    setReserveLoadingIds((prev) => new Set(prev).add(book.id));
     router.push(`/reserve/${book.id}`);
   };
 
@@ -165,7 +170,7 @@ export function HomeStudentContent() {
   };
 
   const handlePopUpReserve = (bookId: string) => {
-    handleClosePopUp();
+    setReserveLoadingIds((prev) => new Set(prev).add(bookId));
     router.push(`/reserve/${bookId}`);
   };
 
@@ -282,6 +287,7 @@ export function HomeStudentContent() {
               isLoading={isLoading}
               pagination={pagination}
               onReserve={handleReserve}
+              reserveLoadingIds={reserveLoadingIds}
               onViewMore={handleViewMore}
               onPageChange={setCurrentPage}
               onClearFilters={clearFilters}
@@ -300,6 +306,7 @@ export function HomeStudentContent() {
               favoriteIds={favoriteIds ?? []}
               onToggleFavorite={handleToggleFavorite}
               favoriteLoadingIds={favoriteLoadingIds}
+              reserveLoadingIds={reserveLoadingIds}
             />
           </TabsContent>
 
@@ -309,6 +316,7 @@ export function HomeStudentContent() {
               isLoading={isLoading}
               onReserve={handleReserve}
               onViewMore={handleViewMore}
+              reserveLoadingIds={reserveLoadingIds}
             />
           </TabsContent>
         </Tabs>
@@ -328,6 +336,9 @@ export function HomeStudentContent() {
         }
         isLoadingFavorite={
           selectedBook ? favoriteLoadingIds.has(selectedBook.id) : false
+        }
+        isLoadingReserve={
+          selectedBook ? reserveLoadingIds.has(selectedBook.id) : false
         }
       />
     </div>

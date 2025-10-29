@@ -25,6 +25,7 @@ interface StudentBooksGridProps {
   emptyMessage?: React.ReactNode;
   skeletonCount?: number;
   onReserve: (book: Book) => void;
+  reserveLoadingIds: Set<string>;
   onViewMore: (book: Book) => void;
   favoriteIds?: string[];
   onToggleFavorite?: (bookId: string) => void;
@@ -37,6 +38,7 @@ export function StudentBooksGrid({
   emptyMessage,
   skeletonCount = 6,
   onReserve,
+  reserveLoadingIds,
   onViewMore,
   favoriteIds = [],
   onToggleFavorite,
@@ -66,6 +68,7 @@ export function StudentBooksGrid({
                 coverUrl={book.imageUrl}
                 isFavorite={favoriteIds.includes(book.id)}
                 isLoadingFavorite={favoriteLoadingIds?.has(book.id) ?? false}
+                isLoadingReserve={reserveLoadingIds.has(book.id)}
                 onReserve={() => onReserve(book)}
                 onViewMore={() => onViewMore(book)}
                 onToggleFavorite={

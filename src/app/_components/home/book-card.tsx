@@ -30,6 +30,7 @@ type BookCardProps = {
   available?: boolean;
   isFavorite?: boolean;
   isLoadingFavorite?: boolean;
+  isLoadingReserve?: boolean;
   onViewMore?: () => void;
   onReserve?: () => void;
   onToggleFavorite?: () => void;
@@ -52,6 +53,7 @@ export default function BookCard(props: BookCardProps) {
     available = true,
     isFavorite = false,
     isLoadingFavorite = false,
+    isLoadingReserve = false,
     onViewMore,
     onReserve,
     onToggleFavorite,
@@ -181,9 +183,19 @@ export default function BookCard(props: BookCardProps) {
                 size="sm"
                 className="bg-berkeley-blue hover:bg-berkeley-blue/90 text-white"
                 onClick={onReserve}
-                disabled={!available}
+                disabled={!available || isLoadingReserve}
               >
-                Reservar
+                <>
+                  {isLoadingReserve ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </>
+                  ) : (
+                    <>
+                      <span>Reservar</span>
+                    </>
+                  )}
+                </>
               </Button>
             </div>
           </div>

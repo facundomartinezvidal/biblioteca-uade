@@ -39,6 +39,7 @@ interface PopUpBookProps {
   onToggleFavorite?: (bookId: string) => void;
   isFavorite?: boolean;
   isLoadingFavorite?: boolean;
+  isLoadingReserve?: boolean;
 }
 
 const getAvailabilityBadge = (status?: string) => {
@@ -65,6 +66,7 @@ export default function PopUpBook({
   onToggleFavorite,
   isFavorite = false,
   isLoadingFavorite = false,
+  isLoadingReserve = false,
 }: PopUpBookProps) {
   const router = useRouter();
   // Close modal with Escape key and prevent body scroll
@@ -248,9 +250,16 @@ export default function PopUpBook({
                   router.push(`/reserve/${book.id}`);
                 }
               }}
-              disabled={book.status !== "AVAILABLE"}
+              disabled={book.status !== "AVAILABLE" || isLoadingReserve}
             >
-              Reservar
+              {isLoadingReserve ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Reservando...
+                </>
+              ) : (
+                "Reservar"
+              )}
             </Button>
           </div>
         </div>
