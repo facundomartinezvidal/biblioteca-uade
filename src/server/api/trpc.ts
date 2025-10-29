@@ -11,6 +11,7 @@ import superjson from "superjson";
 import { ZodError } from "zod";
 
 import { db } from "~/server/db";
+import { createServerClient } from "@supabase/ssr";
 
 /**
  * 1. CONTEXT
@@ -25,8 +26,39 @@ import { db } from "~/server/db";
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          // Extract cookies from the headers
+          const cookieHeader = opts.headers.get("cookie");
+          if (!cookieHeader) return [];
+
+          return cookieHeader.split(";").map((cookie) => {
+            const [name, ...rest] = cookie.trim().split("=");
+            return {
+              name: name ?? "",
+              value: rest.join("=") || "",
+            };
+          });
+        },
+        setAll(_cookiesToSet) {
+          // In the TRPC context, we can't set cookies directly
+          // This is handled by the middleware
+        },
+      },
+    },
+  );
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return {
     db,
+    user,
     ...opts,
   };
 };
@@ -104,3 +136,23 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
  * are logged in.
  */
 export const publicProcedure = t.procedure.use(timingMiddleware);
+
+/**
+ * Protected (authenticated) procedure
+ *
+ * Ensures the user is authenticated before executing the procedure
+ */
+const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
+  if (!ctx.user) {
+    throw new Error("UNAUTHORIZED");
+  }
+  return next({
+    ctx: {
+      user: ctx.user,
+    },
+  });
+});
+
+export const protectedProcedure = t.procedure
+  .use(timingMiddleware)
+  .use(enforceUserIsAuthed);

@@ -2,11 +2,18 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
-import { Bell, GraduationCap, LogOut } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  Bell,
+  GraduationCap,
+  Loader2,
+  LogOut,
+  UserStarIcon,
+} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
+import { Skeleton } from "~/components/ui/skeleton";
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -17,16 +24,44 @@ import { Separator } from "~/components/ui/separator";
 import { routes } from "~/lib/routes";
 import { cn } from "~/lib/utils";
 import CalendarPopover from "./calendar-popover";
+import { supabase } from "~/lib/supabase/client";
+import { toast } from "sonner";
+import { useState } from "react";
+import { useUser } from "~/lib/contexts";
 
 export default function AppNavbar() {
   const pathname = usePathname();
+  const [isLoadingLogout, setIsLoadingLogout] = useState(false);
+  const router = useRouter();
+  const { user, isLoading: isLoadingUser, isAuthenticated } = useUser();
 
-  const navLinks = [
-    { href: "/", label: "Inicio" },
-    { href: "/loans", label: "Préstamos" },
-    { href: "/multas", label: "Multas" },
-    { href: "/profile", label: "Perfil" },
-  ];
+  let navLinks: { href: string; label: string }[] = [];
+  if (user?.rol === "admin") {
+    navLinks = [
+      { href: routes.home, label: "Libros" },
+      { href: routes.loans, label: "Usuarios" },
+      { href: routes.profile, label: "Perfil" },
+    ];
+  } else if (user?.rol === "estudiante") {
+    navLinks = [
+      { href: routes.home, label: "Inicio" },
+      { href: routes.loans, label: "Préstamos" },
+      { href: routes.penalties, label: "Multas" },
+      { href: routes.profile, label: "Perfil" },
+    ];
+  }
+
+  const handleLogout = async () => {
+    try {
+      setIsLoadingLogout(true);
+      await supabase.auth.signOut();
+      toast.success("Sesión cerrada exitosamente");
+      router.push("/auth/login");
+    } catch (error) {
+      toast.error((error as Error).message ?? "Error al cerrar sesión");
+    }
+    toast.success("Sesión cerrada exitosamente");
+  };
 
   const isActive = (href: string) => {
     if (href === "/") {
@@ -58,24 +93,33 @@ export default function AppNavbar() {
 
           <NavigationMenu>
             <NavigationMenuList className="gap-1">
-              {navLinks.map((link) => {
-                const active = isActive(link.href);
-                return (
-                  <NavigationMenuItem key={link.href}>
-                    <NavigationMenuLink asChild>
-                      <Link
-                        href={link.href}
-                        className={cn(
-                          "group inline-flex h-8 w-max items-center justify-center rounded-md px-3 py-1 text-sm font-medium transition-colors hover:bg-white/10 hover:text-white focus:bg-white/10 focus:text-white focus:outline-none disabled:pointer-events-none disabled:opacity-50",
-                          active ? "bg-white/20 text-white" : "text-white/70",
-                        )}
-                      >
-                        {link.label}
-                      </Link>
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
-                );
-              })}
+              {isLoadingUser ? (
+                <>
+                  <Skeleton className="h-8 w-20 animate-pulse rounded-md opacity-30" />
+                  <Skeleton className="h-8 w-24 animate-pulse rounded-md opacity-30" />
+                  <Skeleton className="h-8 w-20 animate-pulse rounded-md opacity-30" />
+                </>
+              ) : (
+                navLinks.map((link) => {
+                  return (
+                    <NavigationMenuItem key={link.href}>
+                      <NavigationMenuLink asChild>
+                        <Link
+                          href={link.href}
+                          className={cn(
+                            "group inline-flex h-8 w-max items-center justify-center rounded-md px-3 py-1 text-sm font-medium transition-colors hover:bg-white/10 hover:text-white focus:bg-white/10 focus:text-white focus:outline-none disabled:pointer-events-none disabled:opacity-50",
+                            isActive(link.href)
+                              ? "bg-white/20 text-white"
+                              : "text-white/70",
+                          )}
+                        >
+                          {link.label}
+                        </Link>
+                      </NavigationMenuLink>
+                    </NavigationMenuItem>
+                  );
+                })
+              )}
             </NavigationMenuList>
           </NavigationMenu>
         </div>
@@ -94,27 +138,54 @@ export default function AppNavbar() {
           <Separator orientation="vertical" className="h-8 bg-white/20" />
 
           <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8 border-white/20">
-              <AvatarImage
-                src="/fmartinezvidal-profile.jpeg"
-                alt="Facundo Martinez Vidal"
-              />
-              <AvatarFallback className="bg-white/20 text-xs font-semibold">
-                FM
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-sm leading-none font-medium">
-                Facundo Martinez Vidal
-              </span>
-            </div>
-            <Badge
-              variant="secondary"
-              className="w-fit bg-white/20 px-1.5 py-0 text-sm text-white hover:bg-white/30"
-            >
-              <GraduationCap className="h-4 w-4" />
-              Estudiante
-            </Badge>
+            {isLoadingUser ? (
+              <>
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-6 w-20 rounded-full" />
+              </>
+            ) : isAuthenticated && user ? (
+              <>
+                <Avatar className="h-8 w-8 border-white/20">
+                  <AvatarImage
+                    src="/fmartinezvidal-profile.jpeg"
+                    alt={`${user.name} ${user.last_name}`}
+                  />
+                  <AvatarFallback className="bg-white/20 text-xs font-semibold">
+                    {user.name?.[0]}
+                    {user.last_name?.[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm leading-none font-medium">
+                    {user.name} {user.last_name}
+                  </span>
+                </div>
+                <Badge
+                  variant="secondary"
+                  className="w-fit bg-white/20 px-1.5 py-0 text-sm text-white hover:bg-white/30"
+                >
+                  {user.rol === "admin" && (
+                    <>
+                      <UserStarIcon className="h-4 w-4" />
+                      Administrador
+                    </>
+                  )}
+                  {user.rol === "estudiante" && (
+                    <>
+                      <GraduationCap className="h-4 w-4" />
+                      Estudiante
+                    </>
+                  )}
+                </Badge>
+              </>
+            ) : (
+              <>
+                <Skeleton className="h-8 w-8 animate-pulse rounded-full opacity-30" />
+                <Skeleton className="h-4 w-32 animate-pulse opacity-30" />
+                <Skeleton className="h-6 w-20 animate-pulse rounded-full opacity-30" />
+              </>
+            )}
           </div>
 
           <Separator orientation="vertical" className="h-8 bg-white/20" />
@@ -135,9 +206,18 @@ export default function AppNavbar() {
               variant="ghost"
               size="icon"
               className="h-8 w-8 rounded-md text-white hover:bg-white/10 hover:text-white"
+              onClick={handleLogout}
+              disabled={isLoadingLogout}
             >
-              <LogOut className="h-4 w-4" />
-              <span className="sr-only">Logout</span>
+              {isLoadingLogout ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </>
+              ) : (
+                <>
+                  <LogOut className="h-4 w-4" />
+                </>
+              )}
             </Button>
           </div>
         </div>
