@@ -3,7 +3,6 @@ import { bookStatusEnum } from "../enums";
 import { authors } from "./authors";
 import { editorials } from "./editorials";
 import { genders } from "./genders";
-import { locations } from "./locations";
 
 export const books = pgTable("books", {
   id: uuid("id").defaultRandom().primaryKey(),
