@@ -1,168 +1,461 @@
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from "~/server/api/trpc";
 import { z } from "zod";
-import { randomUUID } from "crypto";
+import { loans } from "~/server/db/schemas/loans";
+import { books } from "~/server/db/schemas/books";
+import { authors } from "~/server/db/schemas/authors";
+import { genders } from "~/server/db/schemas/genders";
+import { locations } from "~/server/db/schemas/locations";
+import { editorials } from "~/server/db/schemas/editorials";
+import { users } from "~/server/db/schemas/users";
+import { roles } from "~/server/db/schemas/roles";
+import { eq, and, desc, or, ilike } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 
-// Mock data for loans while database is being configured
-const mockLoansData = [
-  {
-    id: randomUUID(),
-    userId: "temp-user-id",
-    endDate: "2024-02-15T00:00:00.000Z",
-    status: "ACTIVE",
-    createdAt: "2024-01-15T00:00:00.000Z",
-    book: {
-      id: randomUUID(),
-      title: "Cien años de soledad",
-      description:
-        "Una novela épica que narra la historia de la familia Buendía a lo largo de siete generaciones en el pueblo ficticio de Macondo.",
-      isbn: "978-84-376-0494-7",
-      status: "NOT_AVAILABLE",
-      year: 1967,
-      editorial: "Sudamericana",
-      imageUrl: "/covers/cien-anos-soledad.jpg",
-      createdAt: "2024-01-01T00:00:00.000Z",
-    },
-    author: {
-      id: randomUUID(),
-      name: "Gabriel",
-      middleName: "José",
-      lastName: "García Márquez",
-      createdAt: "2024-01-01T00:00:00.000Z",
-    },
-    gender: {
-      id: randomUUID(),
-      name: "Literatura",
-      createdAt: "2024-01-01T00:00:00.000Z",
-    },
-    location: {
-      id: randomUUID(),
-      address: "Piso 1, Sección Literatura",
-      campus: "MONSERRAT",
-      createdAt: "2024-01-01T00:00:00.000Z",
-    },
-  },
-  {
-    id: randomUUID(),
-    userId: "temp-user-id",
-    endDate: "2024-02-20T00:00:00.000Z",
-    status: "RESERVED",
-    createdAt: "2024-01-20T00:00:00.000Z",
-    book: {
-      id: randomUUID(),
-      title: "La ciudad y los perros",
-      description:
-        "Una novela que narra la vida de los cadetes en el Colegio Militar Leoncio Prado y sus experiencias de violencia y amistad.",
-      isbn: "978-84-376-0495-4",
-      status: "NOT_AVAILABLE",
-      year: 1963,
-      editorial: "Seix Barral",
-      imageUrl: "/covers/ciudad-perros.jpg",
-      createdAt: "2024-01-01T00:00:00.000Z",
-    },
-    author: {
-      id: randomUUID(),
-      name: "Mario",
-      middleName: "Vargas",
-      lastName: "Llosa",
-      createdAt: "2024-01-01T00:00:00.000Z",
-    },
-    gender: {
-      id: randomUUID(),
-      name: "Literatura",
-      createdAt: "2024-01-01T00:00:00.000Z",
-    },
-    location: {
-      id: randomUUID(),
-      address: "Piso 1, Sección Literatura",
-      campus: "MONSERRAT",
-      createdAt: "2024-01-01T00:00:00.000Z",
-    },
-  },
-  {
-    id: randomUUID(),
-    userId: "temp-user-id",
-    endDate: "2024-01-10T00:00:00.000Z",
-    status: "EXPIRED",
-    createdAt: "2023-12-10T00:00:00.000Z",
-    book: {
-      id: randomUUID(),
-      title: "Rayuela",
-      description:
-        "Una novela experimental que puede leerse de múltiples maneras, explorando temas como el amor, la búsqueda de sentido y la vida bohemia en París.",
-      isbn: "978-84-376-0496-1",
-      status: "AVAILABLE",
-      year: 1963,
-      editorial: "Sudamericana",
-      imageUrl: "/covers/rayuela.jpeg",
-      createdAt: "2024-01-01T00:00:00.000Z",
-    },
-    author: {
-      id: randomUUID(),
-      name: "Julio",
-      middleName: "",
-      lastName: "Cortázar",
-      createdAt: "2024-01-01T00:00:00.000Z",
-    },
-    gender: {
-      id: randomUUID(),
-      name: "Literatura",
-      createdAt: "2024-01-01T00:00:00.000Z",
-    },
-    location: {
-      id: randomUUID(),
-      address: "Piso 1, Sección Literatura",
-      campus: "MONSERRAT",
-      createdAt: "2024-01-01T00:00:00.000Z",
-    },
-  },
-];
+// Middleware para verificar rol de admin
+const enforceUserIsAdmin = protectedProcedure.use(async ({ ctx, next }) => {
+  const userWithRole = await ctx.db
+    .select({
+      rol: roles.nombre_rol,
+    })
+    .from(users)
+    .where(eq(users.id, ctx.user.id))
+    .innerJoin(roles, eq(users.id_rol, roles.id_rol))
+    .limit(1);
+
+  if (!userWithRole[0] || userWithRole[0].rol === "estudiante") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "No tienes permisos para acceder a este recurso",
+    });
+  }
+
+  return next({ ctx });
+});
 
 export const loansRouter = createTRPCRouter({
-  getByUserId: publicProcedure
+  getByUserId: protectedProcedure
     .input(
       z.object({
-        userId: z.string(),
         page: z.number().min(1).default(1),
         limit: z.number().min(1).max(100).default(10),
+        status: z
+          .enum(["RESERVED", "ACTIVE", "FINISHED", "EXPIRED", "CANCELLED"])
+          .optional(),
       }),
     )
-    .query(async ({ input }) => {
-      // Filter by userId and apply pagination
-      const userLoans = mockLoansData.filter(
-        (loan) => loan.userId === input.userId,
-      );
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.user.id;
       const offset = (input.page - 1) * input.limit;
-      const paginatedLoans = userLoans.slice(offset, offset + input.limit);
+
+      const whereConditions = input.status
+        ? and(eq(loans.userId, userId), eq(loans.status, input.status))
+        : eq(loans.userId, userId);
+
+      const results = await ctx.db
+        .select({
+          id: loans.id,
+          userId: loans.userId,
+          endDate: loans.endDate,
+          status: loans.status,
+          createdAt: loans.createdAt,
+          book: {
+            id: books.id,
+            title: books.title,
+            description: books.description,
+            isbn: books.isbn,
+            status: books.status,
+            year: books.year,
+            imageUrl: books.imageUrl,
+            createdAt: books.createdAt,
+          },
+          author: {
+            id: authors.id,
+            name: authors.name,
+            middleName: authors.middleName,
+            lastName: authors.lastName,
+            createdAt: authors.createdAt,
+          },
+          gender: {
+            id: genders.id,
+            name: genders.name,
+            createdAt: genders.createdAt,
+          },
+          location: {
+            id: locations.id,
+            address: locations.address,
+            campus: locations.campus,
+          },
+          editorial: editorials.name,
+        })
+        .from(loans)
+        .innerJoin(books, eq(loans.bookId, books.id))
+        .leftJoin(authors, eq(books.authorId, authors.id))
+        .leftJoin(genders, eq(books.genderId, genders.id))
+        .leftJoin(locations, eq(books.locationId, locations.id))
+        .leftJoin(editorials, eq(books.editorialId, editorials.id))
+        .where(whereConditions)
+        .orderBy(desc(loans.createdAt))
+        .limit(input.limit)
+        .offset(offset);
+
+      const totalResults = await ctx.db
+        .select({ count: loans.id })
+        .from(loans)
+        .where(whereConditions);
+
+      const formattedResults = results.map((result) => ({
+        ...result,
+        book: {
+          ...result.book,
+          editorial: result.editorial ?? "",
+        },
+      }));
 
       return {
-        results: paginatedLoans,
-        total: userLoans.length,
+        results: formattedResults,
+        total: totalResults.length,
         page: input.page,
         limit: input.limit,
       };
     }),
 
-  getActive: publicProcedure
-    .input(
-      z.object({
-        userId: z.string(),
-      }),
-    )
-    .query(async ({ input }) => {
-      const activeLoans = mockLoansData.filter(
-        (loan) => loan.userId === input.userId && loan.status === "ACTIVE",
-      );
+  getActive: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.user.id;
 
-      return {
-        results: activeLoans,
-        total: activeLoans.length,
-      };
-    }),
+    const results = await ctx.db
+      .select({
+        id: loans.id,
+        userId: loans.userId,
+        endDate: loans.endDate,
+        status: loans.status,
+        createdAt: loans.createdAt,
+        book: {
+          id: books.id,
+          title: books.title,
+          description: books.description,
+          isbn: books.isbn,
+          status: books.status,
+          year: books.year,
+          imageUrl: books.imageUrl,
+          createdAt: books.createdAt,
+        },
+        author: {
+          id: authors.id,
+          name: authors.name,
+          middleName: authors.middleName,
+          lastName: authors.lastName,
+          createdAt: authors.createdAt,
+        },
+        gender: {
+          id: genders.id,
+          name: genders.name,
+          createdAt: genders.createdAt,
+        },
+        location: {
+          id: locations.id,
+          address: locations.address,
+          campus: locations.campus,
+        },
+        editorial: editorials.name,
+      })
+      .from(loans)
+      .innerJoin(books, eq(loans.bookId, books.id))
+      .leftJoin(authors, eq(books.authorId, authors.id))
+      .leftJoin(genders, eq(books.genderId, genders.id))
+      .leftJoin(locations, eq(books.locationId, locations.id))
+      .leftJoin(editorials, eq(books.editorialId, editorials.id))
+      .where(and(eq(loans.userId, userId), eq(loans.status, "ACTIVE")))
+      .orderBy(desc(loans.createdAt));
+
+    const formattedResults = results.map((result) => ({
+      ...result,
+      book: {
+        ...result.book,
+        editorial: result.editorial ?? "",
+      },
+    }));
+
+    return {
+      results: formattedResults,
+      total: formattedResults.length,
+    };
+  }),
 
   getById: publicProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      const loan = mockLoansData.find((loan) => loan.id === input.id);
-      return loan ?? null;
+    .query(async ({ ctx, input }) => {
+      const result = await ctx.db
+        .select({
+          id: loans.id,
+          userId: loans.userId,
+          endDate: loans.endDate,
+          status: loans.status,
+          createdAt: loans.createdAt,
+          book: {
+            id: books.id,
+            title: books.title,
+            description: books.description,
+            isbn: books.isbn,
+            status: books.status,
+            year: books.year,
+            imageUrl: books.imageUrl,
+            createdAt: books.createdAt,
+          },
+          author: {
+            id: authors.id,
+            name: authors.name,
+            middleName: authors.middleName,
+            lastName: authors.lastName,
+            createdAt: authors.createdAt,
+          },
+          gender: {
+            id: genders.id,
+            name: genders.name,
+            createdAt: genders.createdAt,
+          },
+          location: {
+            id: locations.id,
+            address: locations.address,
+            campus: locations.campus,
+          },
+          editorial: editorials.name,
+        })
+        .from(loans)
+        .innerJoin(books, eq(loans.bookId, books.id))
+        .leftJoin(authors, eq(books.authorId, authors.id))
+        .leftJoin(genders, eq(books.genderId, genders.id))
+        .leftJoin(locations, eq(books.locationId, locations.id))
+        .leftJoin(editorials, eq(books.editorialId, editorials.id))
+        .where(eq(loans.id, input.id))
+        .limit(1);
+
+      if (result.length === 0) return null;
+
+      return {
+        ...result[0],
+        book: {
+          ...result[0]!.book,
+          editorial: result[0]!.editorial ?? "",
+        },
+      };
+    }),
+
+  cancelReservation: protectedProcedure
+    .input(z.object({ loanId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.user.id;
+
+      const existingLoan = await ctx.db
+        .select()
+        .from(loans)
+        .where(and(eq(loans.id, input.loanId), eq(loans.userId, userId)))
+        .limit(1);
+
+      if (existingLoan.length === 0) {
+        throw new Error("Préstamo no encontrado o no autorizado");
+      }
+
+      if (existingLoan[0]!.status !== "RESERVED") {
+        throw new Error("Solo se pueden cancelar reservas en estado RESERVED");
+      }
+
+      await ctx.db
+        .update(loans)
+        .set({ status: "CANCELLED" })
+        .where(eq(loans.id, input.loanId));
+
+      const bookId = existingLoan[0]!.bookId;
+      await ctx.db
+        .update(books)
+        .set({ status: "AVAILABLE" })
+        .where(eq(books.id, bookId));
+
+      return { success: true };
+    }),
+
+  createReservation: protectedProcedure
+    .input(z.object({ bookId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.user.id;
+
+      const book = await ctx.db
+        .select()
+        .from(books)
+        .where(eq(books.id, input.bookId))
+        .limit(1);
+
+      if (book.length === 0) {
+        throw new Error("Libro no encontrado");
+      }
+
+      if (book[0]!.status !== "AVAILABLE") {
+        throw new Error("El libro no está disponible para reserva");
+      }
+
+      const now = new Date();
+      const endDate = new Date(now);
+      endDate.setDate(endDate.getDate() + 7);
+
+      const newLoan = await ctx.db
+        .insert(loans)
+        .values({
+          bookId: input.bookId,
+          userId: userId,
+          status: "RESERVED",
+          createdAt: now.toISOString(),
+          endDate: endDate.toISOString(),
+        })
+        .returning();
+
+      await ctx.db
+        .update(books)
+        .set({ status: "RESERVED" })
+        .where(eq(books.id, input.bookId));
+
+      return { success: true, loan: newLoan[0] };
+    }),
+
+  getStats: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.user.id;
+
+    const allLoans = await ctx.db
+      .select()
+      .from(loans)
+      .where(eq(loans.userId, userId));
+
+    const activeLoans = allLoans.filter(
+      (loan) => loan.status === "ACTIVE" || loan.status === "RESERVED",
+    ).length;
+
+    const finishedLoans = allLoans.filter(
+      (loan) => loan.status === "FINISHED",
+    ).length;
+
+    const now = new Date();
+    const twoDaysFromNow = new Date(now);
+    twoDaysFromNow.setDate(now.getDate() + 2);
+
+    const upcomingDue = allLoans.filter((loan) => {
+      if (loan.status !== "ACTIVE" && loan.status !== "RESERVED") return false;
+      const endDate = new Date(loan.endDate);
+      return endDate >= now && endDate <= twoDaysFromNow;
+    }).length;
+
+    return {
+      activeLoans,
+      finishedLoans,
+      pendingFines: 0,
+      upcomingDue,
+    };
+  }),
+
+  getByUserIdAdmin: enforceUserIsAdmin
+    .input(
+      z.object({
+        userId: z.string(),
+        page: z.number().min(1).default(1),
+        limit: z.number().min(1).max(100).default(10),
+        status: z
+          .enum(["RESERVED", "ACTIVE", "FINISHED", "EXPIRED", "CANCELLED"])
+          .optional(),
+        search: z.string().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const offset = (input.page - 1) * input.limit;
+
+      const conditions = [eq(loans.userId, input.userId)];
+
+      if (input.status) {
+        conditions.push(eq(loans.status, input.status));
+      }
+
+      if (input.search) {
+        const searchTerm = input.search.trim();
+        conditions.push(
+          or(
+            ilike(books.title, `%${searchTerm}%`),
+            ilike(books.isbn, `%${searchTerm}%`),
+            ilike(authors.name, `%${searchTerm}%`),
+            ilike(authors.middleName, `%${searchTerm}%`),
+            ilike(authors.lastName, `%${searchTerm}%`),
+          ),
+        );
+      }
+
+      const whereConditions = and(...conditions);
+
+      const results = await ctx.db
+        .select({
+          id: loans.id,
+          userId: loans.userId,
+          endDate: loans.endDate,
+          status: loans.status,
+          createdAt: loans.createdAt,
+          book: {
+            id: books.id,
+            title: books.title,
+            description: books.description,
+            isbn: books.isbn,
+            status: books.status,
+            year: books.year,
+            imageUrl: books.imageUrl,
+            createdAt: books.createdAt,
+          },
+          author: {
+            id: authors.id,
+            name: authors.name,
+            middleName: authors.middleName,
+            lastName: authors.lastName,
+            createdAt: authors.createdAt,
+          },
+          gender: {
+            id: genders.id,
+            name: genders.name,
+            createdAt: genders.createdAt,
+          },
+          location: {
+            id: locations.id,
+            address: locations.address,
+            campus: locations.campus,
+          },
+          editorial: editorials.name,
+        })
+        .from(loans)
+        .innerJoin(books, eq(loans.bookId, books.id))
+        .leftJoin(authors, eq(books.authorId, authors.id))
+        .leftJoin(genders, eq(books.genderId, genders.id))
+        .leftJoin(locations, eq(books.locationId, locations.id))
+        .leftJoin(editorials, eq(books.editorialId, editorials.id))
+        .where(whereConditions)
+        .orderBy(desc(loans.createdAt))
+        .limit(input.limit)
+        .offset(offset);
+
+      const totalResults = await ctx.db
+        .select({ count: loans.id })
+        .from(loans)
+        .innerJoin(books, eq(loans.bookId, books.id))
+        .leftJoin(authors, eq(books.authorId, authors.id))
+        .where(whereConditions);
+
+      const formattedResults = results.map((result) => ({
+        ...result,
+        book: {
+          ...result.book,
+          editorial: result.editorial ?? "",
+        },
+      }));
+
+      return {
+        results: formattedResults,
+        total: totalResults.length,
+        page: input.page,
+        limit: input.limit,
+      };
     }),
 });

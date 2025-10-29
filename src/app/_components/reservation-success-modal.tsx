@@ -65,6 +65,11 @@ export default function ReservationSuccessModal({
     router.push("/");
   };
 
+  const handleGoToLoans = () => {
+    onClose();
+    router.push("/loans");
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -184,13 +189,22 @@ export default function ReservationSuccessModal({
             </div>
           </div>
 
-          {/* Action button */}
-          <Button
-            onClick={handleGoHome}
-            className="bg-berkeley-blue hover:bg-berkeley-blue/90 w-full rounded-lg py-3 font-semibold text-white"
-          >
-            Volver a Inicio
-          </Button>
+          {/* Action buttons */}
+          <div className="flex gap-3">
+            <Button
+              onClick={handleGoToLoans}
+              className="bg-berkeley-blue hover:bg-berkeley-blue/90 flex-1 rounded-lg py-3 font-semibold text-white"
+            >
+              Ver Mis Préstamos
+            </Button>
+            <Button
+              onClick={handleGoHome}
+              variant="outline"
+              className="flex-1 rounded-lg py-3 font-semibold"
+            >
+              Volver a Inicio
+            </Button>
+          </div>
         </div>
       </div>
     </div>

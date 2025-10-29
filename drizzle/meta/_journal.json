@@ -15,6 +15,13 @@
       "when": 1760499714002,
       "tag": "0001_neat_mephisto",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1761178265777,
+      "tag": "0002_powerful_wolfsbane",
+      "breakpoints": true
     }
   ]
 }

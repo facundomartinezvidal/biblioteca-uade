@@ -6,6 +6,10 @@ import type {
   inferRouterOutputs,
 } from "node_modules/@trpc/server/dist/unstable-core-do-not-import.d-x-roAJpB.mjs";
 import { documentationRouter } from "./routers/documentation";
+import { authRouter } from "./routers/auth";
+import { catalogRouter } from "./routers/catalog";
+import { userRouter } from "./routers/user";
+import { favoritesRouter } from "./routers/favorites";
 
 /**
  * This is the primary router for your server.
@@ -16,6 +20,10 @@ export const appRouter = createTRPCRouter({
   books: booksRouter,
   loans: loansRouter,
   documentation: documentationRouter,
+  auth: authRouter,
+  catalog: catalogRouter,
+  user: userRouter,
+  favorites: favoritesRouter,
 });
 
 // export type definition of API

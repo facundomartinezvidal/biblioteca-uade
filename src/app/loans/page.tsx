@@ -1,6 +1,14 @@
 "use client";
 
-import { History, Search } from "lucide-react";
+import {
+  History,
+  Search,
+  RefreshCw,
+  Loader2,
+  MoreHorizontal,
+  Eye,
+  X,
+} from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Badge } from "~/components/ui/badge";
@@ -11,11 +19,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  TableHead as TableHeadCell,
 } from "~/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 import { Card, CardContent } from "~/components/ui/card";
 import Image from "next/image";
-import LoanDetailsModal from "../_components/loan-details-modal";
 import { useState } from "react";
 import PaginationControls from "../_components/home/pagination-controls";
 import {
@@ -25,8 +37,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
+import { api } from "~/trpc/react";
+import { useRouter } from "next/navigation";
+import LoansTableSkeleton from "./_components/loans-table-skeleton";
+import LoanDetailsPopup from "./_components/loan-details-popup";
+import CancelReservationModal from "./_components/cancel-reservation-modal";
 
-// Local type to mirror the shape expected by LoanDetailsModal
 type LoanStatus = "ACTIVE" | "RESERVED" | "FINISHED" | "EXPIRED" | "CANCELLED";
 type LoanItem = {
   id: string;
@@ -37,10 +53,10 @@ type LoanItem = {
   book: {
     id: string;
     title: string;
-    description: string;
+    description: string | null;
     isbn: string;
     status: string;
-    year: number;
+    year: number | null;
     editorial: string;
     imageUrl: string | null;
     createdAt: string;
@@ -48,21 +64,20 @@ type LoanItem = {
   author: {
     id: string;
     name: string;
-    middleName: string;
+    middleName: string | null;
     lastName: string;
     createdAt: string;
-  };
+  } | null;
   gender: {
     id: string;
     name: string;
     createdAt: string;
-  };
+  } | null;
   location: {
     id: string;
     address: string;
     campus: string;
-    createdAt: string;
-  };
+  } | null;
 };
 
 // Function to get status color
@@ -101,53 +116,6 @@ const getStatusText = (status: string) => {
   }
 };
 
-type ButtonVariant =
-  | "link"
-  | "outline"
-  | "destructive"
-  | "default"
-  | "secondary"
-  | "ghost"
-  | null
-  | undefined;
-type Action = { label: string; variant: ButtonVariant; className?: string };
-
-// Function to get actions based on status
-const getActions = (status: string): { primary: Action; secondary: Action } => {
-  switch (status) {
-    case "ACTIVE":
-      return {
-        primary: { label: "Ver Más", variant: "outline" as const },
-        secondary: { label: "Cancelar", variant: "destructive" as const },
-      };
-    case "RESERVED":
-      return {
-        primary: { label: "Ver Más", variant: "outline" as const },
-        secondary: { label: "Cancelar", variant: "destructive" as const },
-      };
-    case "FINISHED":
-      return {
-        primary: { label: "Ver Más", variant: "outline" as const },
-        secondary: { label: "Renovar", variant: "default" as const },
-      };
-    case "EXPIRED":
-    case "CANCELLED":
-      return {
-        primary: { label: "Ver Más", variant: "outline", className: undefined },
-        secondary: {
-          label: "Reservar ",
-          variant: "default",
-          className: "bg-berkeley-blue text-white",
-        },
-      };
-    default:
-      return {
-        primary: { label: "Ver Más", variant: "outline" },
-        secondary: { label: "Acción", variant: "default" },
-      };
-  }
-};
-
 // Function to format dates
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -159,161 +127,85 @@ const formatDate = (dateString: string) => {
 };
 
 export default function LoansPage() {
-  // Pagination state (kept for UI mock behaviour)
+  const router = useRouter();
+  const utils = api.useUtils();
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
-
-  // Mocked loan data for the UI mockup
-  const mockLoans: LoanItem[] = [
-    {
-      id: "1",
-      userId: "temp-user-id",
-      endDate: "2024-02-14T00:00:00.000Z",
-      status: "ACTIVE",
-      createdAt: "2024-01-14T00:00:00.000Z",
-      book: {
-        id: "b1",
-        title: "Cien años de soledad",
-        description: "",
-        isbn: "",
-        status: "",
-        year: 1967,
-        editorial: "",
-        imageUrl: "/covers/cien-anos-soledad.jpg",
-        createdAt: "2023-01-01T00:00:00.000Z",
-      },
-      author: {
-        id: "a1",
-        name: "Gabriel",
-        middleName: "José",
-        lastName: "García Márquez",
-        createdAt: "2023-01-01T00:00:00.000Z",
-      },
-      gender: {
-        id: "g1",
-        name: "Ficción",
-        createdAt: "2023-01-01T00:00:00.000Z",
-      },
-      location: {
-        id: "l1",
-        address: "Av. Ejemplo 123",
-        campus: "Central",
-        createdAt: "2023-01-01T00:00:00.000Z",
-      },
-    },
-    {
-      id: "2",
-      userId: "temp-user-id",
-      endDate: "2024-02-19T00:00:00.000Z",
-      status: "RESERVED",
-      createdAt: "2024-01-19T00:00:00.000Z",
-      book: {
-        id: "b2",
-        title: "La ciudad y los perros",
-        description: "",
-        isbn: "",
-        status: "",
-        year: 1963,
-        editorial: "",
-        imageUrl: "/covers/ciudad-perros.jpg",
-        createdAt: "2023-01-01T00:00:00.000Z",
-      },
-      author: {
-        id: "a2",
-        name: "Mario",
-        middleName: "",
-        lastName: "Vargas Llosa",
-        createdAt: "2023-01-01T00:00:00.000Z",
-      },
-      gender: {
-        id: "g2",
-        name: "Ficción",
-        createdAt: "2023-01-01T00:00:00.000Z",
-      },
-      location: {
-        id: "l1",
-        address: "Av. Ejemplo 123",
-        campus: "Central",
-        createdAt: "2023-01-01T00:00:00.000Z",
-      },
-    },
-    {
-      id: "3",
-      userId: "temp-user-id",
-      endDate: "2024-01-09T00:00:00.000Z",
-      status: "EXPIRED",
-      createdAt: "2023-12-09T00:00:00.000Z",
-      book: {
-        id: "b3",
-        title: "Rayuela",
-        description: "",
-        isbn: "",
-        status: "",
-        year: 1963,
-        editorial: "",
-        imageUrl: "/covers/rayuela.jpeg",
-        createdAt: "2023-01-01T00:00:00.000Z",
-      },
-      author: {
-        id: "a3",
-        name: "Julio",
-        middleName: "",
-        lastName: "Cortázar",
-        createdAt: "2023-01-01T00:00:00.000Z",
-      },
-      gender: {
-        id: "g3",
-        name: "Ficción",
-        createdAt: "2023-01-01T00:00:00.000Z",
-      },
-      location: {
-        id: "l1",
-        address: "Av. Ejemplo 123",
-        campus: "Central",
-        createdAt: "2023-01-01T00:00:00.000Z",
-      },
-    },
-  ];
-
-  // State for modal
-  const [selectedLoan, setSelectedLoan] = useState<LoanItem | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  // Filters & search
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | LoanStatus>("all");
+  const [selectedLoan, setSelectedLoan] = useState<LoanItem | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [loanToCancel, setLoanToCancel] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+  const [loadingReserveId, setLoadingReserveId] = useState<string | null>(null);
 
-  // Use mock results for the UI mockup
-  const results = mockLoans;
-  const total = mockLoans.length;
+  const { data, isLoading, refetch } = api.loans.getByUserId.useQuery({
+    page,
+    limit,
+    status: statusFilter === "all" ? undefined : statusFilter,
+  });
+
+  const cancelMutation = api.loans.cancelReservation.useMutation({
+    onSuccess: async () => {
+      await refetch();
+      await Promise.all([
+        utils.books.getAll.invalidate(),
+        utils.books.getById.invalidate(),
+        utils.loans.getByUserId.invalidate(),
+        utils.loans.getActive.invalidate(),
+        utils.loans.getStats.invalidate(),
+      ]);
+      setIsCancelModalOpen(false);
+      setLoanToCancel(null);
+    },
+  });
+
+  const results = data?.results ?? [];
+  const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const hasNextPage = page < totalPages;
   const hasPreviousPage = page > 1;
 
-  // Apply client-side filters (current page only)
   const displayedResults = results.filter((loan) => {
-    const matchesStatus =
-      statusFilter === "all" ? true : loan.status === statusFilter;
     const query = search.trim().toLowerCase();
-    const matchesSearch = query
-      ? loan.book.title.toLowerCase().includes(query) ||
-        `${loan.author.name} ${loan.author.middleName} ${loan.author.lastName}`
-          .toLowerCase()
-          .includes(query) ||
-        (loan.book.isbn ?? "").toLowerCase().includes(query)
-      : true;
-    return matchesStatus && matchesSearch;
+    if (!query) return true;
+    const authorName = loan.author
+      ? `${loan.author.name} ${loan.author.middleName ?? ""} ${loan.author.lastName}`
+      : "";
+    return (
+      loan.book.title.toLowerCase().includes(query) ||
+      authorName.toLowerCase().includes(query) ||
+      (loan.book.isbn ?? "").toLowerCase().includes(query)
+    );
   });
 
-  // Function to open modal
   const handleViewMore = (loan: LoanItem) => {
     setSelectedLoan(loan);
-    setIsModalOpen(true);
+    setIsDetailsModalOpen(true);
   };
 
-  // Function to close modal
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
+  const handleCloseDetailsModal = () => {
+    setIsDetailsModalOpen(false);
     setSelectedLoan(null);
+  };
+
+  const handleOpenCancelModal = (loanId: string, bookTitle: string) => {
+    setLoanToCancel({ id: loanId, title: bookTitle });
+    setIsCancelModalOpen(true);
+  };
+
+  const handleConfirmCancel = () => {
+    if (loanToCancel) {
+      cancelMutation.mutate({ loanId: loanToCancel.id });
+    }
+  };
+
+  const handleReserveAgain = (bookId: string) => {
+    setLoadingReserveId(bookId);
+    router.push(`/reserve/${bookId}`);
   };
 
   return (
@@ -371,112 +263,157 @@ export default function LoansPage() {
           </div>
         </div>
 
-        {/* Loans Table (styled like profile table) */}
-        <Card className="shadow-sm">
-          <CardContent className="px-6 py-4">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Libro</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="min-w-[120px]">Desde</TableHead>
-                    <TableHead className="min-w-[120px]">Hasta</TableHead>
-                    <TableHead className="w-[240px] text-center">
-                      Acciones
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {displayedResults.length > 0 ? (
-                    displayedResults.map((loan) => {
-                      const actions = getActions(loan.status);
-                      const primaryClass = actions.primary.className ?? "";
-                      const secondaryClass = actions.secondary.className ?? "";
-                      return (
-                        <TableRow key={loan.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <div className="relative h-14 w-10 flex-shrink-0 overflow-hidden rounded bg-gray-200">
-                                {loan.book.imageUrl ? (
-                                  <Image
-                                    src={loan.book.imageUrl}
-                                    alt={loan.book.title}
-                                    fill
-                                    className="object-cover"
-                                    onError={(e) => {
-                                      const target =
-                                        e.target as HTMLImageElement;
-                                      target.style.display = "none";
-                                    }}
-                                  />
-                                ) : null}
-                              </div>
-                              <div className="min-w-0">
-                                <p className="truncate text-sm font-medium text-gray-900">
-                                  {loan.book.title}
-                                </p>
-                                <p className="truncate text-sm text-gray-600">
-                                  {loan.author.name} {loan.author.middleName}{" "}
-                                  {loan.author.lastName}
-                                </p>
-                              </div>
-                            </div>
-                          </TableCell>
-
-                          <TableCell>
-                            <Badge
-                              className={`${getStatusColor(loan.status)} border-0 text-sm font-medium`}
-                            >
-                              {getStatusText(loan.status)}
-                            </Badge>
-                          </TableCell>
-
-                          <TableCell className="text-sm text-gray-600">
-                            {formatDate(loan.createdAt)}
-                          </TableCell>
-
-                          <TableCell className="text-sm text-gray-600">
-                            {formatDate(loan.endDate)}
-                          </TableCell>
-
-                          <TableCell className="w-[240px] text-right">
-                            <div className="ml-auto flex w-[240px] items-center justify-end gap-2">
-                              <Button
-                                variant={actions.primary.variant}
-                                size="sm"
-                                className={`w-24 ${primaryClass}`}
-                                onClick={() => handleViewMore(loan)}
-                              >
-                                {actions.primary.label}
-                              </Button>
-                              <Button
-                                variant={actions.secondary.variant}
-                                size="sm"
-                                className={`w-28 ${secondaryClass}`}
-                              >
-                                {actions.secondary.label}
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  ) : (
+        {isLoading ? (
+          <LoansTableSkeleton />
+        ) : (
+          <Card className="shadow-sm">
+            <CardContent className="px-6 py-4">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="py-8 text-center text-gray-500"
-                      >
-                        No tienes préstamos registrados
-                      </TableCell>
+                      <TableHead>Libro</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="min-w-[120px]">Desde</TableHead>
+                      <TableHead className="min-w-[120px]">Hasta</TableHead>
+                      <TableHead className="w-[80px] text-right">
+                        Acciones
+                      </TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {displayedResults.length > 0 ? (
+                      displayedResults.map((loan) => {
+                        const canCancel = loan.status === "RESERVED";
+                        const canReserve =
+                          loan.status === "FINISHED" ||
+                          loan.status === "CANCELLED";
+                        const isLoadingReserve =
+                          loadingReserveId === loan.book.id;
+
+                        return (
+                          <TableRow key={loan.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <div className="relative h-14 w-10 flex-shrink-0 overflow-hidden rounded bg-gray-200">
+                                  {loan.book.imageUrl ? (
+                                    <Image
+                                      src={loan.book.imageUrl}
+                                      alt={loan.book.title}
+                                      fill
+                                      className="object-cover"
+                                      onError={(e) => {
+                                        const target =
+                                          e.target as HTMLImageElement;
+                                        target.style.display = "none";
+                                      }}
+                                    />
+                                  ) : null}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-medium text-gray-900">
+                                    {loan.book.title}
+                                  </p>
+                                  <p className="truncate text-sm text-gray-600">
+                                    {loan.author
+                                      ? `${loan.author.name} ${loan.author.middleName ?? ""} ${loan.author.lastName}`
+                                      : "Autor desconocido"}
+                                  </p>
+                                </div>
+                              </div>
+                            </TableCell>
+
+                            <TableCell>
+                              <Badge
+                                className={`${getStatusColor(loan.status)} border-0 text-sm font-medium`}
+                              >
+                                {getStatusText(loan.status)}
+                              </Badge>
+                            </TableCell>
+
+                            <TableCell className="text-sm text-gray-600">
+                              {formatDate(loan.createdAt)}
+                            </TableCell>
+
+                            <TableCell className="text-sm text-gray-600">
+                              {formatDate(loan.endDate)}
+                            </TableCell>
+
+                            <TableCell className="w-[80px] text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Abrir menú</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() => handleViewMore(loan)}
+                                  >
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    Ver Más
+                                  </DropdownMenuItem>
+                                  {canCancel && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleOpenCancelModal(
+                                          loan.id,
+                                          loan.book.title,
+                                        )
+                                      }
+                                      className="text-red-600"
+                                    >
+                                      <X className="mr-2 h-4 w-4" />
+                                      Cancelar Reserva
+                                    </DropdownMenuItem>
+                                  )}
+                                  {canReserve && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleReserveAgain(loan.book.id)
+                                      }
+                                      disabled={isLoadingReserve}
+                                    >
+                                      {isLoadingReserve ? (
+                                        <>
+                                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                          Reservando...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <RefreshCw className="mr-2 h-4 w-4" />
+                                          Reservar Nuevamente
+                                        </>
+                                      )}
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={5}
+                          className="py-8 text-center text-gray-500"
+                        >
+                          No tienes préstamos registrados
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Bottom Pagination */}
         <PaginationControls
@@ -491,12 +428,28 @@ export default function LoansPage() {
         />
       </main>
 
-      {/* Loan details modal */}
       {selectedLoan && (
-        <LoanDetailsModal
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
+        <LoanDetailsPopup
+          isOpen={isDetailsModalOpen}
+          onClose={handleCloseDetailsModal}
           loan={selectedLoan}
+          onCancel={(loanId) => {
+            handleCloseDetailsModal();
+            handleOpenCancelModal(loanId, selectedLoan.book.title);
+          }}
+          onReserve={handleReserveAgain}
+          isLoadingCancel={cancelMutation.isPending}
+          isLoadingReserve={loadingReserveId === selectedLoan.book.id}
+        />
+      )}
+
+      {loanToCancel && (
+        <CancelReservationModal
+          isOpen={isCancelModalOpen}
+          onClose={() => setIsCancelModalOpen(false)}
+          onConfirm={handleConfirmCancel}
+          bookTitle={loanToCancel.title}
+          isLoading={cancelMutation.isPending}
         />
       )}
     </div>
