@@ -88,7 +88,6 @@ export default function ReservePage() {
       alert("Este libro no está disponible para reserva");
       return;
     }
-
     // TODO: Implement real reservation logic
     console.log("Reserva confirmada para:", book.title);
 
