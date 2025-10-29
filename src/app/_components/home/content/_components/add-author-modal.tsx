@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -157,15 +157,26 @@ export function AddAuthorModal({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button
-              type="submit"
-              className="bg-berkeley-blue hover:bg-berkeley-blue/90"
-              disabled={createAuthorMutation.isPending}
+            <form.Subscribe
+              selector={(state) => ({
+                name: state.values.name,
+                lastName: state.values.lastName,
+                isPending: createAuthorMutation.isPending,
+              })}
             >
-              {createAuthorMutation.isPending
-                ? "Agregando..."
-                : "Agregar Autor"}
-            </Button>
+              {({ name, lastName, isPending }) => (
+                <Button
+                  type="submit"
+                  className="bg-berkeley-blue hover:bg-berkeley-blue/90"
+                  disabled={
+                    isPending || !name.trim() || !lastName.trim()
+                  }
+                >
+                  {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isPending ? "Agregando..." : "Agregar Autor"}
+                </Button>
+              )}
+            </form.Subscribe>
           </div>
         </form>
       </div>

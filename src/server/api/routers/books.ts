@@ -259,13 +259,13 @@ export const booksRouter = createTRPCRouter({
       z.object({
         id: z.string(),
         title: z.string().min(1),
-        description: z.string(),
+        description: z.string().optional(),
         isbn: z.string().min(1),
         status: z.enum(["AVAILABLE", "NOT_AVAILABLE", "RESERVED"]),
-        year: z.number().min(1800).max(2030),
-        editorialId: z.string().min(1),
-        authorId: z.string(),
-        genderId: z.string(),
+        year: z.number().min(1800).max(2030).optional(),
+        editorialId: z.string().optional(),
+        authorId: z.string().optional(),
+        genderId: z.string().optional(),
         locationId: z.string().optional(),
         imageUrl: z.string().optional(),
       }),
@@ -300,14 +300,14 @@ export const booksRouter = createTRPCRouter({
   createBook: publicProcedure
     .input(
       z.object({
-        title: z.string().min(1),
-        description: z.string(),
-        isbn: z.string().min(1),
-        status: z.enum(["AVAILABLE", "NOT_AVAILABLE", "RESERVED"]),
-        year: z.number().min(1800).max(2030),
-        editorialId: z.string().min(1),
-        authorId: z.string(),
-        genderId: z.string(),
+        title: z.string().min(1, "El título es obligatorio"),
+        description: z.string().optional(),
+        isbn: z.string().min(1, "El ISBN es obligatorio"),
+        status: z.enum(["AVAILABLE", "NOT_AVAILABLE", "RESERVED"]).optional(),
+        year: z.number().min(1800).max(2030).optional(),
+        editorialId: z.string().optional(),
+        authorId: z.string().optional(),
+        genderId: z.string().optional(),
         locationId: z.string().optional(),
         imageUrl: z.string().optional(),
       }),
@@ -317,6 +317,7 @@ export const booksRouter = createTRPCRouter({
         .insert(books)
         .values({
           ...input,
+          status: input.status ?? "AVAILABLE",
           createdAt: new Date().toISOString(),
         })
         .returning();

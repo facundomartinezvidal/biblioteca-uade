@@ -18,13 +18,13 @@ interface Book {
   author?: string | null;
   authorMiddleName?: string | null;
   authorLastName?: string | null;
-  authorId: string;
+  authorId: string | null;
   isbn: string;
   year?: number | null;
   editorial?: string | null;
-  editorialId: string;
+  editorialId: string | null;
   status: string;
-  genderId: string;
+  genderId: string | null;
   gender?: string | null;
   location?: string | null;
   imageUrl?: string | null;

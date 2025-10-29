@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -121,15 +121,23 @@ export function AddGenderModal({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button
-              type="submit"
-              className="bg-berkeley-blue hover:bg-berkeley-blue/90"
-              disabled={createGenderMutation.isPending}
+            <form.Subscribe
+              selector={(state) => ({
+                name: state.values.name,
+                isPending: createGenderMutation.isPending,
+              })}
             >
-              {createGenderMutation.isPending
-                ? "Agregando..."
-                : "Agregar Género"}
-            </Button>
+              {({ name, isPending }) => (
+                <Button
+                  type="submit"
+                  className="bg-berkeley-blue hover:bg-berkeley-blue/90"
+                  disabled={isPending || !name.trim()}
+                >
+                  {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isPending ? "Agregando..." : "Agregar Género"}
+                </Button>
+              )}
+            </form.Subscribe>
           </div>
         </form>
       </div>

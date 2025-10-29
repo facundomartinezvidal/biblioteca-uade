@@ -1,11 +1,12 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form";
-import { X, Upload } from "lucide-react";
+import { X, Upload, Loader2 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
+import { Combobox } from "~/components/ui/combobox";
 import {
   Select,
   SelectContent,
@@ -13,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { api } from "~/trpc/react";
 import Image from "next/image";
@@ -59,13 +60,6 @@ export function EditBookModal({
   }, []);
 
   const utils = api.useUtils();
-  const updateBookMutation = api.books.updateBook.useMutation({
-    onSuccess: () => {
-      void utils.books.getAllAdmin.invalidate();
-      onSuccess?.();
-      onClose();
-    },
-  });
 
   const { data: authorsData } = api.catalog.getAllAuthors.useQuery();
   const { data: gendersData } = api.catalog.getAllGenders.useQuery();
@@ -82,23 +76,46 @@ export function EditBookModal({
       isbn: book.isbn,
       status: book.status as "AVAILABLE" | "NOT_AVAILABLE" | "RESERVED",
       year: book.year ?? new Date().getFullYear(),
-      editorialId: book.editorialId,
-      authorId: book.authorId,
-      genderId: book.genderId,
+      editorialId: book.editorialId ?? "",
+      authorId: book.authorId ?? "",
+      genderId: book.genderId ?? "",
       locationId: book.location ?? "",
       imageUrl: book.imageUrl ?? "",
     },
     onSubmit: async ({ value }) => {
       updateBookMutation.mutate({
         id: book.id,
-        ...value,
+        title: value.title,
+        description: value.description || undefined,
+        isbn: value.isbn,
+        status: value.status,
+        year: value.year || undefined,
+        editorialId: value.editorialId || undefined,
+        authorId: value.authorId || undefined,
+        genderId: value.genderId || undefined,
+        locationId: value.locationId || undefined,
+        imageUrl: value.imageUrl || undefined,
       });
+    },
+  });
+
+  const handleClose = useCallback(() => {
+    form.reset();
+    setImagePreview(book.imageUrl ?? null);
+    onClose();
+  }, [form, book.imageUrl, onClose]);
+
+  const updateBookMutation = api.books.updateBook.useMutation({
+    onSuccess: () => {
+      void utils.books.getAllAdmin.invalidate();
+      onSuccess?.();
+      onClose();
     },
   });
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
     };
 
     if (isOpen) {
@@ -110,7 +127,7 @@ export function EditBookModal({
       document.removeEventListener("keydown", handleEscape);
       document.body.style.overflow = "unset";
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, handleClose]);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -155,7 +172,7 @@ export function EditBookModal({
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
+        onClick={handleClose}
         aria-hidden
       />
 
@@ -169,7 +186,7 @@ export function EditBookModal({
           <Button
             variant="ghost"
             size="icon"
-            onClick={onClose}
+            onClick={handleClose}
             className="h-8 w-8"
           >
             <X className="h-4 w-4" />
@@ -185,7 +202,7 @@ export function EditBookModal({
         >
           <div className="p-6">
             <div className="flex gap-6">
-              {/* Imagen - Columna Izquierda */}
+              {/* Image - Left Column */}
               <div className="flex-shrink-0">
                 <Label>Imagen del Libro</Label>
                 <div className="relative mt-2 h-80 w-56 overflow-hidden rounded-lg bg-gray-100 shadow-md">
@@ -226,9 +243,9 @@ export function EditBookModal({
                 </div>
               </div>
 
-              {/* Formulario - Columna Derecha */}
+              {/* Form - Right Column */}
               <div className="flex-1 space-y-4">
-                {/* Título */}
+                {/* Title */}
                 <form.Field name="title">
                   {(field) => (
                     <div>
@@ -258,28 +275,23 @@ export function EditBookModal({
                   )}
                 </form.Field>
 
-                {/* Autor y Género en la misma fila */}
+                {/* Author and Genre in the same row */}
                 <div className="grid grid-cols-2 gap-4">
                   <form.Field name="authorId">
                     {(field) => (
                       <div>
                         <Label htmlFor="authorId">Autor *</Label>
-                        <Select
+                        <Combobox
+                          options={authors.map((author) => ({
+                            value: author.id,
+                            label: `${author.name} ${author.middleName ?? ""} ${author.lastName}`.trim(),
+                          }))}
                           value={field.state.value}
                           onValueChange={(value) => field.handleChange(value)}
-                        >
-                          <SelectTrigger id="authorId">
-                            <SelectValue placeholder="Seleccionar autor" />
-                          </SelectTrigger>
-                          <SelectContent className="z-[110]">
-                            {authors.map((author) => (
-                              <SelectItem key={author.id} value={author.id}>
-                                {author.name} {author.middleName}{" "}
-                                {author.lastName}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          placeholder="Seleccionar autor"
+                          searchPlaceholder="Buscar autor..."
+                          emptyText="No se encontraron autores."
+                        />
                       </div>
                     )}
                   </form.Field>
@@ -288,50 +300,39 @@ export function EditBookModal({
                     {(field) => (
                       <div>
                         <Label htmlFor="genderId">Género *</Label>
-                        <Select
+                        <Combobox
+                          options={genders.map((gender) => ({
+                            value: gender.id,
+                            label: gender.name,
+                          }))}
                           value={field.state.value}
                           onValueChange={(value) => field.handleChange(value)}
-                        >
-                          <SelectTrigger id="genderId">
-                            <SelectValue placeholder="Seleccionar género" />
-                          </SelectTrigger>
-                          <SelectContent className="z-[110]">
-                            {genders.map((gender) => (
-                              <SelectItem key={gender.id} value={gender.id}>
-                                {gender.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          placeholder="Seleccionar género"
+                          searchPlaceholder="Buscar género..."
+                          emptyText="No se encontraron géneros."
+                        />
                       </div>
                     )}
                   </form.Field>
                 </div>
 
-                {/* Editorial, Año y Estado en la misma fila */}
+                {/* Editorial, Year and Status in the same row */}
                 <div className="grid grid-cols-3 gap-4">
                   <form.Field name="editorialId">
                     {(field) => (
                       <div>
                         <Label htmlFor="editorialId">Editorial *</Label>
-                        <Select
+                        <Combobox
+                          options={editorials.map((editorial) => ({
+                            value: editorial.id,
+                            label: editorial.name,
+                          }))}
                           value={field.state.value}
                           onValueChange={(value) => field.handleChange(value)}
-                        >
-                          <SelectTrigger id="editorialId">
-                            <SelectValue placeholder="Seleccionar editorial" />
-                          </SelectTrigger>
-                          <SelectContent className="z-[110]">
-                            {editorials.map((editorial) => (
-                              <SelectItem
-                                key={editorial.id}
-                                value={editorial.id}
-                              >
-                                {editorial.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          placeholder="Seleccionar editorial"
+                          searchPlaceholder="Buscar editorial..."
+                          emptyText="No se encontraron editoriales."
+                        />
                       </div>
                     )}
                   </form.Field>
@@ -388,7 +389,7 @@ export function EditBookModal({
                   </form.Field>
                 </div>
 
-                {/* Ubicación */}
+                {/* Location */}
                 <form.Field name="locationId">
                   {(field) => (
                     <div>
@@ -403,7 +404,7 @@ export function EditBookModal({
                   )}
                 </form.Field>
 
-                {/* Descripción */}
+                {/* Description */}
                 <form.Field name="description">
                   {(field) => (
                     <div>
@@ -422,9 +423,9 @@ export function EditBookModal({
             </div>
           </div>
 
-          {/* Footer con botones */}
+          {/* Footer with buttons */}
           <div className="flex justify-end gap-3 border-t p-6">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={handleClose}>
               Cancelar
             </Button>
             <Button
@@ -432,6 +433,9 @@ export function EditBookModal({
               className="bg-berkeley-blue hover:bg-berkeley-blue/90"
               disabled={updateBookMutation.isPending}
             >
+              {updateBookMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               {updateBookMutation.isPending
                 ? "Guardando..."
                 : "Guardar Cambios"}

@@ -1,19 +1,13 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form";
-import { X, Upload } from "lucide-react";
+import { X, Upload, Loader2 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
-import { useEffect, useState, useRef } from "react";
+import { Combobox } from "~/components/ui/combobox";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { api } from "~/trpc/react";
 import Image from "next/image";
@@ -41,15 +35,6 @@ export function AddBookModal({
   }, []);
 
   const utils = api.useUtils();
-  const createBookMutation = api.books.createBook.useMutation({
-    onSuccess: () => {
-      void utils.books.getAllAdmin.invalidate();
-      onSuccess?.();
-      onClose();
-      form.reset();
-      setImagePreview(null);
-    },
-  });
 
   const { data: authorsData } = api.catalog.getAllAuthors.useQuery();
   const { data: gendersData } = api.catalog.getAllGenders.useQuery();
@@ -64,7 +49,6 @@ export function AddBookModal({
       title: "",
       description: "",
       isbn: "",
-      status: "AVAILABLE" as "AVAILABLE" | "NOT_AVAILABLE" | "RESERVED",
       year: new Date().getFullYear(),
       editorialId: "",
       authorId: "",
@@ -73,13 +57,51 @@ export function AddBookModal({
       imageUrl: "",
     },
     onSubmit: async ({ value }) => {
-      createBookMutation.mutate(value);
+      // Validate required fields
+      if (!value.title.trim()) {
+        alert("El título es obligatorio");
+        return;
+      }
+      if (!value.isbn.trim()) {
+        alert("El ISBN es obligatorio");
+        return;
+      }
+
+      // Clean optional empty fields
+      const cleanedValue = {
+        title: value.title,
+        isbn: value.isbn,
+        description: value.description || undefined,
+        status: "AVAILABLE" as const,
+        year: value.year || undefined,
+        editorialId: value.editorialId || undefined,
+        authorId: value.authorId || undefined,
+        genderId: value.genderId || undefined,
+        locationId: value.locationId || undefined,
+        imageUrl: value.imageUrl || undefined,
+      };
+
+      createBookMutation.mutate(cleanedValue);
+    },
+  });
+
+  const handleClose = useCallback(() => {
+    form.reset();
+    setImagePreview(null);
+    onClose();
+  }, [form, onClose]);
+
+  const createBookMutation = api.books.createBook.useMutation({
+    onSuccess: () => {
+      void utils.books.getAllAdmin.invalidate();
+      onSuccess?.();
+      handleClose();
     },
   });
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
     };
 
     if (isOpen) {
@@ -91,7 +113,7 @@ export function AddBookModal({
       document.removeEventListener("keydown", handleEscape);
       document.body.style.overflow = "unset";
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, handleClose]);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -136,7 +158,7 @@ export function AddBookModal({
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
+        onClick={handleClose}
         aria-hidden
       />
 
@@ -160,17 +182,17 @@ export function AddBookModal({
               variant="ghost"
               size="icon"
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="rounded-full hover:bg-gray-100"
             >
               <X className="h-5 w-5" />
             </Button>
           </div>
 
-          {/* Body con dos columnas */}
+          {/* Body with two columns */}
           <div className="p-6">
             <div className="flex gap-6">
-              {/* Columna izquierda - Imagen */}
+              {/* Left Column - Image */}
               <div className="flex w-64 flex-shrink-0 flex-col">
                 <Label className="mb-2 text-sm font-medium">
                   Imagen del Libro
@@ -213,9 +235,9 @@ export function AddBookModal({
                 </div>
               </div>
 
-              {/* Formulario - Columna Derecha */}
+              {/* Form - Right Column */}
               <div className="flex-1 space-y-4">
-                {/* Título */}
+                {/* Title */}
                 <form.Field name="title">
                   {(field) => (
                     <div>
@@ -245,28 +267,23 @@ export function AddBookModal({
                   )}
                 </form.Field>
 
-                {/* Autor y Género en la misma fila */}
+                {/* Author && Gender */}
                 <div className="grid grid-cols-2 gap-4">
                   <form.Field name="authorId">
                     {(field) => (
                       <div>
-                        <Label htmlFor="authorId">Autor *</Label>
-                        <Select
+                        <Label htmlFor="authorId">Autor</Label>
+                        <Combobox
+                          options={authors.map((author) => ({
+                            value: author.id,
+                            label: `${author.name} ${author.middleName ?? ""} ${author.lastName}`.trim(),
+                          }))}
                           value={field.state.value}
                           onValueChange={(value) => field.handleChange(value)}
-                        >
-                          <SelectTrigger id="authorId">
-                            <SelectValue placeholder="Seleccionar autor" />
-                          </SelectTrigger>
-                          <SelectContent className="z-[110]">
-                            {authors.map((author) => (
-                              <SelectItem key={author.id} value={author.id}>
-                                {author.name} {author.middleName}{" "}
-                                {author.lastName}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          placeholder="Seleccionar autor"
+                          searchPlaceholder="Buscar autor..."
+                          emptyText="No se encontraron autores."
+                        />
                       </div>
                     )}
                   </form.Field>
@@ -274,51 +291,40 @@ export function AddBookModal({
                   <form.Field name="genderId">
                     {(field) => (
                       <div>
-                        <Label htmlFor="genderId">Género *</Label>
-                        <Select
+                        <Label htmlFor="genderId">Género</Label>
+                        <Combobox
+                          options={genders.map((gender) => ({
+                            value: gender.id,
+                            label: gender.name,
+                          }))}
                           value={field.state.value}
                           onValueChange={(value) => field.handleChange(value)}
-                        >
-                          <SelectTrigger id="genderId">
-                            <SelectValue placeholder="Seleccionar género" />
-                          </SelectTrigger>
-                          <SelectContent className="z-[110]">
-                            {genders.map((gender) => (
-                              <SelectItem key={gender.id} value={gender.id}>
-                                {gender.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          placeholder="Seleccionar género"
+                          searchPlaceholder="Buscar género..."
+                          emptyText="No se encontraron géneros."
+                        />
                       </div>
                     )}
                   </form.Field>
                 </div>
 
-                {/* Editorial, Año y Estado en la misma fila */}
-                <div className="grid grid-cols-3 gap-4">
+                {/* Editorial && Year */}
+                <div className="grid grid-cols-2 gap-4">
                   <form.Field name="editorialId">
                     {(field) => (
                       <div>
-                        <Label htmlFor="editorialId">Editorial *</Label>
-                        <Select
+                        <Label htmlFor="editorialId">Editorial</Label>
+                        <Combobox
+                          options={editorials.map((editorial) => ({
+                            value: editorial.id,
+                            label: editorial.name,
+                          }))}
                           value={field.state.value}
                           onValueChange={(value) => field.handleChange(value)}
-                        >
-                          <SelectTrigger id="editorialId">
-                            <SelectValue placeholder="Seleccionar editorial" />
-                          </SelectTrigger>
-                          <SelectContent className="z-[110]">
-                            {editorials.map((editorial) => (
-                              <SelectItem
-                                key={editorial.id}
-                                value={editorial.id}
-                              >
-                                {editorial.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          placeholder="Seleccionar editorial"
+                          searchPlaceholder="Buscar editorial..."
+                          emptyText="No se encontraron editoriales."
+                        />
                       </div>
                     )}
                   </form.Field>
@@ -326,7 +332,7 @@ export function AddBookModal({
                   <form.Field name="year">
                     {(field) => (
                       <div>
-                        <Label htmlFor="year">Año *</Label>
+                        <Label htmlFor="year">Año</Label>
                         <Input
                           id="year"
                           type="number"
@@ -341,41 +347,9 @@ export function AddBookModal({
                       </div>
                     )}
                   </form.Field>
-
-                  <form.Field name="status">
-                    {(field) => (
-                      <div>
-                        <Label htmlFor="status">Estado *</Label>
-                        <Select
-                          value={field.state.value}
-                          onValueChange={(value) =>
-                            field.handleChange(
-                              value as
-                                | "AVAILABLE"
-                                | "NOT_AVAILABLE"
-                                | "RESERVED",
-                            )
-                          }
-                        >
-                          <SelectTrigger id="status">
-                            <SelectValue placeholder="Estado" />
-                          </SelectTrigger>
-                          <SelectContent className="z-[110]">
-                            <SelectItem value="AVAILABLE">
-                              Disponible
-                            </SelectItem>
-                            <SelectItem value="NOT_AVAILABLE">
-                              No disponible
-                            </SelectItem>
-                            <SelectItem value="RESERVED">Reservado</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                  </form.Field>
                 </div>
 
-                {/* Ubicación */}
+                {/* Location */}
                 <form.Field name="locationId">
                   {(field) => (
                     <div>
@@ -390,11 +364,11 @@ export function AddBookModal({
                   )}
                 </form.Field>
 
-                {/* Descripción */}
+                {/* Description */}
                 <form.Field name="description">
                   {(field) => (
                     <div>
-                      <Label htmlFor="description">Descripción *</Label>
+                      <Label htmlFor="description">Descripción</Label>
                       <Textarea
                         id="description"
                         value={field.state.value}
@@ -409,18 +383,36 @@ export function AddBookModal({
             </div>
           </div>
 
-          {/* Footer con botones */}
+          {/* Footer with buttons */}
           <div className="flex justify-end gap-3 border-t p-6">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={handleClose}>
               Cancelar
             </Button>
-            <Button
-              type="submit"
-              className="bg-berkeley-blue hover:bg-berkeley-blue/90"
-              disabled={createBookMutation.isPending}
+            <form.Subscribe
+              selector={(state) => ({
+                title: state.values.title,
+                isbn: state.values.isbn,
+              })}
             >
-              {createBookMutation.isPending ? "Agregando..." : "Agregar Libro"}
-            </Button>
+              {({ title, isbn }) => (
+                <Button
+                  type="submit"
+                  className="bg-berkeley-blue hover:bg-berkeley-blue/90"
+                  disabled={
+                    createBookMutation.isPending ||
+                    !title.trim() ||
+                    !isbn.trim()
+                  }
+                >
+                  {createBookMutation.isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {createBookMutation.isPending
+                    ? "Agregando..."
+                    : "Agregar Libro"}
+                </Button>
+              )}
+            </form.Subscribe>
           </div>
         </form>
       </div>
