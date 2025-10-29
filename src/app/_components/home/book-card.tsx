@@ -4,7 +4,16 @@ import Image from "next/image";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
-import { BookOpen, Calendar, Hash, MapPin, Tag, UserRound } from "lucide-react";
+import {
+  BookOpen,
+  Calendar,
+  Hash,
+  MapPin,
+  Tag,
+  UserRound,
+  Heart,
+  Loader2,
+} from "lucide-react";
 
 type BookCardProps = {
   coverUrl?: string | null;
@@ -20,6 +29,7 @@ type BookCardProps = {
   location: string;
   available?: boolean;
   isFavorite?: boolean;
+  isLoadingFavorite?: boolean;
   onViewMore?: () => void;
   onReserve?: () => void;
   onToggleFavorite?: () => void;
@@ -41,6 +51,7 @@ export default function BookCard(props: BookCardProps) {
     location,
     available = true,
     isFavorite = false,
+    isLoadingFavorite = false,
     onViewMore,
     onReserve,
     onToggleFavorite,
@@ -94,19 +105,26 @@ export default function BookCard(props: BookCardProps) {
                 {available ? "Disponible" : "No disponible"}
               </Badge>
 
-              {/* <Button
-                variant="ghost"
-                size="icon"
-                aria-label={
-                  isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"
-                }
-                onClick={onToggleFavorite}
-                className="h-8 w-8 shrink-0"
-              >
-                <Heart
-                  className={`h-4 w-4 ${isFavorite ? "fill-current text-rose-600" : ""}`}
-                />
-              </Button> */}
+              {onToggleFavorite && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={
+                    isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"
+                  }
+                  onClick={onToggleFavorite}
+                  className="h-8 w-8 shrink-0"
+                  disabled={isLoadingFavorite}
+                >
+                  {isLoadingFavorite ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Heart
+                      className={`h-4 w-4 ${isFavorite ? "fill-current text-rose-600" : ""}`}
+                    />
+                  )}
+                </Button>
+              )}
             </div>
           </div>
 

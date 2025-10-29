@@ -20,35 +20,27 @@ interface Book {
   status?: string | null;
 }
 
-interface StudentBooksFavoritesTabProps {
+interface StudentBooksRecommendedTabProps {
   books: Book[];
   isLoading: boolean;
   onReserve: (book: Book) => void;
   onViewMore: (book: Book) => void;
-  favoriteIds?: string[];
-  onToggleFavorite?: (bookId: string) => void;
-  favoriteLoadingIds?: Set<string>;
 }
 
-export function StudentBooksFavoritesTab({
+export function StudentBooksRecommendedTab({
   books,
   isLoading,
   onReserve,
   onViewMore,
-  favoriteIds = [],
-  onToggleFavorite,
-  favoriteLoadingIds,
-}: StudentBooksFavoritesTabProps) {
+}: StudentBooksRecommendedTabProps) {
   const emptyMessage = (
     <div className="col-span-2 flex items-center justify-center py-12">
-      <div className="text-center">
-        <p className="text-lg text-gray-500">
-          No tienes libros en favoritos aún.
-        </p>
-        <p className="mt-2 text-sm text-gray-400">
-          Explora el catálogo y marca tus libros favoritos.
-        </p>
-      </div>
+      <ComingSoon
+        icon={<Clock className="h-6 w-6" />}
+        title="Recomendados"
+        subtitle="Próximamente"
+        description="Estamos trabajando en recomendaciones personalizadas para sugerirte lecturas basadas en tus intereses."
+      />
     </div>
   );
 
@@ -60,9 +52,6 @@ export function StudentBooksFavoritesTab({
       skeletonCount={4}
       onReserve={onReserve}
       onViewMore={onViewMore}
-      favoriteIds={favoriteIds}
-      onToggleFavorite={onToggleFavorite}
-      favoriteLoadingIds={favoriteLoadingIds}
     />
   );
 }
