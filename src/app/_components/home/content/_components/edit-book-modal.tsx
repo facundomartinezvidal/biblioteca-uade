@@ -225,11 +225,11 @@ export function EditBookModal({
       />
 
       <div
-        className="relative z-10 max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white shadow-xl"
+        className="relative z-10 flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-lg bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b p-6">
+        {/* Header - Fixed */}
+        <div className="flex flex-shrink-0 items-center justify-between border-b p-6">
           <h2 className="text-lg font-semibold text-gray-900">Editar Libro</h2>
           <Button
             variant="ghost"
@@ -247,8 +247,10 @@ export function EditBookModal({
             e.stopPropagation();
             void form.handleSubmit();
           }}
+          className="flex max-h-[90vh] flex-col"
         >
-          <div className="p-6">
+          {/* Body - Scrollable */}
+          <div className="flex-1 overflow-y-auto p-6">
             <div className="flex gap-6">
               {/* Image - Left Column */}
               <div className="flex-shrink-0">
@@ -339,11 +341,11 @@ export function EditBookModal({
               </div>
 
               {/* Form - Right Column */}
-              <div className="flex-1 space-y-4">
+              <div className="flex-1 space-y-5">
                 {/* Title */}
                 <form.Field name="title">
                   {(field) => (
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="title">Título *</Label>
                       <Input
                         id="title"
@@ -358,7 +360,7 @@ export function EditBookModal({
                 {/* ISBN */}
                 <form.Field name="isbn">
                   {(field) => (
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="isbn">ISBN *</Label>
                       <Input
                         id="isbn"
@@ -374,7 +376,7 @@ export function EditBookModal({
                 <div className="grid grid-cols-2 gap-4">
                   <form.Field name="authorId">
                     {(field) => (
-                      <div>
+                      <div className="space-y-2">
                         <Label htmlFor="authorId">Autor *</Label>
                         <Combobox
                           options={authors.map((author) => ({
@@ -394,7 +396,7 @@ export function EditBookModal({
 
                   <form.Field name="genderId">
                     {(field) => (
-                      <div>
+                      <div className="space-y-2">
                         <Label htmlFor="genderId">Género *</Label>
                         <Combobox
                           options={genders.map((gender) => ({
@@ -416,7 +418,7 @@ export function EditBookModal({
                 <div className="grid grid-cols-3 gap-4">
                   <form.Field name="editorialId">
                     {(field) => (
-                      <div>
+                      <div className="space-y-2">
                         <Label htmlFor="editorialId">Editorial *</Label>
                         <Combobox
                           options={editorials.map((editorial) => ({
@@ -435,7 +437,7 @@ export function EditBookModal({
 
                   <form.Field name="year">
                     {(field) => (
-                      <div>
+                      <div className="space-y-2">
                         <Label htmlFor="year">Año *</Label>
                         <Input
                           id="year"
@@ -454,7 +456,7 @@ export function EditBookModal({
 
                   <form.Field name="status">
                     {(field) => (
-                      <div>
+                      <div className="space-y-2">
                         <Label htmlFor="status">Estado *</Label>
                         <Select
                           value={field.state.value}
@@ -488,7 +490,7 @@ export function EditBookModal({
                 {/* Location */}
                 <form.Field name="locationId">
                   {(field) => (
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="locationId">Ubicación</Label>
                       <Input
                         id="locationId"
@@ -503,7 +505,7 @@ export function EditBookModal({
                 {/* Description */}
                 <form.Field name="description">
                   {(field) => (
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="description">Descripción</Label>
                       <Textarea
                         id="description"
@@ -519,8 +521,8 @@ export function EditBookModal({
             </div>
           </div>
 
-          {/* Footer with buttons */}
-          <div className="flex justify-end gap-3 border-t p-6">
+          {/* Footer - Fixed */}
+          <div className="flex flex-shrink-0 justify-end gap-3 border-t p-6">
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancelar
             </Button>

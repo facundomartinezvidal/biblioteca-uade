@@ -78,7 +78,7 @@ export function AddAuthorModal({
       />
 
       <div
-        className="relative z-10 w-full max-w-md overflow-hidden rounded-lg bg-white shadow-xl"
+        className="relative z-10 flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-lg bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <form
@@ -87,9 +87,10 @@ export function AddAuthorModal({
             e.stopPropagation();
             void form.handleSubmit();
           }}
+          className="flex max-h-[90vh] flex-col"
         >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b p-6">
+          {/* Header - Fixed */}
+          <div className="flex flex-shrink-0 items-center justify-between border-b p-6">
             <h2 className="text-lg font-semibold text-gray-900">
               Agregar Nuevo Autor
             </h2>
@@ -104,12 +105,12 @@ export function AddAuthorModal({
             </Button>
           </div>
 
-          {/* Body */}
-          <div className="space-y-4 p-6">
+          {/* Body - Scrollable */}
+          <div className="flex-1 space-y-5 overflow-y-auto p-6">
             {/* Nombre */}
             <form.Field name="name">
               {(field) => (
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="name">Nombre *</Label>
                   <Input
                     id="name"
@@ -124,7 +125,7 @@ export function AddAuthorModal({
             {/* Segundo Nombre */}
             <form.Field name="middleName">
               {(field) => (
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="middleName">Segundo Nombre</Label>
                   <Input
                     id="middleName"
@@ -139,7 +140,7 @@ export function AddAuthorModal({
             {/* Apellido */}
             <form.Field name="lastName">
               {(field) => (
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="lastName">Apellido *</Label>
                   <Input
                     id="lastName"
@@ -152,8 +153,8 @@ export function AddAuthorModal({
             </form.Field>
           </div>
 
-          {/* Footer con botones */}
-          <div className="flex justify-end gap-3 border-t p-6">
+          {/* Footer - Fixed */}
+          <div className="flex flex-shrink-0 justify-end gap-3 border-t p-6">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
