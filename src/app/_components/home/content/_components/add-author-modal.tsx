@@ -168,11 +168,11 @@ export function AddAuthorModal({
                 <Button
                   type="submit"
                   className="bg-berkeley-blue hover:bg-berkeley-blue/90"
-                  disabled={
-                    isPending || !name.trim() || !lastName.trim()
-                  }
+                  disabled={isPending || !name.trim() || !lastName.trim()}
                 >
-                  {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   {isPending ? "Agregando..." : "Agregar Autor"}
                 </Button>
               )}

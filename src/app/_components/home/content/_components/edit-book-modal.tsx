@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form";
-import { X, Upload, Loader2 } from "lucide-react";
+import { X, Upload, Loader2, Trash2, ImageIcon } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -19,6 +19,7 @@ import { createPortal } from "react-dom";
 import { api } from "~/trpc/react";
 import Image from "next/image";
 import { supabase } from "~/lib/supabase/client";
+import { Alert, AlertDescription } from "~/components/ui/alert";
 
 interface EditBookModalProps {
   isOpen: boolean;
@@ -53,6 +54,8 @@ export function EditBookModal({
   );
   const [mounted, setMounted] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -102,6 +105,8 @@ export function EditBookModal({
   const handleClose = useCallback(() => {
     form.reset();
     setImagePreview(book.imageUrl ?? null);
+    setUploadError(null);
+    setUploadProgress(0);
     onClose();
   }, [form, book.imageUrl, onClose]);
 
@@ -133,12 +138,42 @@ export function EditBookModal({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Reset error state
+    setUploadError(null);
+
+    // Validate file type
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      setUploadError(
+        "Formato de imagen no válido. Por favor, usa JPG, PNG o WebP.",
+      );
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      setUploadError("La imagen es muy grande. El tamaño máximo es 5MB.");
+      return;
+    }
+
     try {
       setUploadingImage(true);
+      setUploadProgress(10);
+
+      // Create preview immediately
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+        setUploadProgress(30);
+      };
+      reader.readAsDataURL(file);
 
       const fileExtension = file.name.split(".").pop();
       const fileName = `${file.name}`;
       const storagePath = `${book.id}/${fileName}`;
+
+      setUploadProgress(50);
 
       const { error: uploadError } = await supabase.storage
         .from("book_image")
@@ -151,18 +186,31 @@ export function EditBookModal({
         throw uploadError;
       }
 
+      setUploadProgress(80);
+
       const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/book_image/${storagePath}`;
 
-      setImagePreview(publicUrl);
       form.setFieldValue("imageUrl", publicUrl);
+      setUploadProgress(100);
     } catch (error) {
       console.error("Error uploading image:", error);
-      alert("Error al subir la imagen. Por favor, intenta de nuevo.");
+      setUploadError("Error al subir la imagen. Por favor, intenta de nuevo.");
+      setImagePreview(book.imageUrl ?? null);
     } finally {
       setUploadingImage(false);
+      setUploadProgress(0);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImagePreview(null);
+    form.setFieldValue("imageUrl", "");
+    setUploadError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -205,20 +253,63 @@ export function EditBookModal({
               {/* Image - Left Column */}
               <div className="flex-shrink-0">
                 <Label>Imagen del Libro</Label>
-                <div className="relative mt-2 h-80 w-56 overflow-hidden rounded-lg bg-gray-100 shadow-md">
+                <div className="relative mt-2 h-80 w-56 overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 shadow-md">
+                  {uploadingImage && (
+                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/60">
+                      <Loader2 className="h-8 w-8 animate-spin text-white" />
+                      <p className="mt-2 text-sm text-white">
+                        Subiendo imagen...
+                      </p>
+                      {uploadProgress > 0 && (
+                        <div className="mt-2 h-1 w-32 overflow-hidden rounded-full bg-gray-700">
+                          <div
+                            className="h-full bg-white transition-all duration-300"
+                            style={{ width: `${uploadProgress}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {imagePreview ? (
-                    <Image
-                      src={imagePreview}
-                      alt="Preview"
-                      fill
-                      className="object-cover"
-                    />
+                    <>
+                      <Image
+                        src={imagePreview}
+                        alt="Preview"
+                        fill
+                        className="object-cover"
+                      />
+                      {!uploadingImage && (
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 h-8 w-8"
+                          onClick={handleRemoveImage}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </>
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-xs text-gray-400">
-                      Sin imagen
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-4 text-center">
+                      <ImageIcon className="h-12 w-12 text-gray-400" />
+                      <p className="text-xs text-gray-400">
+                        JPG, PNG o WebP
+                        <br />
+                        Máx. 5MB
+                      </p>
                     </div>
                   )}
                 </div>
+
+                {uploadError && (
+                  <Alert variant="destructive" className="mt-2">
+                    <AlertDescription className="text-xs">
+                      {uploadError}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 <div className="mt-3">
                   <Label
                     htmlFor="image-upload"
@@ -229,13 +320,17 @@ export function EditBookModal({
                     }`}
                   >
                     <Upload className="h-4 w-4" />
-                    {uploadingImage ? "Subiendo..." : "Cambiar Imagen"}
+                    {uploadingImage
+                      ? "Subiendo..."
+                      : imagePreview
+                        ? "Cambiar Imagen"
+                        : "Subir Imagen"}
                   </Label>
                   <input
                     ref={fileInputRef}
                     id="image-upload"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
                     className="hidden"
                     onChange={handleImageChange}
                     disabled={uploadingImage}
@@ -284,7 +379,8 @@ export function EditBookModal({
                         <Combobox
                           options={authors.map((author) => ({
                             value: author.id,
-                            label: `${author.name} ${author.middleName ?? ""} ${author.lastName}`.trim(),
+                            label:
+                              `${author.name} ${author.middleName ?? ""} ${author.lastName}`.trim(),
                           }))}
                           value={field.state.value}
                           onValueChange={(value) => field.handleChange(value)}

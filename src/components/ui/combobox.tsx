@@ -59,7 +59,7 @@ export function Combobox({
           className={cn(
             "w-full justify-between",
             !value && "text-muted-foreground",
-            className
+            className,
           )}
           disabled={disabled}
         >
@@ -67,7 +67,7 @@ export function Combobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0 z-[150]" align="start">
+      <PopoverContent className="z-[150] w-full p-0" align="start">
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
@@ -85,7 +85,7 @@ export function Combobox({
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0"
+                      value === option.value ? "opacity-100" : "opacity-0",
                     )}
                   />
                   {option.label}
