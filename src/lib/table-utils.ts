@@ -6,7 +6,7 @@ export const getStatusColor = (status: string) => {
     NOT_AVAILABLE: "bg-red-100 text-red-800",
     RESERVED: "bg-amber-100 text-amber-800",
   };
-  return colors[status] || "bg-gray-100 text-gray-800";
+  return colors[status] ?? "bg-gray-100 text-gray-800";
 };
 
 export const getStatusText = (status: string) => {
@@ -15,7 +15,7 @@ export const getStatusText = (status: string) => {
     NOT_AVAILABLE: "No disponible",
     RESERVED: "Reservado",
   };
-  return text[status] || status;
+  return text[status] ?? status;
 };
 
 export const formatAuthorName = (
@@ -23,10 +23,7 @@ export const formatAuthorName = (
   middleName?: string | null,
   lastName?: string | null,
 ): string => {
-  return [firstName, middleName, lastName]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
+  return [firstName, middleName, lastName].filter(Boolean).join(" ").trim();
 };
 
 export const formatDate = (dateString: string): string => {

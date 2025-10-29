@@ -27,7 +27,7 @@ export function LoansTableSkeleton() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {[...Array(3)].map((_, i) => (
+              {[...Array(3).keys()].map((i) => (
                 <tr key={i} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <Skeleton className="h-16 w-12 rounded" />
