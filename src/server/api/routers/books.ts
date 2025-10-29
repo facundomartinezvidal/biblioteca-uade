@@ -135,9 +135,9 @@ export const booksRouter = createTRPCRouter({
       const totalCountResult = await ctx.db
         .select({ count: count() })
         .from(books)
-        .innerJoin(authors, eq(books.authorId, authors.id))
-        .innerJoin(editorials, eq(books.editorialId, editorials.id))
-        .innerJoin(genders, eq(books.genderId, genders.id))
+        .leftJoin(authors, eq(books.authorId, authors.id))
+        .leftJoin(editorials, eq(books.editorialId, editorials.id))
+        .leftJoin(genders, eq(books.genderId, genders.id))
         .where(whereClause);
 
       const totalCount = totalCountResult[0]?.count ?? 0;
@@ -161,9 +161,9 @@ export const booksRouter = createTRPCRouter({
           createdAt: books.createdAt,
         })
         .from(books)
-        .innerJoin(authors, eq(books.authorId, authors.id))
-        .innerJoin(editorials, eq(books.editorialId, editorials.id))
-        .innerJoin(genders, eq(books.genderId, genders.id))
+        .leftJoin(authors, eq(books.authorId, authors.id))
+        .leftJoin(editorials, eq(books.editorialId, editorials.id))
+        .leftJoin(genders, eq(books.genderId, genders.id))
         .where(whereClause)
         .limit(limit)
         .offset(offset);
@@ -221,9 +221,9 @@ export const booksRouter = createTRPCRouter({
       const totalCountResult = await ctx.db
         .select({ count: count() })
         .from(books)
-        .innerJoin(authors, eq(books.authorId, authors.id))
-        .innerJoin(editorials, eq(books.editorialId, editorials.id))
-        .innerJoin(genders, eq(books.genderId, genders.id))
+        .leftJoin(authors, eq(books.authorId, authors.id))
+        .leftJoin(editorials, eq(books.editorialId, editorials.id))
+        .leftJoin(genders, eq(books.genderId, genders.id))
         .where(whereClause);
 
       const totalCount = totalCountResult[0]?.count ?? 0;
@@ -249,9 +249,9 @@ export const booksRouter = createTRPCRouter({
           createdAt: books.createdAt,
         })
         .from(books)
-        .innerJoin(authors, eq(books.authorId, authors.id))
-        .innerJoin(editorials, eq(books.editorialId, editorials.id))
-        .innerJoin(genders, eq(books.genderId, genders.id))
+        .leftJoin(authors, eq(books.authorId, authors.id))
+        .leftJoin(editorials, eq(books.editorialId, editorials.id))
+        .leftJoin(genders, eq(books.genderId, genders.id))
         .where(whereClause)
         .limit(limit)
         .offset(offset);
@@ -297,9 +297,9 @@ export const booksRouter = createTRPCRouter({
         })
         .from(books)
         .where(eq(books.id, input.id))
-        .innerJoin(authors, eq(books.authorId, authors.id))
-        .innerJoin(editorials, eq(books.editorialId, editorials.id))
-        .innerJoin(genders, eq(books.genderId, genders.id));
+        .leftJoin(authors, eq(books.authorId, authors.id))
+        .leftJoin(editorials, eq(books.editorialId, editorials.id))
+        .leftJoin(genders, eq(books.genderId, genders.id));
       return {
         success: true,
         method: "GET",

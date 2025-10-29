@@ -56,6 +56,7 @@ export function EditBookModal({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -86,18 +87,29 @@ export function EditBookModal({
       imageUrl: book.imageUrl ?? "",
     },
     onSubmit: async ({ value }) => {
+      setUpdateError(null);
+
+      if (!value.title.trim()) {
+        setUpdateError("El título es obligatorio");
+        return;
+      }
+      if (!value.isbn.trim()) {
+        setUpdateError("El ISBN es obligatorio");
+        return;
+      }
+
       updateBookMutation.mutate({
         id: book.id,
-        title: value.title,
-        description: value.description || undefined,
-        isbn: value.isbn,
+        title: value.title.trim(),
+        description: value.description?.trim() || undefined,
+        isbn: value.isbn.trim(),
         status: value.status,
         year: value.year || undefined,
-        editorialId: value.editorialId || undefined,
-        authorId: value.authorId || undefined,
-        genderId: value.genderId || undefined,
-        locationId: value.locationId || undefined,
-        imageUrl: value.imageUrl || undefined,
+        editorialId: value.editorialId?.trim() || undefined,
+        authorId: value.authorId?.trim() || undefined,
+        genderId: value.genderId?.trim() || undefined,
+        locationId: value.locationId?.trim() || undefined,
+        imageUrl: value.imageUrl?.trim() || undefined,
       });
     },
   });
@@ -106,15 +118,22 @@ export function EditBookModal({
     form.reset();
     setImagePreview(book.imageUrl ?? null);
     setUploadError(null);
+    setUpdateError(null);
     setUploadProgress(0);
     onClose();
   }, [form, book.imageUrl, onClose]);
 
   const updateBookMutation = api.books.updateBook.useMutation({
-    onSuccess: () => {
-      void utils.books.getAllAdmin.invalidate();
+    onSuccess: async () => {
+      await utils.books.getAllAdmin.invalidate();
       onSuccess?.();
       onClose();
+    },
+    onError: (error) => {
+      setUpdateError(
+        error.message ||
+          "Error al actualizar el libro. Por favor, intenta de nuevo.",
+      );
     },
   });
 
@@ -251,6 +270,11 @@ export function EditBookModal({
         >
           {/* Body - Scrollable */}
           <div className="flex-1 overflow-y-auto p-6">
+            {updateError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{updateError}</AlertDescription>
+              </Alert>
+            )}
             <div className="flex gap-6">
               {/* Image - Left Column */}
               <div className="flex-shrink-0">

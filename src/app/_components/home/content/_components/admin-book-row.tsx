@@ -83,8 +83,10 @@ export function AdminBookRow({
           </div>
         </TableCell>
         <TableCell className="text-sm">{isbn}</TableCell>
-        <TableCell className="text-sm">{year}</TableCell>
-        <TableCell className="text-sm">{editorial}</TableCell>
+        <TableCell className="text-sm">{year ?? "-"}</TableCell>
+        <TableCell className="text-sm">
+          {editorial ?? "Sin editorial"}
+        </TableCell>
         <TableCell>
           <Badge
             className={`${getStatusColor(status)} border-0 text-sm font-medium`}

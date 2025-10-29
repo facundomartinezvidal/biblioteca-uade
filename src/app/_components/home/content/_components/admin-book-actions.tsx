@@ -40,8 +40,8 @@ export function AdminBookActions({
 
   const utils = api.useUtils();
   const deleteBookMutation = api.books.deleteBook.useMutation({
-    onSuccess: () => {
-      void utils.books.getAllAdmin.invalidate();
+    onSuccess: async () => {
+      await utils.books.getAllAdmin.invalidate();
       onDeleteSuccess?.();
       setShowDeleteDialog(false);
     },

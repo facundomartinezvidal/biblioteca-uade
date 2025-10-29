@@ -8,6 +8,7 @@ import { Label } from "~/components/ui/label";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { api } from "~/trpc/react";
+import { Alert, AlertDescription } from "~/components/ui/alert";
 
 interface AddGenderModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export function AddGenderModal({
   onSuccess,
 }: AddGenderModalProps) {
   const [mounted, setMounted] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -28,11 +30,17 @@ export function AddGenderModal({
 
   const utils = api.useUtils();
   const createGenderMutation = api.catalog.createGender.useMutation({
-    onSuccess: () => {
-      void utils.catalog.getAllGenders.invalidate();
+    onSuccess: async () => {
+      await utils.catalog.getAllGenders.invalidate();
       onSuccess?.();
       onClose();
       form.reset();
+    },
+    onError: (error) => {
+      setCreateError(
+        error.message ||
+          "Error al crear el género. Por favor, intenta de nuevo.",
+      );
     },
   });
 
@@ -41,18 +49,32 @@ export function AddGenderModal({
       name: "",
     },
     onSubmit: async ({ value }) => {
-      createGenderMutation.mutate(value);
+      setCreateError(null);
+
+      if (!value.name.trim()) {
+        setCreateError("El nombre del género es obligatorio");
+        return;
+      }
+
+      createGenderMutation.mutate({
+        name: value.name.trim(),
+      });
     },
   });
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        setCreateError(null);
+        onClose();
+      }
     };
 
     if (isOpen) {
       document.addEventListener("keydown", handleEscape);
       document.body.style.overflow = "hidden";
+    } else {
+      setCreateError(null);
     }
 
     return () => {
@@ -101,6 +123,11 @@ export function AddGenderModal({
 
           {/* Body - Scrollable */}
           <div className="flex-1 overflow-y-auto p-6">
+            {createError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{createError}</AlertDescription>
+              </Alert>
+            )}
             {/* Nombre */}
             <form.Field name="name">
               {(field) => (
