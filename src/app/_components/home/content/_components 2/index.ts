@@ -1,9 +1,0 @@
-export { AdminBooksFilters } from "./admin-books-filters";
-export { AdminBookRow } from "./admin-book-row";
-export { AdminBooksTable } from "./admin-books-table";
-export { AdminBookActions } from "./admin-book-actions";
-export { EditBookModal } from "./edit-book-modal";
-export { AddBookModal } from "./add-book-modal";
-export { AddAuthorModal } from "./add-author-modal";
-export { AddGenderModal } from "./add-gender-modal";
-export { AddEditorialModal } from "./add-editorial-modal";

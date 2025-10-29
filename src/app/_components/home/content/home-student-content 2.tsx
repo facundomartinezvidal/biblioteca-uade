@@ -65,10 +65,17 @@ export function HomeStudentContent() {
     undefined,
   );
 
+  const [reserveLoadingIds, setReserveLoadingIds] = useState<Set<string>>(
+    new Set(),
+  );
+
   const [activeTab, setActiveTab] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(6);
   const [filterKey, setFilterKey] = useState(0);
+  const [favoriteLoadingIds, setFavoriteLoadingIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   // Build query parameters
   const queryParams = useMemo(() => {
@@ -125,6 +132,36 @@ export function HomeStudentContent() {
   // Fetch books
   const { data: booksData, isLoading } = api.books.getAll.useQuery(queryParams);
 
+  // Fetch favorites
+  const { data: favoritesData, isLoading: isLoadingFavorites } =
+    api.favorites.getFavorites.useQuery();
+  const { data: favoriteIds } = api.favorites.getFavoriteIds.useQuery();
+
+  // Fetch user reservations to check which books are reserved/active by current user
+  const { data: userActiveLoansData } = api.loans.getActive.useQuery();
+  const { data: userReservedLoansData } = api.loans.getByUserId.useQuery({
+    page: 1,
+    limit: 100,
+    status: "RESERVED",
+  });
+
+  const userReservedBookIds = useMemo(() => {
+    const reservedBookIds =
+      userReservedLoansData?.results.map((loan) => loan.book.id) ?? [];
+    return reservedBookIds;
+  }, [userReservedLoansData]);
+
+  const userActiveBookIds = useMemo(() => {
+    const activeBookIds =
+      userActiveLoansData?.results.map((loan) => loan.book.id) ?? [];
+    return activeBookIds;
+  }, [userActiveLoansData]);
+
+  // Mutations para favoritos
+  const addFavoriteMutation = api.favorites.addFavorite.useMutation();
+  const removeFavoriteMutation = api.favorites.removeFavorite.useMutation();
+  const utils = api.useUtils();
+
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
@@ -138,6 +175,7 @@ export function HomeStudentContent() {
   ]);
 
   const handleReserve = (book: { id: string }) => {
+    setReserveLoadingIds((prev) => new Set(prev).add(book.id));
     router.push(`/reserve/${book.id}`);
   };
 
@@ -152,8 +190,32 @@ export function HomeStudentContent() {
   };
 
   const handlePopUpReserve = (bookId: string) => {
-    handleClosePopUp();
+    setReserveLoadingIds((prev) => new Set(prev).add(bookId));
     router.push(`/reserve/${bookId}`);
+  };
+
+  const handleToggleFavorite = async (bookId: string) => {
+    const isFav = favoriteIds?.includes(bookId);
+
+    setFavoriteLoadingIds((prev) => new Set(prev).add(bookId));
+
+    try {
+      if (isFav) {
+        await removeFavoriteMutation.mutateAsync({ bookId });
+      } else {
+        await addFavoriteMutation.mutateAsync({ bookId });
+      }
+      await utils.favorites.getFavorites.invalidate();
+      await utils.favorites.getFavoriteIds.invalidate();
+    } catch (error) {
+      console.error("Error al actualizar favorito:", error);
+    } finally {
+      setFavoriteLoadingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(bookId);
+        return next;
+      });
+    }
   };
 
   const clearFilters = () => {
@@ -192,10 +254,7 @@ export function HomeStudentContent() {
   const books = booksData?.response ?? [];
   const pagination = booksData?.pagination;
 
-  const favoritesEnabled = false;
-  const favoriteBooks = favoritesEnabled
-    ? books.filter((book) => book.status === "AVAILABLE").slice(0, 2)
-    : [];
+  const favoriteBooks = favoritesData ?? [];
 
   const recommendedEnabled = false;
   const recommendedBooks = recommendedEnabled
@@ -234,7 +293,7 @@ export function HomeStudentContent() {
               Todos ({pagination?.totalCount ?? 0})
             </TabsTrigger>
             <TabsTrigger value="favorites" className="flex-1">
-              Favoritos
+              Favoritos ({favoriteBooks.length})
             </TabsTrigger>
             <TabsTrigger value="recomended" className="flex-1">
               Recomendados
@@ -247,18 +306,30 @@ export function HomeStudentContent() {
               isLoading={isLoading}
               pagination={pagination}
               onReserve={handleReserve}
+              reserveLoadingIds={reserveLoadingIds}
               onViewMore={handleViewMore}
               onPageChange={setCurrentPage}
               onClearFilters={clearFilters}
+              favoriteIds={favoriteIds ?? []}
+              onToggleFavorite={handleToggleFavorite}
+              favoriteLoadingIds={favoriteLoadingIds}
+              userReservedBookIds={userReservedBookIds}
+              userActiveBookIds={userActiveBookIds}
             />
           </TabsContent>
 
           <TabsContent value="favorites" className="mt-6">
             <StudentBooksFavoritesTab
-              books={favoriteBooks}
-              isLoading={isLoading}
+              books={favoriteBooks as BookSummary[]}
+              isLoading={(isLoadingFavorites as boolean | undefined) ?? false}
               onReserve={handleReserve}
               onViewMore={handleViewMore}
+              favoriteIds={favoriteIds ?? []}
+              onToggleFavorite={handleToggleFavorite}
+              favoriteLoadingIds={favoriteLoadingIds}
+              reserveLoadingIds={reserveLoadingIds}
+              userReservedBookIds={userReservedBookIds}
+              userActiveBookIds={userActiveBookIds}
             />
           </TabsContent>
 
@@ -268,6 +339,7 @@ export function HomeStudentContent() {
               isLoading={isLoading}
               onReserve={handleReserve}
               onViewMore={handleViewMore}
+              reserveLoadingIds={reserveLoadingIds}
             />
           </TabsContent>
         </Tabs>
@@ -279,9 +351,24 @@ export function HomeStudentContent() {
         onClose={handleClosePopUp}
         book={selectedBook}
         onReserve={handlePopUpReserve}
-        onToggleFavorite={() => {
-          // TODO: implementar toggle de favoritos
-        }}
+        onToggleFavorite={handleToggleFavorite}
+        isFavorite={
+          selectedBook
+            ? (favoriteIds?.includes(selectedBook.id) ?? false)
+            : false
+        }
+        isLoadingFavorite={
+          selectedBook ? favoriteLoadingIds.has(selectedBook.id) : false
+        }
+        isLoadingReserve={
+          selectedBook ? reserveLoadingIds.has(selectedBook.id) : false
+        }
+        isReservedByCurrentUser={
+          selectedBook ? userReservedBookIds.includes(selectedBook.id) : false
+        }
+        isActiveByCurrentUser={
+          selectedBook ? userActiveBookIds.includes(selectedBook.id) : false
+        }
       />
     </div>
   );

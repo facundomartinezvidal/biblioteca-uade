@@ -364,6 +364,12 @@ export function HomeStudentContent() {
         isLoadingReserve={
           selectedBook ? reserveLoadingIds.has(selectedBook.id) : false
         }
+        isReservedByCurrentUser={
+          selectedBook ? userReservedBookIds.includes(selectedBook.id) : false
+        }
+        isActiveByCurrentUser={
+          selectedBook ? userActiveBookIds.includes(selectedBook.id) : false
+        }
       />
     </div>
   );

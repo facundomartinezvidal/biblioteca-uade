@@ -160,8 +160,13 @@ export default function LoanUserDetailsPage() {
     onSuccess: async () => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await refetch();
-      await utils.books.getAll.invalidate();
-      await utils.books.getById.invalidate();
+      await Promise.all([
+        utils.books.getAll.invalidate(),
+        utils.books.getById.invalidate(),
+        utils.loans.getByUserId.invalidate(),
+        utils.loans.getActive.invalidate(),
+        utils.loans.getStats.invalidate(),
+      ]);
       setIsCancelModalOpen(false);
       setLoanToCancel(null);
     },

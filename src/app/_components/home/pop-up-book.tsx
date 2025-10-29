@@ -40,19 +40,49 @@ interface PopUpBookProps {
   isFavorite?: boolean;
   isLoadingFavorite?: boolean;
   isLoadingReserve?: boolean;
+  isReservedByCurrentUser?: boolean;
+  isActiveByCurrentUser?: boolean;
 }
 
-const getAvailabilityBadge = (status?: string) => {
-  if (status === "AVAILABLE")
+const getAvailabilityBadge = (
+  status?: string,
+  isReservedByCurrentUser?: boolean,
+  isActiveByCurrentUser?: boolean,
+) => {
+  if (isActiveByCurrentUser) {
+    return (
+      <Badge
+        className="border-0"
+        style={{
+          backgroundColor: "#F5FBEF",
+          color: "#9A6D38",
+        }}
+      >
+        Reserva activa
+      </Badge>
+    );
+  }
+  if (status === "RESERVED" && isReservedByCurrentUser) {
+    return (
+      <Badge className="bg-berkeley-blue/10 text-berkeley-blue border-0">
+        Reservado por ti
+      </Badge>
+    );
+  }
+  if (status === "RESERVED" || status === "NOT_AVAILABLE") {
+    return (
+      <Badge className="border-0 bg-rose-100 text-rose-800">
+        No disponible
+      </Badge>
+    );
+  }
+  if (status === "AVAILABLE") {
     return (
       <Badge className="border-0 bg-emerald-100 text-emerald-800">
         Disponible
       </Badge>
     );
-  if (status === "RESERVED")
-    return (
-      <Badge className="border-0 bg-blue-100 text-blue-800">Reservado</Badge>
-    );
+  }
   return (
     <Badge className="border-0 bg-rose-100 text-rose-800">No disponible</Badge>
   );
@@ -67,6 +97,8 @@ export default function PopUpBook({
   isFavorite = false,
   isLoadingFavorite = false,
   isLoadingReserve = false,
+  isReservedByCurrentUser = false,
+  isActiveByCurrentUser = false,
 }: PopUpBookProps) {
   const router = useRouter();
   // Close modal with Escape key and prevent body scroll
@@ -166,7 +198,11 @@ export default function PopUpBook({
                     </div>
                   )}
                 </div>
-                {getAvailabilityBadge(book.status ?? undefined)}
+                {getAvailabilityBadge(
+                  book.status ?? undefined,
+                  isReservedByCurrentUser,
+                  isActiveByCurrentUser,
+                )}
               </div>
 
               {/* Metadata above synopsis in the right panel */}

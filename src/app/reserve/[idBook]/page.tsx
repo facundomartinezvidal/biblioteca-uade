@@ -58,12 +58,24 @@ export default function ReservePage() {
 
   const { data: favoriteIds } = api.favorites.getFavoriteIds.useQuery();
 
+  const { data: userActiveLoansData } = api.loans.getActive.useQuery();
+  const { data: userReservedLoansData } = api.loans.getByUserId.useQuery({
+    page: 1,
+    limit: 100,
+    status: "RESERVED",
+  });
+
   const addFavoriteMutation = api.favorites.addFavorite.useMutation();
   const removeFavoriteMutation = api.favorites.removeFavorite.useMutation();
   const createReservationMutation = api.loans.createReservation.useMutation();
   const utils = api.useUtils();
 
   const book = bookData?.response?.[0];
+
+  const userReservedBookIds =
+    userReservedLoansData?.results.map((loan) => loan.book.id) ?? [];
+  const userActiveBookIds =
+    userActiveLoansData?.results.map((loan) => loan.book.id) ?? [];
 
   // Filter recommended books (excluding the current book and taking only some)
   const recommendedBooks =
@@ -91,7 +103,16 @@ export default function ReservePage() {
 
     try {
       await createReservationMutation.mutateAsync({ bookId: book.id });
-      await utils.books.getById.invalidate({ id: bookId });
+
+      // Invalidar todas las queries relacionadas para actualizar el estado
+      await Promise.all([
+        utils.books.getById.invalidate({ id: bookId }),
+        utils.books.getAll.invalidate(),
+        utils.loans.getByUserId.invalidate(),
+        utils.loans.getActive.invalidate(),
+        utils.loans.getStats.invalidate(),
+      ]);
+
       setShowSuccessModal(true);
     } catch (error) {
       alert(
@@ -218,6 +239,12 @@ export default function ReservePage() {
         }
         isLoadingReserve={
           selectedBook ? reserveLoadingIds.has(selectedBook.id) : false
+        }
+        isReservedByCurrentUser={
+          selectedBook ? userReservedBookIds.includes(selectedBook.id) : false
+        }
+        isActiveByCurrentUser={
+          selectedBook ? userActiveBookIds.includes(selectedBook.id) : false
         }
       />
     </div>

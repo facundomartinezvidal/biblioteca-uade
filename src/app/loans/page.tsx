@@ -151,8 +151,13 @@ export default function LoansPage() {
   const cancelMutation = api.loans.cancelReservation.useMutation({
     onSuccess: async () => {
       await refetch();
-      await utils.books.getAll.invalidate();
-      await utils.books.getById.invalidate();
+      await Promise.all([
+        utils.books.getAll.invalidate(),
+        utils.books.getById.invalidate(),
+        utils.loans.getByUserId.invalidate(),
+        utils.loans.getActive.invalidate(),
+        utils.loans.getStats.invalidate(),
+      ]);
       setIsCancelModalOpen(false);
       setLoanToCancel(null);
     },
