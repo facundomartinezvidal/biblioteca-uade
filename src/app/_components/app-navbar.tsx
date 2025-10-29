@@ -39,7 +39,7 @@ export default function AppNavbar() {
   if (user?.rol === "admin") {
     navLinks = [
       { href: routes.home, label: "Libros" },
-      { href: routes.loans, label: "Usuarios" },
+      { href: routes.users, label: "Usuarios" },
       { href: routes.profile, label: "Perfil" },
     ];
   } else if (user?.rol === "estudiante") {

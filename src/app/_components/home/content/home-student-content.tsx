@@ -137,7 +137,7 @@ export function HomeStudentContent() {
     api.favorites.getFavorites.useQuery();
   const { data: favoriteIds } = api.favorites.getFavoriteIds.useQuery();
 
-  // Fetch user reservations (both RESERVED and ACTIVE) to check which books are reserved by current user
+  // Fetch user reservations to check which books are reserved/active by current user
   const { data: userActiveLoansData } = api.loans.getActive.useQuery();
   const { data: userReservedLoansData } = api.loans.getByUserId.useQuery({
     page: 1,
@@ -146,12 +146,16 @@ export function HomeStudentContent() {
   });
 
   const userReservedBookIds = useMemo(() => {
-    const activeBookIds =
-      userActiveLoansData?.results.map((loan) => loan.book.id) ?? [];
     const reservedBookIds =
       userReservedLoansData?.results.map((loan) => loan.book.id) ?? [];
-    return [...activeBookIds, ...reservedBookIds];
-  }, [userActiveLoansData, userReservedLoansData]);
+    return reservedBookIds;
+  }, [userReservedLoansData]);
+
+  const userActiveBookIds = useMemo(() => {
+    const activeBookIds =
+      userActiveLoansData?.results.map((loan) => loan.book.id) ?? [];
+    return activeBookIds;
+  }, [userActiveLoansData]);
 
   // Mutations para favoritos
   const addFavoriteMutation = api.favorites.addFavorite.useMutation();
@@ -311,6 +315,7 @@ export function HomeStudentContent() {
               onToggleFavorite={handleToggleFavorite}
               favoriteLoadingIds={favoriteLoadingIds}
               userReservedBookIds={userReservedBookIds}
+              userActiveBookIds={userActiveBookIds}
             />
           </TabsContent>
 
@@ -325,6 +330,7 @@ export function HomeStudentContent() {
               favoriteLoadingIds={favoriteLoadingIds}
               reserveLoadingIds={reserveLoadingIds}
               userReservedBookIds={userReservedBookIds}
+              userActiveBookIds={userActiveBookIds}
             />
           </TabsContent>
 

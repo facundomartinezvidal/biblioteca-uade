@@ -30,6 +30,7 @@ type BookCardProps = {
   available?: boolean;
   status?: "AVAILABLE" | "NOT_AVAILABLE" | "RESERVED";
   isReservedByCurrentUser?: boolean;
+  isActiveByCurrentUser?: boolean;
   isFavorite?: boolean;
   isLoadingFavorite?: boolean;
   isLoadingReserve?: boolean;
@@ -55,6 +56,7 @@ export default function BookCard(props: BookCardProps) {
     available = true,
     status,
     isReservedByCurrentUser = false,
+    isActiveByCurrentUser = false,
     isFavorite = false,
     isLoadingFavorite = false,
     isLoadingReserve = false,
@@ -68,6 +70,19 @@ export default function BookCard(props: BookCardProps) {
     `${authorFirstName} ${authorMiddleName} ${authorLastName}`.trim();
 
   const getStatusBadge = () => {
+    if (isActiveByCurrentUser) {
+      return (
+        <Badge
+          className="border-0"
+          style={{
+            backgroundColor: "#F5FBEF",
+            color: "#9A6D38",
+          }}
+        >
+          Reserva activa
+        </Badge>
+      );
+    }
     if (status === "RESERVED" && isReservedByCurrentUser) {
       return (
         <Badge className="bg-berkeley-blue/10 text-berkeley-blue border-0">

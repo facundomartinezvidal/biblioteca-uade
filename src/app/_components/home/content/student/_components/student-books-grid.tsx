@@ -31,6 +31,7 @@ interface StudentBooksGridProps {
   onToggleFavorite?: (bookId: string) => void;
   favoriteLoadingIds?: Set<string>;
   userReservedBookIds?: string[];
+  userActiveBookIds?: string[];
 }
 
 export function StudentBooksGrid({
@@ -45,6 +46,7 @@ export function StudentBooksGrid({
   onToggleFavorite,
   favoriteLoadingIds,
   userReservedBookIds = [],
+  userActiveBookIds = [],
 }: StudentBooksGridProps) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -75,6 +77,7 @@ export function StudentBooksGrid({
                     | undefined
                 }
                 isReservedByCurrentUser={userReservedBookIds.includes(book.id)}
+                isActiveByCurrentUser={userActiveBookIds.includes(book.id)}
                 coverUrl={book.imageUrl}
                 isFavorite={favoriteIds.includes(book.id)}
                 isLoadingFavorite={favoriteLoadingIds?.has(book.id) ?? false}
