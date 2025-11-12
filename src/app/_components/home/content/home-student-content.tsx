@@ -47,6 +47,9 @@ export function HomeStudentContent() {
     undefined,
   );
   const [formYearTo, setFormYearTo] = useState<number | undefined>(undefined);
+  const [formLocation, setFormLocation] = useState<string | undefined>(
+    undefined,
+  );
 
   // Applied filter states
   const [appliedGenre, setAppliedGenre] = useState<string | undefined>(
@@ -62,6 +65,9 @@ export function HomeStudentContent() {
     undefined,
   );
   const [appliedYearTo, setAppliedYearTo] = useState<number | undefined>(
+    undefined,
+  );
+  const [appliedLocation, setAppliedLocation] = useState<string | undefined>(
     undefined,
   );
 
@@ -86,6 +92,7 @@ export function HomeStudentContent() {
       editorial?: string;
       yearFrom?: number;
       yearTo?: number;
+      locationId?: string;
       page: number;
       limit: number;
     } = {
@@ -117,6 +124,10 @@ export function HomeStudentContent() {
       params.yearTo = appliedYearTo;
     }
 
+    if (appliedLocation) {
+      params.locationId = appliedLocation;
+    }
+
     return params;
   }, [
     searchTerm,
@@ -125,6 +136,7 @@ export function HomeStudentContent() {
     appliedEditorial,
     appliedYearFrom,
     appliedYearTo,
+    appliedLocation,
     currentPage,
     pageSize,
   ]);
@@ -172,6 +184,7 @@ export function HomeStudentContent() {
     appliedEditorial,
     appliedYearFrom,
     appliedYearTo,
+    appliedLocation,
   ]);
 
   const handleReserve = (book: { id: string }) => {
@@ -226,11 +239,13 @@ export function HomeStudentContent() {
     setFormEditorial(undefined);
     setFormYearFrom(undefined);
     setFormYearTo(undefined);
+    setFormLocation(undefined);
     setAppliedGenre(undefined);
     setAppliedAvailability(undefined);
     setAppliedEditorial(undefined);
     setAppliedYearFrom(undefined);
     setAppliedYearTo(undefined);
+    setAppliedLocation(undefined);
     setCurrentPage(1);
     setFilterKey((prev) => prev + 1);
   };
@@ -240,6 +255,7 @@ export function HomeStudentContent() {
     setAppliedEditorial(formEditorial);
     setAppliedYearFrom(formYearFrom);
     setAppliedYearTo(formYearTo);
+    setAppliedLocation(formLocation);
 
     if (formAvailability === "disponible") {
       setAppliedAvailability("AVAILABLE");
@@ -277,12 +293,14 @@ export function HomeStudentContent() {
           formEditorial={formEditorial}
           formYearFrom={formYearFrom}
           formYearTo={formYearTo}
+          formLocation={formLocation}
           onSearchChange={setSearchTerm}
           onGenreChange={setFormGenre}
           onAvailabilityChange={setFormAvailability}
           onEditorialChange={setFormEditorial}
           onYearFromChange={setFormYearFrom}
           onYearToChange={setFormYearTo}
+          onLocationChange={setFormLocation}
           onFilterCancel={clearFilters}
           onFilterSubmit={applyFilters}
         />
