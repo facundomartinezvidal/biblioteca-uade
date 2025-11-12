@@ -174,10 +174,9 @@ export const penaltiesRouter = createTRPCRouter({
       const userId = ctx.user.id;
       const offset = (input.page - 1) * input.limit;
 
-      const whereConditions =
-        input.status
-          ? and(eq(penalties.userId, userId), eq(penalties.status, input.status))
-          : eq(penalties.userId, userId);
+      const whereConditions = input.status
+        ? and(eq(penalties.userId, userId), eq(penalties.status, input.status))
+        : eq(penalties.userId, userId);
 
       const results = await ctx.db
         .select({
@@ -404,7 +403,12 @@ export const penaltiesRouter = createTRPCRouter({
     ).length;
 
     const totalAmount = allPenalties.reduce((sum, penalty) => {
-      return sum + (penalty.status !== "PAID" ? parseFloat(penalty.sanctionAmount ?? "0") : 0);
+      return (
+        sum +
+        (penalty.status !== "PAID"
+          ? parseFloat(penalty.sanctionAmount ?? "0")
+          : 0)
+      );
     }, 0);
 
     const now = new Date();

@@ -101,7 +101,7 @@ const getStatusBadge = (status: "PENDING" | "PAID" | "EXPIRED") => {
   }
   if (status === "EXPIRED") {
     return (
-      <Badge className="border-0 bg-orange-600 text-white text-sm">
+      <Badge className="border-0 bg-orange-600 text-sm text-white">
         Vencida
       </Badge>
     );
@@ -289,8 +289,10 @@ export default function PenaltiesPage() {
 
                         return (
                           <TableRow key={penalty.id}>
-                            <TableCell className="text-sm text-gray-600 font-mono">
-                              {penalty.loanId ? penalty.loanId.slice(0, 8) + "..." : "N/A"}
+                            <TableCell className="font-mono text-sm text-gray-600">
+                              {penalty.loanId
+                                ? penalty.loanId.slice(0, 8) + "..."
+                                : "N/A"}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-3">
@@ -381,7 +383,8 @@ export default function PenaltiesPage() {
                                       ) : (
                                         <>
                                           <DollarSign className="mr-2 h-4 w-4" />
-                                          Pagar {penalty.sanction?.amount ?? "0"}
+                                          Pagar{" "}
+                                          {penalty.sanction?.amount ?? "0"}
                                         </>
                                       )}
                                     </DropdownMenuItem>

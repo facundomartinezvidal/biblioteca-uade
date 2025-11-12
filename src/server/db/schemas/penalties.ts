@@ -1,8 +1,4 @@
-import {
-  pgTable,
-  uuid,
-  timestamp,
-} from "drizzle-orm/pg-core";
+import { pgTable, uuid, timestamp } from "drizzle-orm/pg-core";
 import { loans } from "./loans";
 import { sanctions } from "./sanctions";
 import { penaltyStatusEnum } from "../enums";

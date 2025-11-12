@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  AlertTriangle,
-  Search,
-  ArrowLeft,
-} from "lucide-react";
+import { AlertTriangle, Search, ArrowLeft } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Badge } from "~/components/ui/badge";
@@ -40,9 +36,15 @@ const getStatusBadge = (status: "PENDING" | "PAID" | "EXPIRED") => {
     );
   }
   if (status === "EXPIRED") {
-    return <Badge className="border-0 bg-orange-600 text-white text-sm">Vencida</Badge>;
+    return (
+      <Badge className="border-0 bg-orange-600 text-sm text-white">
+        Vencida
+      </Badge>
+    );
   }
-  return <Badge className="border-0 bg-red-600 text-white text-sm">Pendiente</Badge>;
+  return (
+    <Badge className="border-0 bg-red-600 text-sm text-white">Pendiente</Badge>
+  );
 };
 
 const formatDate = (dateString: string | Date | null) => {
@@ -107,7 +109,10 @@ export default function PenaltyUserDetailsPage() {
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-6 w-6" />
             <h1 className="text-2xl font-semibold tracking-tight">
-              Multas de {isLoadingStudent ? "..." : `${studentData?.nombre ?? ""} ${studentData?.apellido ?? ""}`}
+              Multas de{" "}
+              {isLoadingStudent
+                ? "..."
+                : `${studentData?.nombre ?? ""} ${studentData?.apellido ?? ""}`}
             </h1>
           </div>
         </div>
@@ -178,8 +183,10 @@ export default function PenaltyUserDetailsPage() {
                       results.map((penalty) => {
                         return (
                           <TableRow key={penalty.id}>
-                            <TableCell className="text-sm text-gray-600 font-mono">
-                              {penalty.loanId ? penalty.loanId.slice(0, 8) + "..." : "N/A"}
+                            <TableCell className="font-mono text-sm text-gray-600">
+                              {penalty.loanId
+                                ? penalty.loanId.slice(0, 8) + "..."
+                                : "N/A"}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-3">

@@ -84,9 +84,7 @@ const getStatusBadge = (status: "PENDING" | "PAID" | "EXPIRED") => {
     );
   }
   if (status === "EXPIRED") {
-    return (
-      <Badge className="border-0 bg-orange-600 text-white">Vencida</Badge>
-    );
+    return <Badge className="border-0 bg-orange-600 text-white">Vencida</Badge>;
   }
   return <Badge className="border-0 bg-red-600 text-white">Pendiente</Badge>;
 };
@@ -255,11 +253,11 @@ export default function PenaltyDetailsPopup({
                     <span className="text-sm font-medium text-gray-600">
                       ID del Préstamo
                     </span>
-                    <code className="text-xs font-mono text-gray-900 bg-white px-2 py-1 rounded border">
+                    <code className="rounded border bg-white px-2 py-1 font-mono text-xs text-gray-900">
                       {penalty.loanId ?? "N/A"}
                     </code>
                   </div>
-                  
+
                   {penalty.sanction && (
                     <div className="flex items-center justify-between rounded-lg bg-amber-50 p-3">
                       <span className="text-sm font-medium text-gray-600">

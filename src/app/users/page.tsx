@@ -163,7 +163,9 @@ export default function UsersPage() {
                                   Ver Préstamos
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() => handleViewPenalties(student.id)}
+                                  onClick={() =>
+                                    handleViewPenalties(student.id)
+                                  }
                                 >
                                   <AlertCircle className="mr-2 h-4 w-4" />
                                   Ver Multas
