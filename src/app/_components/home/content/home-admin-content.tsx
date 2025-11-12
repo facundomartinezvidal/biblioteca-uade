@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Plus, UserPlus, Tags, Building2 } from "lucide-react";
+import { BookOpen, Plus, UserPlus, Tags, Building2, Settings } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import PaginationControls from "~/app/_components/home/pagination-controls";
 import { Button } from "~/components/ui/button";
@@ -13,6 +13,7 @@ import {
   AddGenderModal,
   AddEditorialModal,
 } from "./_components";
+import { ManageCatalogModals } from "./_components/manage-catalog-modals";
 
 export function HomeAdminContent() {
   const [search, setSearch] = useState("");
@@ -26,6 +27,7 @@ export function HomeAdminContent() {
   const [showAddAuthorModal, setShowAddAuthorModal] = useState(false);
   const [showAddGenderModal, setShowAddGenderModal] = useState(false);
   const [showAddEditorialModal, setShowAddEditorialModal] = useState(false);
+  const [manageType, setManageType] = useState<"author"|"gender"|"editorial"|null>(null);
 
   const utils = api.useUtils();
 
@@ -98,6 +100,27 @@ export function HomeAdminContent() {
               <Tags className="mr-2 h-4 w-4" />
               Género
             </Button>
+            <Button
+              onClick={() => setManageType("author")}
+              variant="outline"
+              className="border-berkeley-blue text-berkeley-blue hover:bg-berkeley-blue/10"
+            >
+              <Settings className="mr-2 h-4 w-4" /> Gest. Autores
+            </Button>
+            <Button
+              onClick={() => setManageType("editorial")}
+              variant="outline"
+              className="border-berkeley-blue text-berkeley-blue hover:bg-berkeley-blue/10"
+            >
+              <Settings className="mr-2 h-4 w-4" /> Gest. Editoriales
+            </Button>
+            <Button
+              onClick={() => setManageType("gender")}
+              variant="outline"
+              className="border-berkeley-blue text-berkeley-blue hover:bg-berkeley-blue/10"
+            >
+              <Settings className="mr-2 h-4 w-4" /> Gest. Géneros
+            </Button>
           </div>
         </div>
         <p className="text-muted-foreground mt-1 text-sm">
@@ -151,6 +174,13 @@ export function HomeAdminContent() {
           isOpen={showAddGenderModal}
           onClose={() => setShowAddGenderModal(false)}
         />
+        {manageType && (
+          <ManageCatalogModals
+            open={!!manageType}
+            type={manageType}
+            onClose={() => setManageType(null)}
+          />
+        )}
       </main>
     </div>
   );

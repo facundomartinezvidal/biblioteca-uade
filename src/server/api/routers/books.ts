@@ -312,7 +312,9 @@ export const booksRouter = createTRPCRouter({
         id: z.string(),
         title: z.string().min(1),
         description: z.string().optional(),
-        isbn: z.string().min(1),
+        isbn: z
+          .string()
+          .regex(/^[0-9]{10}$|^[0-9]{13}$/,{ message: "El ISBN debe tener 10 o 13 dígitos numéricos" }),
         status: z.enum(["AVAILABLE", "NOT_AVAILABLE", "RESERVED"]),
         year: z.number().min(1800).max(2030).optional(),
         editorialId: z.string().optional(),
@@ -354,7 +356,9 @@ export const booksRouter = createTRPCRouter({
       z.object({
         title: z.string().min(1, "El título es obligatorio"),
         description: z.string().optional(),
-        isbn: z.string().min(1, "El ISBN es obligatorio"),
+        isbn: z
+          .string()
+          .regex(/^[0-9]{10}$|^[0-9]{13}$/,{ message: "El ISBN debe ser numérico y contener exactamente 10 o 13 dígitos" }),
         status: z.enum(["AVAILABLE", "NOT_AVAILABLE", "RESERVED"]).optional(),
         year: z.number().min(1800).max(2030).optional(),
         editorialId: z.string().optional(),
