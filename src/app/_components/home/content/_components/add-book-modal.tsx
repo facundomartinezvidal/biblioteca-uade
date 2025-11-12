@@ -30,6 +30,7 @@ export function AddBookModal({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [tempBookId] = useState(() => crypto.randomUUID());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -60,28 +61,28 @@ export function AddBookModal({
       imageUrl: "",
     },
     onSubmit: async ({ value }) => {
-      // Validate required fields
+      setCreateError(null);
+
       if (!value.title.trim()) {
-        alert("El título es obligatorio");
+        setCreateError("El título es obligatorio");
         return;
       }
       if (!value.isbn.trim()) {
-        alert("El ISBN es obligatorio");
+        setCreateError("El ISBN es obligatorio");
         return;
       }
 
-      // Clean optional empty fields
       const cleanedValue = {
-        title: value.title,
-        isbn: value.isbn,
-        description: value.description || undefined,
+        title: value.title.trim(),
+        isbn: value.isbn.trim(),
+        description: value.description?.trim() || undefined,
         status: "AVAILABLE" as const,
         year: value.year || undefined,
-        editorialId: value.editorialId || undefined,
-        authorId: value.authorId || undefined,
-        genderId: value.genderId || undefined,
-        locationId: value.locationId || undefined,
-        imageUrl: value.imageUrl || undefined,
+        editorialId: value.editorialId?.trim() || undefined,
+        authorId: value.authorId?.trim() || undefined,
+        genderId: value.genderId?.trim() || undefined,
+        locationId: value.locationId?.trim() || undefined,
+        imageUrl: value.imageUrl?.trim() || undefined,
       };
 
       createBookMutation.mutate(cleanedValue);
@@ -92,15 +93,22 @@ export function AddBookModal({
     form.reset();
     setImagePreview(null);
     setUploadError(null);
+    setCreateError(null);
     setUploadProgress(0);
     onClose();
   }, [form, onClose]);
 
   const createBookMutation = api.books.createBook.useMutation({
-    onSuccess: () => {
-      void utils.books.getAllAdmin.invalidate();
+    onSuccess: async () => {
+      await utils.books.getAllAdmin.invalidate();
       onSuccess?.();
       handleClose();
+    },
+    onError: (error) => {
+      setCreateError(
+        error.message ||
+          "Error al crear el libro. Por favor, intenta de nuevo.",
+      );
     },
   });
 
@@ -240,6 +248,11 @@ export function AddBookModal({
 
           {/* Body - Scrollable */}
           <div className="flex-1 overflow-y-auto p-6">
+            {createError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{createError}</AlertDescription>
+              </Alert>
+            )}
             <div className="flex gap-6">
               {/* Left Column - Image */}
               <div className="flex w-64 flex-shrink-0 flex-col">

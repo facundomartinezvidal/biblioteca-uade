@@ -8,6 +8,7 @@ import { Label } from "~/components/ui/label";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { api } from "~/trpc/react";
+import { Alert, AlertDescription } from "~/components/ui/alert";
 
 interface AddAuthorModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export function AddAuthorModal({
   onSuccess,
 }: AddAuthorModalProps) {
   const [mounted, setMounted] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -28,11 +30,17 @@ export function AddAuthorModal({
 
   const utils = api.useUtils();
   const createAuthorMutation = api.catalog.createAuthor.useMutation({
-    onSuccess: () => {
-      void utils.catalog.getAllAuthors.invalidate();
+    onSuccess: async () => {
+      await utils.catalog.getAllAuthors.invalidate();
       onSuccess?.();
       onClose();
       form.reset();
+    },
+    onError: (error) => {
+      setCreateError(
+        error.message ||
+          "Error al crear el autor. Por favor, intenta de nuevo.",
+      );
     },
   });
 
@@ -43,22 +51,38 @@ export function AddAuthorModal({
       lastName: "",
     },
     onSubmit: async ({ value }) => {
+      setCreateError(null);
+
+      if (!value.name.trim()) {
+        setCreateError("El nombre es obligatorio");
+        return;
+      }
+      if (!value.lastName.trim()) {
+        setCreateError("El apellido es obligatorio");
+        return;
+      }
+
       createAuthorMutation.mutate({
-        name: value.name,
-        middleName: value.middleName || undefined,
-        lastName: value.lastName,
+        name: value.name.trim(),
+        middleName: value.middleName?.trim() || undefined,
+        lastName: value.lastName.trim(),
       });
     },
   });
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        setCreateError(null);
+        onClose();
+      }
     };
 
     if (isOpen) {
       document.addEventListener("keydown", handleEscape);
       document.body.style.overflow = "hidden";
+    } else {
+      setCreateError(null);
     }
 
     return () => {
@@ -107,6 +131,11 @@ export function AddAuthorModal({
 
           {/* Body - Scrollable */}
           <div className="flex-1 space-y-5 overflow-y-auto p-6">
+            {createError && (
+              <Alert variant="destructive">
+                <AlertDescription>{createError}</AlertDescription>
+              </Alert>
+            )}
             {/* Nombre */}
             <form.Field name="name">
               {(field) => (

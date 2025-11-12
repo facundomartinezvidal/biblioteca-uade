@@ -23,7 +23,11 @@ export const formatAuthorName = (
   middleName?: string | null,
   lastName?: string | null,
 ): string => {
-  return [firstName, middleName, lastName].filter(Boolean).join(" ").trim();
+  const name = [firstName, middleName, lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  return name || "Sin autor";
 };
 
 export const formatDate = (dateString: string): string => {
