@@ -142,24 +142,69 @@ export function HomeStudentContent() {
   ]);
 
   // Fetch books
-  const { data: booksData, isLoading } = api.books.getAll.useQuery(queryParams);
+  const { data: booksData, isLoading } = api.books.getAll.useQuery(
+    queryParams,
+    {
+      retry: 0,
+      staleTime: 10000,
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+    },
+  );
 
-  // Fetch favorites
+  // Fetch favorites solo cuando se necesiten
   const { data: favoritesData, isLoading: isLoadingFavorites } =
-    api.favorites.getFavorites.useQuery();
-  const { data: favoriteIds } = api.favorites.getFavoriteIds.useQuery();
-  const {
-    data: recommendedData,
-    isLoading: isLoadingRecommended,
-  } = api.books.getRecommended.useQuery({ limit: pageSize });
+    api.favorites.getFavorites.useQuery(undefined, {
+      retry: 0,
+      staleTime: 60000,
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      enabled: activeTab === "favorites", // Solo cargar cuando el tab esté activo
+    });
+  const { data: favoriteIds } = api.favorites.getFavoriteIds.useQuery(
+    undefined,
+    {
+      retry: 0,
+      staleTime: 60000,
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+    },
+  );
+  const { data: recommendedData, isLoading: isLoadingRecommended } =
+    api.books.getRecommended.useQuery(
+      { limit: pageSize },
+      {
+        retry: 0,
+        staleTime: 120000,
+        refetchOnMount: false,
+        refetchOnWindowFocus: false,
+        enabled: activeTab === "recomended",
+      },
+    );
 
   // Fetch user reservations to check which books are reserved/active by current user
-  const { data: userActiveLoansData } = api.loans.getActive.useQuery();
-  const { data: userReservedLoansData } = api.loans.getByUserId.useQuery({
-    page: 1,
-    limit: 100,
-    status: "RESERVED",
-  });
+  const { data: userActiveLoansData } = api.loans.getActive.useQuery(
+    undefined,
+    {
+      retry: 0,
+      staleTime: 30000,
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+    },
+  );
+  const { data: userReservedLoansData } = api.loans.getByUserId.useQuery(
+    {
+      page: 1,
+      limit: 100,
+      status: "RESERVED",
+    },
+    {
+      retry: 0,
+      staleTime: 30000,
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+    },
+  );
 
   const userReservedBookIds = useMemo(() => {
     const reservedBookIds =

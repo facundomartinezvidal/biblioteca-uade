@@ -60,9 +60,10 @@ export function AdminLoanActions({
   const activateLoanMutation = api.loans.activateLoan.useMutation({
     onSuccess: async () => {
       await Promise.all([
-        utils.loans.getByUserIdAdmin.invalidate(),
-        utils.books.getAllAdmin.invalidate(),
-        utils.books.getAll.invalidate(),
+        utils.loans.invalidate(), // Invalida todas las queries de loans
+        utils.books.invalidate(), // Invalida todas las queries de books
+        utils.dashboard.invalidate(), // Invalida dashboard
+        utils.notifications.invalidate(), // Invalida notificaciones
       ]);
       onSuccess?.();
       toast.success("Préstamo activado exitosamente");
@@ -77,9 +78,10 @@ export function AdminLoanActions({
   const finishLoanMutation = api.loans.finishLoan.useMutation({
     onSuccess: async () => {
       await Promise.all([
-        utils.loans.getByUserIdAdmin.invalidate(),
-        utils.books.getAllAdmin.invalidate(),
-        utils.books.getAll.invalidate(), // Invalidar también el endpoint público de libros
+        utils.loans.invalidate(), // Invalida todas las queries de loans
+        utils.books.invalidate(), // Invalida todas las queries de books
+        utils.dashboard.invalidate(), // Invalida dashboard
+        utils.notifications.invalidate(), // Invalida notificaciones
       ]);
       onSuccess?.();
       toast.success("Préstamo finalizado exitosamente");
@@ -97,10 +99,11 @@ export function AdminLoanActions({
     api.loans.createPenaltyForDamagedBook.useMutation({
       onSuccess: async () => {
         await Promise.all([
-          utils.loans.getByUserIdAdmin.invalidate(),
-          utils.books.getAllAdmin.invalidate(),
-          utils.books.getAll.invalidate(),
-          utils.penalties.getByUserId.invalidate(),
+          utils.loans.invalidate(), // Invalida todas las queries de loans
+          utils.books.invalidate(), // Invalida todas las queries de books
+          utils.penalties.invalidate(), // Invalida todas las queries de penalties
+          utils.dashboard.invalidate(), // Invalida dashboard
+          utils.notifications.invalidate(), // Invalida notificaciones
         ]);
         onSuccess?.();
         toast.success("Multa creada y préstamo finalizado exitosamente");
@@ -118,9 +121,10 @@ export function AdminLoanActions({
     api.loans.createReservationForStudent.useMutation({
       onSuccess: async () => {
         await Promise.all([
-          utils.loans.getByUserIdAdmin.invalidate(),
-          utils.books.getAllAdmin.invalidate(),
-          utils.books.getAll.invalidate(),
+          utils.loans.invalidate(), // Invalida todas las queries de loans
+          utils.books.invalidate(), // Invalida todas las queries de books
+          utils.dashboard.invalidate(), // Invalida dashboard
+          utils.notifications.invalidate(), // Invalida notificaciones
         ]);
         onSuccess?.();
         toast.success("Nuevo préstamo creado exitosamente");
@@ -223,7 +227,7 @@ export function AdminLoanActions({
               <br />
               <br />
               El préstamo pasará de RESERVADO a ACTIVO y el plazo de devolución
-              será de 14 días desde ahora.
+              será de 7 días desde ahora.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

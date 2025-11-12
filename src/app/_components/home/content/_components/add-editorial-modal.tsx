@@ -31,7 +31,10 @@ export function AddEditorialModal({
   const utils = api.useUtils();
   const createEditorialMutation = api.catalog.createEditorial.useMutation({
     onSuccess: async () => {
-      await utils.catalog.getAllEditorials.invalidate();
+      await Promise.all([
+        utils.catalog.invalidate(), // Invalida todas las queries de catalog
+        utils.books.invalidate(), // Invalida todas las queries de books
+      ]);
       onSuccess?.();
       onClose();
       form.reset();

@@ -46,13 +46,37 @@ export default function ImprovedFiltersSidebar(
     selectedLocation,
   } = props;
 
-  const { data: locationsData } = api.catalog.getAllLocations.useQuery();
+  const { data: locationsData, isLoading: isLoadingLocations } =
+    api.catalog.getAllLocations.useQuery(undefined, {
+      retry: 0,
+      staleTime: 600000, // 10 minutes
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+    });
   const locations = locationsData?.response ?? [];
 
-  const { data: gendersData } = api.catalog.getAllGenders.useQuery();
+  const { data: gendersData, isLoading: isLoadingGenders } =
+    api.catalog.getAllGenders.useQuery(
+      { limit: 100 },
+      {
+        retry: 0,
+        staleTime: 600000, // 10 minutes
+        refetchOnMount: false,
+        refetchOnWindowFocus: false,
+      },
+    );
   const genders = gendersData?.response ?? [];
 
-  const { data: editorialsData } = api.catalog.getAllEditorials.useQuery();
+  const { data: editorialsData, isLoading: isLoadingEditorials } =
+    api.catalog.getAllEditorials.useQuery(
+      { limit: 100 },
+      {
+        retry: 0,
+        staleTime: 600000, // 10 minutes
+        refetchOnMount: false,
+        refetchOnWindowFocus: false,
+      },
+    );
   const editorials = editorialsData?.response ?? [];
 
   const formatLocationLabel = (campus: string, address: string) => {
@@ -80,14 +104,26 @@ export default function ImprovedFiltersSidebar(
       {/* Género */}
       <Select value={selectedGenre} onValueChange={onGenreChange}>
         <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Género" />
+          <SelectValue
+            placeholder={isLoadingGenders ? "Cargando..." : "Género"}
+          />
         </SelectTrigger>
         <SelectContent>
-          {genders.map((gender) => (
-            <SelectItem key={gender.id} value={gender.id}>
-              {gender.name}
+          {isLoadingGenders ? (
+            <SelectItem value="_loading" disabled>
+              Cargando géneros...
             </SelectItem>
-          ))}
+          ) : genders.length === 0 ? (
+            <SelectItem value="_empty" disabled>
+              No hay géneros disponibles
+            </SelectItem>
+          ) : (
+            genders.map((gender) => (
+              <SelectItem key={gender.id} value={gender.id}>
+                {gender.name}
+              </SelectItem>
+            ))
+          )}
         </SelectContent>
       </Select>
 
@@ -106,28 +142,52 @@ export default function ImprovedFiltersSidebar(
       {/* Editorial */}
       <Select value={selectedEditorial} onValueChange={onEditorialChange}>
         <SelectTrigger className="w-[200px]">
-          <SelectValue placeholder="Editorial" />
+          <SelectValue
+            placeholder={isLoadingEditorials ? "Cargando..." : "Editorial"}
+          />
         </SelectTrigger>
         <SelectContent>
-          {editorials.map((editorial) => (
-            <SelectItem key={editorial.id} value={editorial.id}>
-              {editorial.name}
+          {isLoadingEditorials ? (
+            <SelectItem value="_loading" disabled>
+              Cargando editoriales...
             </SelectItem>
-          ))}
+          ) : editorials.length === 0 ? (
+            <SelectItem value="_empty" disabled>
+              No hay editoriales disponibles
+            </SelectItem>
+          ) : (
+            editorials.map((editorial) => (
+              <SelectItem key={editorial.id} value={editorial.id}>
+                {editorial.name}
+              </SelectItem>
+            ))
+          )}
         </SelectContent>
       </Select>
 
       {/* Location */}
       <Select value={selectedLocation} onValueChange={onLocationChange}>
         <SelectTrigger className="w-[240px]">
-          <SelectValue placeholder="Ubicación" />
+          <SelectValue
+            placeholder={isLoadingLocations ? "Cargando..." : "Ubicación"}
+          />
         </SelectTrigger>
         <SelectContent>
-          {locations.map((location) => (
-            <SelectItem key={location.id} value={location.id}>
-              {formatLocationLabel(location.campus, location.address)}
+          {isLoadingLocations ? (
+            <SelectItem value="_loading" disabled>
+              Cargando ubicaciones...
             </SelectItem>
-          ))}
+          ) : locations.length === 0 ? (
+            <SelectItem value="_empty" disabled>
+              No hay ubicaciones disponibles
+            </SelectItem>
+          ) : (
+            locations.map((location) => (
+              <SelectItem key={location.id} value={location.id}>
+                {formatLocationLabel(location.campus, location.address)}
+              </SelectItem>
+            ))
+          )}
         </SelectContent>
       </Select>
 

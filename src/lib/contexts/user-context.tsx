@@ -44,8 +44,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const { data, isLoading, refetch } = api.auth.getUser.useQuery(undefined, {
     enabled: isClient,
-    retry: false,
+    retry: 0,
     refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 120000, // 2 minutes
   });
 
   useEffect(() => {

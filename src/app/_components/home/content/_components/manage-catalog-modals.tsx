@@ -9,6 +9,7 @@ import { Label } from "~/components/ui/label";
 import { Alert, AlertDescription } from "~/components/ui/alert";
 import { Loader2, Pencil, Trash2, X } from "lucide-react";
 import { createPortal } from "react-dom";
+import { toast } from "sonner";
 
 interface BaseItem {
   id: string;
@@ -91,45 +92,87 @@ export function ManageCatalogModals({
   // Mutations
   const updateAuthor = api.catalog.updateAuthor.useMutation({
     onSuccess: async () => {
-      await utils.catalog.getAllAuthors.invalidate();
+      await Promise.all([
+        utils.catalog.invalidate(), // Invalida todas las queries de catalog
+        utils.books.invalidate(), // Invalida todas las queries de books (pueden mostrar autores)
+      ]);
+      toast.success("Autor actualizado exitosamente");
       resetState();
     },
-    onError: (err) => setErrorMsg(err.message),
+    onError: (err) => {
+      setErrorMsg(err.message);
+      toast.error(err.message || "Error al actualizar el autor");
+    },
   });
   const deleteAuthor = api.catalog.deleteAuthor.useMutation({
     onSuccess: async () => {
-      await utils.catalog.getAllAuthors.invalidate();
+      await Promise.all([
+        utils.catalog.invalidate(), // Invalida todas las queries de catalog
+        utils.books.invalidate(), // Invalida todas las queries de books
+      ]);
+      toast.success("Autor eliminado exitosamente");
       resetState();
     },
-    onError: (err) => setErrorMsg(err.message),
+    onError: (err) => {
+      setErrorMsg(err.message);
+      toast.error(err.message || "Error al eliminar el autor");
+    },
   });
   const updateGender = api.catalog.updateGender.useMutation({
     onSuccess: async () => {
-      await utils.catalog.getAllGenders.invalidate();
+      await Promise.all([
+        utils.catalog.invalidate(), // Invalida todas las queries de catalog
+        utils.books.invalidate(), // Invalida todas las queries de books
+      ]);
+      toast.success("Género actualizado exitosamente");
       resetState();
     },
-    onError: (err) => setErrorMsg(err.message),
+    onError: (err) => {
+      setErrorMsg(err.message);
+      toast.error(err.message || "Error al actualizar el género");
+    },
   });
   const deleteGender = api.catalog.deleteGender.useMutation({
     onSuccess: async () => {
-      await utils.catalog.getAllGenders.invalidate();
+      await Promise.all([
+        utils.catalog.invalidate(), // Invalida todas las queries de catalog
+        utils.books.invalidate(), // Invalida todas las queries de books
+      ]);
+      toast.success("Género eliminado exitosamente");
       resetState();
     },
-    onError: (err) => setErrorMsg(err.message),
+    onError: (err) => {
+      setErrorMsg(err.message);
+      toast.error(err.message || "Error al eliminar el género");
+    },
   });
   const updateEditorial = api.catalog.updateEditorial.useMutation({
     onSuccess: async () => {
-      await utils.catalog.getAllEditorials.invalidate();
+      await Promise.all([
+        utils.catalog.invalidate(), // Invalida todas las queries de catalog
+        utils.books.invalidate(), // Invalida todas las queries de books
+      ]);
+      toast.success("Editorial actualizada exitosamente");
       resetState();
     },
-    onError: (err) => setErrorMsg(err.message),
+    onError: (err) => {
+      setErrorMsg(err.message);
+      toast.error(err.message || "Error al actualizar la editorial");
+    },
   });
   const deleteEditorial = api.catalog.deleteEditorial.useMutation({
     onSuccess: async () => {
-      await utils.catalog.getAllEditorials.invalidate();
+      await Promise.all([
+        utils.catalog.invalidate(), // Invalida todas las queries de catalog
+        utils.books.invalidate(), // Invalida todas las queries de books
+      ]);
+      toast.success("Editorial eliminada exitosamente");
       resetState();
     },
-    onError: (err) => setErrorMsg(err.message),
+    onError: (err) => {
+      setErrorMsg(err.message);
+      toast.error(err.message || "Error al eliminar la editorial");
+    },
   });
 
   const resetState = () => {

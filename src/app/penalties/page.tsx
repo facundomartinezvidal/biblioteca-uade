@@ -151,9 +151,10 @@ export default function PenaltiesPage() {
     onSuccess: async () => {
       await refetch();
       await Promise.all([
-        utils.penalties.getByUserId.invalidate(),
-        utils.penalties.getStats.invalidate(),
-        utils.loans.getStats.invalidate(), // Invalidar stats del perfil
+        utils.penalties.invalidate(), // Invalida todas las queries de penalties
+        utils.loans.invalidate(), // Invalida todas las queries de loans
+        utils.dashboard.invalidate(), // Invalida dashboard
+        utils.notifications.invalidate(), // Invalida notificaciones
       ]);
       setIsPayModalOpen(false);
       setPenaltyToPay(null);

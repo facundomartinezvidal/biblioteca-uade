@@ -8,6 +8,7 @@ import { NavbarWrapper } from "./_components/navbar-wrapper";
 import { FooterWrapper } from "./_components/footer-wrapper";
 import { Toaster } from "sonner";
 import { UserProvider } from "~/lib/contexts";
+import { ErrorBoundary } from "./_components/error-boundary";
 
 export const metadata: Metadata = {
   title: "Biblioteca UADE",
@@ -27,14 +28,18 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geist.variable}`}>
       <body className="flex min-h-screen flex-col">
-        <TRPCReactProvider>
-          <UserProvider>
-            <Toaster />
-            <NavbarWrapper />
-            <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
-            <FooterWrapper />
-          </UserProvider>
-        </TRPCReactProvider>
+        <ErrorBoundary>
+          <TRPCReactProvider>
+            <UserProvider>
+              <Toaster />
+              <NavbarWrapper />
+              <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+                {children}
+              </main>
+              <FooterWrapper />
+            </UserProvider>
+          </TRPCReactProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

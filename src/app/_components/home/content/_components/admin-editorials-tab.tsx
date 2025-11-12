@@ -17,6 +17,7 @@ import { Skeleton } from "~/components/ui/skeleton";
 import PaginationControls from "~/app/_components/home/pagination-controls";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "~/components/ui/alert-dialog";
 import { Input } from "~/components/ui/input";
+import { toast } from "sonner";
 
 interface Editorial {
   id: string;
@@ -47,13 +48,43 @@ export function AdminEditorialsTab() {
 
   // Mutations
   const createEditorial = api.catalog.createEditorial.useMutation({
-    onSuccess: async () => { await utils.catalog.getAllEditorials.invalidate(); setShowAddModal(false); },
+    onSuccess: async () => { 
+      await Promise.all([
+        utils.catalog.invalidate(),
+        utils.books.invalidate(),
+      ]); 
+      toast.success("Editorial creada exitosamente");
+      setShowAddModal(false); 
+    },
+    onError: (err) => {
+      toast.error(err.message || "Error al crear la editorial");
+    },
   });
   const updateEditorial = api.catalog.updateEditorial.useMutation({
-    onSuccess: async () => { await utils.catalog.getAllEditorials.invalidate(); setEditEditorial(null); },
+    onSuccess: async () => { 
+      await Promise.all([
+        utils.catalog.invalidate(),
+        utils.books.invalidate(),
+      ]); 
+      toast.success("Editorial actualizada exitosamente");
+      setEditEditorial(null); 
+    },
+    onError: (err) => {
+      toast.error(err.message || "Error al actualizar la editorial");
+    },
   });
   const deleteEditorialMutation = api.catalog.deleteEditorial.useMutation({
-    onSuccess: async () => { await utils.catalog.getAllEditorials.invalidate(); setDeleteEditorial(null); },
+    onSuccess: async () => { 
+      await Promise.all([
+        utils.catalog.invalidate(),
+        utils.books.invalidate(),
+      ]); 
+      toast.success("Editorial eliminada exitosamente");
+      setDeleteEditorial(null); 
+    },
+    onError: (err) => {
+      toast.error(err.message || "Error al eliminar la editorial");
+    },
   });
 
   // Form state
@@ -178,7 +209,12 @@ export function AdminEditorialsTab() {
       )}
       {/* Modal de confirmación de borrado */}
       {deleteEditorial && (
-        <AlertDialog open={!!deleteEditorial} onOpenChange={open => { if (!open) setDeleteEditorial(null); }}>
+        <AlertDialog open={!!deleteEditorial} onOpenChange={(open) => { 
+          // Solo permitir cerrar si no está en proceso de eliminación
+          if (!open && !deleteEditorialMutation.isPending) {
+            setDeleteEditorial(null);
+          }
+        }}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>¿Eliminar editorial?</AlertDialogTitle>
@@ -187,8 +223,17 @@ export function AdminEditorialsTab() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={() => deleteEditorialMutation.mutate({ id: deleteEditorial.id })} disabled={deleteEditorialMutation.isPending} className="bg-red-600 hover:bg-red-700">
+              <AlertDialogCancel disabled={deleteEditorialMutation.isPending}>
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={(e) => {
+                  e.preventDefault();
+                  deleteEditorialMutation.mutate({ id: deleteEditorial.id });
+                }} 
+                disabled={deleteEditorialMutation.isPending} 
+                className="bg-red-600 hover:bg-red-700"
+              >
                 {deleteEditorialMutation.isPending ? "Eliminando..." : "Eliminar"}
               </AlertDialogAction>
             </AlertDialogFooter>
