@@ -3,13 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  Bell,
-  GraduationCap,
-  Loader2,
-  LogOut,
-  UserStarIcon,
-} from "lucide-react";
+import { GraduationCap, Loader2, LogOut, UserStarIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -23,11 +17,12 @@ import {
 import { Separator } from "~/components/ui/separator";
 import { routes } from "~/lib/routes";
 import { cn } from "~/lib/utils";
-import CalendarPopover from "./calendar-popover";
 import { supabase } from "~/lib/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useUser } from "~/lib/contexts";
+import { NotificationsPopover } from "./notifications-popover";
+import CalendarPopover from "./calendar-popover";
 
 export default function AppNavbar() {
   const pathname = usePathname();
@@ -157,7 +152,7 @@ export default function AppNavbar() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-sm leading-none font-medium">
+                  <span className="text-sm font-medium leading-none">
                     {user.name} {user.last_name}
                   </span>
                 </div>
@@ -199,7 +194,12 @@ export default function AppNavbar() {
               <Bell className="h-4 w-4" />
               <span className="sr-only">Notifications</span>
             </Button>
-            {/* {user?.rol === "estudiante" && <CalendarPopover />} */}
+            {isLoadingUser ? (
+              <Skeleton className="h-8 w-8 rounded-md" />
+            ) : user?.rol === "estudiante" ? (
+              <CalendarPopover className="h-8 w-8" />
+            ) : null}
+            {user?.rol === "estudiante" && <NotificationsPopover />}
 
             <Button
               variant="ghost"

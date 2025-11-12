@@ -27,6 +27,7 @@ type BookCardProps = {
   description: string;
   isbn: string;
   location: string;
+  locationCampus?: string;
   available?: boolean;
   status?: "AVAILABLE" | "NOT_AVAILABLE" | "RESERVED";
   isReservedByCurrentUser?: boolean;
@@ -53,6 +54,7 @@ export default function BookCard(props: BookCardProps) {
     description,
     isbn,
     location,
+    locationCampus,
     available = true,
     status,
     isReservedByCurrentUser = false,
@@ -68,6 +70,22 @@ export default function BookCard(props: BookCardProps) {
 
   const fullAuthorName =
     `${authorFirstName} ${authorMiddleName} ${authorLastName}`.trim();
+
+  // Format location to show campus and address
+  const formatLocation = () => {
+    if (!location) return "No especificada";
+    if (!locationCampus) return location;
+
+    // Map campus enum to readable names
+    const campusNames: Record<string, string> = {
+      MONSERRAT: "Sede Monserrat",
+      RECOLETA: "Sede Recoleta",
+      COSTA: "Sede Costa",
+    };
+
+    const campusName = campusNames[locationCampus] ?? locationCampus;
+    return `${campusName} - ${location}`;
+  };
 
   const getStatusBadge = () => {
     if (isActiveByCurrentUser) {
@@ -188,9 +206,7 @@ export default function BookCard(props: BookCardProps) {
               </div>
               <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
                 <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-                <span className="truncate font-medium">
-                  {location.trim() || "No especificada"}
-                </span>
+                <span className="truncate font-medium">{formatLocation()}</span>
               </div>
               <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
                 <Hash className="h-3.5 w-3.5 flex-shrink-0" />

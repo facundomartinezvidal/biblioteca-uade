@@ -3,7 +3,7 @@ export const routes = {
   users: "/users",
   documentation: "/documentation",
   loans: "/loans",
-  penalties: "/multas",
+  penalties: "/penalties",
   profile: "/profile",
   webcampus: "https://www.webcampus.uade.edu.ar/",
   linkedinUade: "https://www.linkedin.com/school/uade/posts/?feedView=all",

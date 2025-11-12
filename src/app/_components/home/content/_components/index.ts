@@ -7,3 +7,4 @@ export { AddBookModal } from "./add-book-modal";
 export { AddAuthorModal } from "./add-author-modal";
 export { AddGenderModal } from "./add-gender-modal";
 export { AddEditorialModal } from "./add-editorial-modal";
+export { AdminReserveModal } from "./admin-reserve-modal";

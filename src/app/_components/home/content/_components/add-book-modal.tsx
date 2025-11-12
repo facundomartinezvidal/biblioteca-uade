@@ -40,14 +40,15 @@ export function AddBookModal({
 
   const utils = api.useUtils();
 
-  // Solo cargar catálogos cuando el modal está abierto para evitar conexiones innecesarias
-  const { data: authorsData } = api.catalog.getAllAuthors.useQuery(undefined, { enabled: isOpen });
-  const { data: gendersData } = api.catalog.getAllGenders.useQuery(undefined, { enabled: isOpen });
-  const { data: editorialsData } = api.catalog.getAllEditorials.useQuery(undefined, { enabled: isOpen });
+  const { data: authorsData } = api.catalog.getAllAuthors.useQuery();
+  const { data: gendersData } = api.catalog.getAllGenders.useQuery();
+  const { data: editorialsData } = api.catalog.getAllEditorials.useQuery();
+  const { data: locationsData } = api.catalog.getAllLocations.useQuery();
 
   const authors = authorsData?.response ?? [];
   const genders = gendersData?.response ?? [];
   const editorials = editorialsData?.response ?? [];
+  const locations = locationsData?.response ?? [];
 
   const form = useForm({
     defaultValues: {
@@ -465,11 +466,16 @@ export function AddBookModal({
                   {(field) => (
                     <div className="space-y-2">
                       <Label htmlFor="locationId">Ubicación</Label>
-                      <Input
-                        id="locationId"
+                      <Combobox
+                        options={locations.map((location) => ({
+                          value: location.id,
+                          label: `${location.campus === "MONSERRAT" ? "Sede Monserrat" : location.campus === "RECOLETA" ? "Sede Recoleta" : "Sede Costa"} - ${location.address}`,
+                        }))}
                         value={field.state.value}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="Ubicación del libro"
+                        onValueChange={(value) => field.handleChange(value)}
+                        placeholder="Seleccionar ubicación"
+                        searchPlaceholder="Buscar ubicación..."
+                        emptyText="No se encontraron ubicaciones."
                       />
                     </div>
                   )}

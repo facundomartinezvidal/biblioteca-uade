@@ -47,6 +47,9 @@ export function HomeStudentContent() {
     undefined,
   );
   const [formYearTo, setFormYearTo] = useState<number | undefined>(undefined);
+  const [formLocation, setFormLocation] = useState<string | undefined>(
+    undefined,
+  );
 
   // Applied filter states
   const [appliedGenre, setAppliedGenre] = useState<string | undefined>(
@@ -62,6 +65,9 @@ export function HomeStudentContent() {
     undefined,
   );
   const [appliedYearTo, setAppliedYearTo] = useState<number | undefined>(
+    undefined,
+  );
+  const [appliedLocation, setAppliedLocation] = useState<string | undefined>(
     undefined,
   );
 
@@ -86,6 +92,7 @@ export function HomeStudentContent() {
       editorial?: string;
       yearFrom?: number;
       yearTo?: number;
+      locationId?: string;
       page: number;
       limit: number;
     } = {
@@ -117,6 +124,10 @@ export function HomeStudentContent() {
       params.yearTo = appliedYearTo;
     }
 
+    if (appliedLocation) {
+      params.locationId = appliedLocation;
+    }
+
     return params;
   }, [
     searchTerm,
@@ -125,6 +136,7 @@ export function HomeStudentContent() {
     appliedEditorial,
     appliedYearFrom,
     appliedYearTo,
+    appliedLocation,
     currentPage,
     pageSize,
   ]);
@@ -136,6 +148,10 @@ export function HomeStudentContent() {
   const { data: favoritesData, isLoading: isLoadingFavorites } =
     api.favorites.getFavorites.useQuery();
   const { data: favoriteIds } = api.favorites.getFavoriteIds.useQuery();
+  const {
+    data: recommendedData,
+    isLoading: isLoadingRecommended,
+  } = api.books.getRecommended.useQuery({ limit: pageSize });
 
   // Fetch user reservations to check which books are reserved/active by current user
   const { data: userActiveLoansData } = api.loans.getActive.useQuery();
@@ -172,6 +188,7 @@ export function HomeStudentContent() {
     appliedEditorial,
     appliedYearFrom,
     appliedYearTo,
+    appliedLocation,
   ]);
 
   const handleReserve = (book: { id: string }) => {
@@ -226,11 +243,13 @@ export function HomeStudentContent() {
     setFormEditorial(undefined);
     setFormYearFrom(undefined);
     setFormYearTo(undefined);
+    setFormLocation(undefined);
     setAppliedGenre(undefined);
     setAppliedAvailability(undefined);
     setAppliedEditorial(undefined);
     setAppliedYearFrom(undefined);
     setAppliedYearTo(undefined);
+    setAppliedLocation(undefined);
     setCurrentPage(1);
     setFilterKey((prev) => prev + 1);
   };
@@ -240,6 +259,7 @@ export function HomeStudentContent() {
     setAppliedEditorial(formEditorial);
     setAppliedYearFrom(formYearFrom);
     setAppliedYearTo(formYearTo);
+    setAppliedLocation(formLocation);
 
     if (formAvailability === "disponible") {
       setAppliedAvailability("AVAILABLE");
@@ -257,10 +277,7 @@ export function HomeStudentContent() {
 
   const favoriteBooks = favoritesData ?? [];
 
-  const recommendedEnabled = false;
-  const recommendedBooks = recommendedEnabled
-    ? books.filter((book) => book.status === "AVAILABLE").slice(-2)
-    : [];
+  const recommendedBooks = recommendedData?.response ?? [];
 
   return (
     <div>
@@ -277,10 +294,12 @@ export function HomeStudentContent() {
           formEditorial={formEditorial}
           formYearFrom={formYearFrom}
           formYearTo={formYearTo}
+          formLocation={formLocation}
           onSearchChange={setSearchTerm}
           onGenreChange={setFormGenre}
           onAvailabilityChange={setFormAvailability}
           onEditorialChange={setFormEditorial}
+          onLocationChange={setFormLocation}
           onYearFromChange={setFormYearFrom}
           onYearToChange={setFormYearTo}
           onFilterCancel={clearFilters}
@@ -337,10 +356,15 @@ export function HomeStudentContent() {
           <TabsContent value="recomended" className="mt-6">
             <StudentBooksRecommendedTab
               books={recommendedBooks}
-              isLoading={isLoading}
+              isLoading={isLoadingRecommended}
               onReserve={handleReserve}
               onViewMore={handleViewMore}
               reserveLoadingIds={reserveLoadingIds}
+              favoriteIds={favoriteIds ?? []}
+              onToggleFavorite={handleToggleFavorite}
+              favoriteLoadingIds={favoriteLoadingIds}
+              userReservedBookIds={userReservedBookIds}
+              userActiveBookIds={userActiveBookIds}
             />
           </TabsContent>
         </Tabs>

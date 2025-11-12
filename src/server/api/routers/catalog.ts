@@ -1,5 +1,5 @@
 import { createTRPCRouter, publicProcedure } from "../trpc";
-import { authors, editorials, genders } from "~/server/db/schemas";
+import { authors, editorials, genders, locations } from "~/server/db/schemas";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 
@@ -192,4 +192,14 @@ export const catalogRouter = createTRPCRouter({
         message: "Editorial deleted successfully",
       };
     }),
+
+  getAllLocations: publicProcedure.query(async ({ ctx }) => {
+    const allLocations = await ctx.db.select().from(locations);
+
+    return {
+      success: true,
+      method: "GET",
+      response: allLocations,
+    };
+  }),
 });

@@ -6,13 +6,13 @@ import { api } from "~/trpc/react";
 import { ProfileHeader } from "./_components/profile-header";
 import { StatsGrid } from "./_components/stats-grid";
 import { LoansTable } from "./_components/loans-table";
-import { ComingSoon } from "../_components/coming-soon";
-import { Settings } from "lucide-react";
 import { ProfileHeaderSkeleton } from "./_components/profile-header-skeleton";
 import { StatsGridSkeleton } from "./_components/stats-grid-skeleton";
 import { LoansTableSkeleton } from "./_components/loans-table-skeleton";
 import LoanDetailsPopup from "../loans/_components/loan-details-popup";
 import CancelReservationModal from "../loans/_components/cancel-reservation-modal";
+import { AdminDashboard } from "./_components/admin-dashboard";
+import { AdminDashboardSkeleton } from "./_components/admin-dashboard-skeleton";
 
 type LoanStatus = "RESERVED" | "ACTIVE" | "FINISHED" | "EXPIRED" | "CANCELLED";
 
@@ -72,6 +72,14 @@ export default function ProfilePage() {
     },
   );
 
+  const {
+    data: adminOverview,
+    isLoading: isLoadingAdminOverview,
+    refetch: refetchAdminOverview,
+  } = api.dashboard.getAdminOverview.useQuery(undefined, {
+    enabled: user?.role === "admin",
+  });
+
   const [selectedLoan, setSelectedLoan] = useState<LoanItem | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
@@ -115,6 +123,10 @@ export default function ProfilePage() {
     router.push(`/reserve/${bookId}`);
   };
 
+  const handleViewPenalties = () => {
+    router.push("/penalties");
+  };
+
   const activeLoans =
     activeLoansData?.results.filter(
       (loan) => loan.status === "ACTIVE" || loan.status === "RESERVED",
@@ -153,13 +165,29 @@ export default function ProfilePage() {
           />
 
           {user?.role === "admin" && (
-            <div className="flex items-center justify-center py-12">
-              <ComingSoon
-                title="Dashboard de administrador"
-                description="Estamos trabajando en esta sección. Pronto podrás ver estadísticas y gestionar el sistema desde aquí."
-                icon={<Settings className="h-6 w-6" />}
-              />
-            </div>
+            <>
+              {isLoadingAdminOverview ? (
+                <AdminDashboardSkeleton />
+              ) : adminOverview ? (
+                <AdminDashboard data={adminOverview} />
+              ) : (
+                <div className="rounded-xl border border-berkeley-blue/10 bg-slate-50 p-6 text-center text-sm text-slate-600">
+                  <p className="font-medium text-slate-700">
+                    No pudimos cargar el dashboard del administrador.
+                  </p>
+                  <p className="mt-1 text-slate-500">
+                    Intentalo nuevamente más tarde o refresca la página.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void refetchAdminOverview()}
+                    className="mt-4 inline-flex items-center justify-center rounded-md bg-berkeley-blue px-4 py-2 text-sm font-medium text-white transition hover:bg-berkeley-blue/90"
+                  >
+                    Reintentar
+                  </button>
+                </div>
+              )}
+            </>
           )}
 
           {user?.role === "estudiante" && (
@@ -172,6 +200,7 @@ export default function ProfilePage() {
                   finishedLoans={stats?.finishedLoans ?? 0}
                   pendingFines={stats?.pendingFines ?? 0}
                   upcomingDue={stats?.upcomingDue ?? 0}
+                  onPendingFinesClick={handleViewPenalties}
                 />
               )}
 

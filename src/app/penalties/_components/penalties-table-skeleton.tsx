@@ -9,7 +9,13 @@ import {
 } from "~/components/ui/table";
 import { Skeleton } from "~/components/ui/skeleton";
 
-export default function LoansTableSkeleton() {
+type PenaltiesTableSkeletonProps = {
+  showActions?: boolean;
+};
+
+export default function PenaltiesTableSkeleton({
+  showActions = true,
+}: PenaltiesTableSkeletonProps) {
   return (
     <Card className="shadow-sm">
       <CardContent className="px-6 py-4">
@@ -19,12 +25,16 @@ export default function LoansTableSkeleton() {
               <TableRow>
                 <TableHead>ID Préstamo</TableHead>
                 <TableHead>Libro</TableHead>
+                <TableHead>Sanción</TableHead>
                 <TableHead>Estado</TableHead>
-                <TableHead className="min-w-[120px]">Desde</TableHead>
-                <TableHead className="min-w-[120px]">Hasta</TableHead>
-                <TableHead className="w-[240px] text-center">
-                  Acciones
-                </TableHead>
+                <TableHead className="min-w-[120px]">Creada</TableHead>
+                <TableHead className="min-w-[120px]">Vence</TableHead>
+                <TableHead className="min-w-[120px]">Monto</TableHead>
+                {showActions && (
+                  <TableHead className="w-[80px] text-right">
+                    Acciones
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -45,6 +55,10 @@ export default function LoansTableSkeleton() {
                   </TableCell>
 
                   <TableCell>
+                    <Skeleton className="h-4 w-28" />
+                  </TableCell>
+
+                  <TableCell>
                     <Skeleton className="h-6 w-20 rounded-full" />
                   </TableCell>
 
@@ -56,12 +70,15 @@ export default function LoansTableSkeleton() {
                     <Skeleton className="h-4 w-20" />
                   </TableCell>
 
-                  <TableCell className="w-[240px] text-right">
-                    <div className="ml-auto flex w-[240px] items-center justify-end gap-2">
-                      <Skeleton className="h-9 w-24" />
-                      <Skeleton className="h-9 w-28" />
-                    </div>
+                  <TableCell>
+                    <Skeleton className="h-4 w-16" />
                   </TableCell>
+
+                  {showActions && (
+                    <TableCell className="w-[80px] text-right">
+                      <Skeleton className="ml-auto h-8 w-8 rounded" />
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>

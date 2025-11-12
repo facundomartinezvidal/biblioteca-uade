@@ -1,9 +1,68 @@
-import { createTRPCRouter, publicProcedure } from "../trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from "../trpc";
 import type { RouterInput, RouterOutput } from "../root";
-import { authors, books, editorials, genders } from "~/server/db/schemas";
+import {
+  authors,
+  books,
+  editorials,
+  genders,
+  locations,
+} from "~/server/db/schemas";
 import { loans } from "~/server/db/schemas/loans";
-import { eq, or, ilike, and, count, gte, lte, inArray } from "drizzle-orm";
+import { eq, or, ilike, and, count, gte, lte, inArray, desc } from "drizzle-orm";
 import { z } from "zod";
+
+const normalizeText = (text: string | null | undefined) =>
+  (text ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+const STOP_WORDS = new Set([
+  "el",
+  "la",
+  "los",
+  "las",
+  "un",
+  "una",
+  "unos",
+  "unas",
+  "de",
+  "del",
+  "al",
+  "y",
+  "en",
+  "a",
+  "con",
+  "por",
+  "para",
+  "sobre",
+  "sin",
+  "the",
+  "of",
+  "and",
+]);
+
+const normalizeToken = (token: string) => {
+  let base = normalizeText(token).replace(/[^a-z0-9\s]/g, "");
+  if (base.length > 4 && base.endsWith("es")) {
+    base = base.slice(0, -2);
+  } else if (base.length > 3 && base.endsWith("s")) {
+    base = base.slice(0, -1);
+  }
+  return base;
+};
+
+const tokenize = (text: string | null | undefined) => {
+  if (!text) return [];
+  return normalizeText(text)
+    .split(/\s+/)
+    .map((token) => normalizeToken(token))
+    .filter((token) => token.length > 2 && !STOP_WORDS.has(token));
+};
 
 export type getAllBooksInput = RouterInput["books"]["getAll"];
 export type getAllBooksOutput = RouterOutput["books"]["getAll"];
@@ -20,6 +79,7 @@ export const booksRouter = createTRPCRouter({
         genre: z.string().optional(),
         status: z.enum(["AVAILABLE", "NOT_AVAILABLE", "RESERVED"]).optional(),
         editorial: z.string().optional(),
+        locationId: z.string().optional(),
         yearFrom: z.number().min(1800).max(2030).optional(),
         yearTo: z.number().min(1800).max(2030).optional(),
         page: z.number().min(1).default(1),
@@ -32,6 +92,7 @@ export const booksRouter = createTRPCRouter({
         genre,
         status,
         editorial,
+        locationId,
         yearFrom,
         yearTo,
         page,
@@ -120,6 +181,10 @@ export const booksRouter = createTRPCRouter({
         conditions.push(ilike(editorials.name, `%${editorial}%`));
       }
 
+      if (locationId) {
+        conditions.push(eq(books.locationId, locationId));
+      }
+
       if (yearFrom) {
         conditions.push(gte(books.year, yearFrom));
       }
@@ -138,6 +203,7 @@ export const booksRouter = createTRPCRouter({
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
+        .leftJoin(locations, eq(books.locationId, locations.id))
         .where(whereClause);
 
       const totalCount = totalCountResult[0]?.count ?? 0;
@@ -156,7 +222,8 @@ export const booksRouter = createTRPCRouter({
           year: books.year,
           editorial: editorials.name,
           gender: genders.name,
-          location: books.locationId,
+          location: locations.address,
+          locationCampus: locations.campus,
           imageUrl: books.imageUrl,
           createdAt: books.createdAt,
         })
@@ -164,6 +231,7 @@ export const booksRouter = createTRPCRouter({
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
+        .leftJoin(locations, eq(books.locationId, locations.id))
         .where(whereClause)
         .limit(limit)
         .offset(offset);
@@ -184,17 +252,259 @@ export const booksRouter = createTRPCRouter({
         },
       };
     }),
+  getRecommended: protectedProcedure
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(20).default(6),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const limit = input?.limit ?? 6;
+      const userId = ctx.user.id;
+
+      const userLoans = await ctx.db
+        .select({
+          bookId: loans.bookId,
+          authorId: books.authorId,
+          genderId: books.genderId,
+          editorialId: books.editorialId,
+          title: books.title,
+          description: books.description,
+        })
+        .from(loans)
+        .innerJoin(books, eq(loans.bookId, books.id))
+        .where(eq(loans.userId, userId));
+
+      const loanedBookIds = new Set(userLoans.map((loan) => loan.bookId));
+
+      const increment = (
+        map: Map<string, number>,
+        key: string | null | undefined,
+      ) => {
+        if (!key) return;
+        map.set(key, (map.get(key) ?? 0) + 1);
+      };
+
+      const authorCounts = new Map<string, number>();
+      const genderCounts = new Map<string, number>();
+      const editorialCounts = new Map<string, number>();
+      const titleTokenCounts = new Map<string, number>();
+
+      for (const loan of userLoans) {
+        increment(authorCounts, loan.authorId);
+        increment(genderCounts, loan.genderId);
+        increment(editorialCounts, loan.editorialId);
+        const tokens = new Set([
+          ...tokenize(loan.title),
+          ...tokenize(loan.description),
+        ]);
+        tokens.forEach((token) => increment(titleTokenCounts, token));
+      }
+
+      const hasPreferences =
+        authorCounts.size > 0 ||
+        genderCounts.size > 0 ||
+        editorialCounts.size > 0 ||
+        titleTokenCounts.size > 0;
+
+      const baseSelect = ctx.db
+        .select({
+          id: books.id,
+          title: books.title,
+          description: books.description,
+          isbn: books.isbn,
+          status: books.status,
+          author: authors.name,
+          authorMiddleName: authors.middleName,
+          authorLastName: authors.lastName,
+          authorId: books.authorId,
+          year: books.year,
+          editorial: editorials.name,
+          editorialId: books.editorialId,
+          gender: genders.name,
+          genderId: books.genderId,
+          location: locations.address,
+          locationCampus: locations.campus,
+          locationId: books.locationId,
+          imageUrl: books.imageUrl,
+          createdAt: books.createdAt,
+        })
+        .from(books)
+        .leftJoin(authors, eq(books.authorId, authors.id))
+        .leftJoin(editorials, eq(books.editorialId, editorials.id))
+        .leftJoin(genders, eq(books.genderId, genders.id))
+        .leftJoin(locations, eq(books.locationId, locations.id))
+        .where(eq(books.status, "AVAILABLE"))
+        .orderBy(desc(books.createdAt));
+
+      if (!hasPreferences) {
+        const fallbackBooks = await baseSelect.limit(limit * 2);
+        const uniqueFallback = fallbackBooks.filter(
+          (book) => !loanedBookIds.has(book.id),
+        );
+
+        return {
+          success: true,
+          method: "GET",
+          response: uniqueFallback.slice(0, limit),
+        };
+      }
+
+      const candidateLimit = Math.max(limit * 4, 32);
+      const candidateBooks = await baseSelect.limit(candidateLimit);
+
+      if (candidateBooks.length === 0) {
+        return {
+          success: true,
+          method: "GET",
+          response: [],
+        };
+      }
+
+      const maxAuthorCount =
+        authorCounts.size === 0
+          ? 0
+          : Math.max(...Array.from(authorCounts.values()));
+      const maxGenderCount =
+        genderCounts.size === 0
+          ? 0
+          : Math.max(...Array.from(genderCounts.values()));
+      const maxEditorialCount =
+        editorialCounts.size === 0
+          ? 0
+          : Math.max(...Array.from(editorialCounts.values()));
+      const maxTitleTokenCount =
+        titleTokenCounts.size === 0
+          ? 0
+          : Math.max(...Array.from(titleTokenCounts.values()));
+
+      const sortedBooks = candidateBooks
+        .filter((book) => !loanedBookIds.has(book.id))
+        .map((book) => {
+          const computeWeightedScore = (
+            map: Map<string, number>,
+            key: string | null,
+            weight: number,
+            maxCount: number,
+          ) => {
+            if (!key) return 0;
+            const count = map.get(key) ?? 0;
+            if (count === 0 || maxCount === 0) return 0;
+            return weight * (count / maxCount);
+          };
+
+          const authorScore = computeWeightedScore(
+            authorCounts,
+            book.authorId,
+            3,
+            maxAuthorCount,
+          );
+          const genderScore = computeWeightedScore(
+            genderCounts,
+            book.genderId,
+            2,
+            maxGenderCount,
+          );
+          const editorialScore = computeWeightedScore(
+            editorialCounts,
+            book.editorialId,
+            1,
+            maxEditorialCount,
+          );
+          const tokens = new Set([
+            ...tokenize(book.title),
+            ...tokenize(book.description),
+          ]);
+          let tokenScore = 0;
+          if (tokens.size > 0 && maxTitleTokenCount > 0) {
+            for (const token of tokens) {
+              const count = titleTokenCounts.get(token) ?? 0;
+              if (count > 0) {
+                tokenScore += count / maxTitleTokenCount;
+              }
+            }
+            tokenScore *= 1.5;
+          }
+
+          const score =
+            authorScore + genderScore + editorialScore + tokenScore;
+
+          return {
+            ...book,
+            score,
+          };
+        })
+        .sort((a, b) => {
+          if (b.score === a.score) {
+            return (
+              new Date(b.createdAt ?? 0).getTime() -
+              new Date(a.createdAt ?? 0).getTime()
+            );
+          }
+          return b.score - a.score;
+        });
+
+      const recommendedBooks = sortedBooks
+        .filter((book) => book.score > 0)
+        .slice(0, limit);
+
+      if (recommendedBooks.length < limit) {
+        const fallbackCandidates = sortedBooks
+          .filter((book) => book.score === 0)
+          .sort((a, b) => {
+            const dateDiff =
+              new Date(b.createdAt ?? 0).getTime() -
+              new Date(a.createdAt ?? 0).getTime();
+            if (dateDiff !== 0) return dateDiff;
+            return b.title.localeCompare(a.title);
+          });
+
+        for (const book of fallbackCandidates) {
+          if (recommendedBooks.length >= limit) break;
+          if (recommendedBooks.some((selected) => selected.id === book.id))
+            continue;
+          recommendedBooks.push(book);
+        }
+      }
+
+      const sanitizedBooks = recommendedBooks.slice(0, limit).map((book) => ({
+        id: book.id,
+        title: book.title,
+        description: book.description,
+        isbn: book.isbn,
+        status: book.status,
+        author: book.author,
+        authorMiddleName: book.authorMiddleName,
+        authorLastName: book.authorLastName,
+        year: book.year,
+        editorial: book.editorial,
+        gender: book.gender,
+        location: book.location,
+        locationCampus: book.locationCampus,
+        locationId: book.locationId,
+        imageUrl: book.imageUrl,
+      }));
+
+      return {
+        success: true,
+        method: "GET",
+        response: sanitizedBooks,
+      };
+    }),
   getAllAdmin: publicProcedure
     .input(
       z.object({
         search: z.string().optional(),
         status: z.enum(["AVAILABLE", "NOT_AVAILABLE", "RESERVED"]).optional(),
+        locationId: z.string().optional(),
         page: z.number().min(1).default(1),
         limit: z.number().min(1).max(100).default(10),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { search, status, page, limit } = input;
+      const { search, status, locationId, page, limit } = input;
       const offset = (page - 1) * limit;
 
       const conditions = [];
@@ -215,6 +525,10 @@ export const booksRouter = createTRPCRouter({
         conditions.push(eq(books.status, status));
       }
 
+      if (locationId) {
+        conditions.push(eq(books.locationId, locationId));
+      }
+
       const whereClause =
         conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -224,6 +538,7 @@ export const booksRouter = createTRPCRouter({
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
+        .leftJoin(locations, eq(books.locationId, locations.id))
         .where(whereClause);
 
       const totalCount = totalCountResult[0]?.count ?? 0;
@@ -244,7 +559,9 @@ export const booksRouter = createTRPCRouter({
           editorialId: books.editorialId,
           gender: genders.name,
           genderId: books.genderId,
-          location: books.locationId,
+          location: locations.address,
+          locationCampus: locations.campus,
+          locationId: books.locationId,
           imageUrl: books.imageUrl,
           createdAt: books.createdAt,
         })
@@ -252,6 +569,7 @@ export const booksRouter = createTRPCRouter({
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
+        .leftJoin(locations, eq(books.locationId, locations.id))
         .where(whereClause)
         .limit(limit)
         .offset(offset);
@@ -291,7 +609,9 @@ export const booksRouter = createTRPCRouter({
           editorialId: books.editorialId,
           gender: genders.name,
           genderId: books.genderId,
-          location: books.locationId,
+          location: locations.address,
+          locationCampus: locations.campus,
+          locationId: books.locationId,
           imageUrl: books.imageUrl,
           createdAt: books.createdAt,
         })
@@ -299,7 +619,8 @@ export const booksRouter = createTRPCRouter({
         .where(eq(books.id, input.id))
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
-        .leftJoin(genders, eq(books.genderId, genders.id));
+        .leftJoin(genders, eq(books.genderId, genders.id))
+        .leftJoin(locations, eq(books.locationId, locations.id));
       return {
         success: true,
         method: "GET",
