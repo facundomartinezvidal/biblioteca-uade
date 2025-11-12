@@ -3,13 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  GraduationCap,
-  Loader2,
-  LogOut,
-  UserStarIcon,
-  Bell,
-} from "lucide-react";
+import { GraduationCap, Loader2, LogOut, UserStarIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -192,20 +186,14 @@ export default function AppNavbar() {
           <Separator orientation="vertical" className="h-8 bg-white/20" />
 
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-md text-white hover:bg-white/10 hover:text-white"
-            >
-              <Bell className="h-4 w-4" />
-              <span className="sr-only">Notifications</span>
-            </Button>
             {isLoadingUser ? (
               <Skeleton className="h-8 w-8 rounded-md" />
             ) : user?.rol === "estudiante" ? (
-              <CalendarPopover className="h-8 w-8" />
+              <>
+                <CalendarPopover className="h-8 w-8" />
+                <NotificationsPopover />
+              </>
             ) : null}
-            {user?.rol === "estudiante" && <NotificationsPopover />}
 
             <Button
               variant="ghost"
