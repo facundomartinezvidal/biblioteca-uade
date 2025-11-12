@@ -66,10 +66,13 @@ export const dashboardRouter = createTRPCRouter({
     const toRecord = <T extends string>(
       items: { status: T; count: number | null }[],
     ) =>
-      items.reduce<Record<T, number>>((acc, item) => {
-        acc[item.status] = Number(item.count ?? 0);
-        return acc;
-      }, {} as Record<T, number>);
+      items.reduce<Record<T, number>>(
+        (acc, item) => {
+          acc[item.status] = Number(item.count ?? 0);
+          return acc;
+        },
+        {} as Record<T, number>,
+      );
 
     const bookStatusRecord = toRecord(bookStatusCounts);
     const loanStatusRecord = toRecord(loanStatusCounts);
@@ -87,8 +90,7 @@ export const dashboardRouter = createTRPCRouter({
       reservedLoans: loanStatusRecord.RESERVED ?? 0,
       overdueLoans: loanStatusRecord.EXPIRED ?? 0,
       pendingPenalties:
-        (penaltyStatusRecord.PENDING ?? 0) +
-        (penaltyStatusRecord.EXPIRED ?? 0),
+        (penaltyStatusRecord.PENDING ?? 0) + (penaltyStatusRecord.EXPIRED ?? 0),
       totalStudents: Number(studentCountResult[0]?.count ?? 0),
       totalAuthors: Number(authorCountResult[0]?.count ?? 0),
     };
@@ -120,6 +122,8 @@ export const dashboardRouter = createTRPCRouter({
         .split("-")
         .map((value) => Number.parseInt(value, 10));
 
+      if (oldestYear === undefined || oldestMonth === undefined) continue;
+
       const oldestDate = new Date(oldestYear, oldestMonth, 1);
       const firstDayOfKey = new Date(
         createdAt.getFullYear(),
@@ -137,10 +141,7 @@ export const dashboardRouter = createTRPCRouter({
       count: loansPerMonthMap.get(key) ?? 0,
     }));
 
-    const loanStatusLabels: Record<
-      keyof typeof loanStatusRecord,
-      string
-    > = {
+    const loanStatusLabels: Record<keyof typeof loanStatusRecord, string> = {
       RESERVED: "Reservas",
       ACTIVE: "Activos",
       FINISHED: "Finalizados",
@@ -148,9 +149,9 @@ export const dashboardRouter = createTRPCRouter({
       CANCELLED: "Cancelados",
     };
 
-    const loansByStatus = (Object.keys(loanStatusLabels) as Array<
-      keyof typeof loanStatusLabels
-    >).map((status) => ({
+    const loansByStatus = (
+      Object.keys(loanStatusLabels) as Array<keyof typeof loanStatusLabels>
+    ).map((status) => ({
       status,
       label: loanStatusLabels[status],
       count: loanStatusRecord[status] ?? 0,
@@ -175,5 +176,3 @@ export const dashboardRouter = createTRPCRouter({
     };
   }),
 });
-
-
