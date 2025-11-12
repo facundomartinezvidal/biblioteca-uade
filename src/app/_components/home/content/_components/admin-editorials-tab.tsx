@@ -75,13 +75,15 @@ export function AdminEditorialsTab() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <Input
-          placeholder="Buscar editorial"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-64"
-        />
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+        <div className="flex w-full max-w-xl flex-row items-center gap-4">
+          <Input
+            placeholder="Buscar editorial"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full max-w-md"
+          />
+        </div>
         <Button onClick={() => setShowAddModal(true)} className="bg-berkeley-blue hover:bg-berkeley-blue/90">
           <Plus className="mr-2 h-4 w-4" /> Agregar Editorial
         </Button>
