@@ -14,6 +14,7 @@ import {
   Heart,
   Loader2,
 } from "lucide-react";
+import { formatISBN } from "~/lib/utils";
 
 type BookCardProps = {
   coverUrl?: string | null;
@@ -210,7 +211,7 @@ export default function BookCard(props: BookCardProps) {
               </div>
               <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
                 <Hash className="h-3.5 w-3.5 flex-shrink-0" />
-                <span className="truncate font-medium">{isbn}</span>
+                <span className="truncate font-medium">{formatISBN(isbn)}</span>
               </div>
             </div>
           </div>

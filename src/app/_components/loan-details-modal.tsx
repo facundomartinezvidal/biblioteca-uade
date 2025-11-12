@@ -5,6 +5,7 @@ import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import Image from "next/image";
 import { useEffect } from "react";
+import { formatISBN } from "~/lib/utils";
 
 interface LoanDetailsModalProps {
   isOpen: boolean;
@@ -232,7 +233,7 @@ export default function LoanDetailsModal({ isOpen, onClose, loan }: LoanDetailsM
                 {loan.author.name} {loan.author.middleName} {loan.author.lastName}
               </div>
               <div className="text-gray-500 text-xs">
-                #ISBN: {loan.book.isbn}
+                #ISBN: {formatISBN(loan.book.isbn)}
               </div>
             </div>
           </div>

@@ -6,7 +6,6 @@ import { X, CheckCircle, Info, User, BookOpen, Tag } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import Image from "next/image";
-import { formatISBN } from "~/lib/utils";
 
 interface ReservationSuccessModalProps {
   isOpen: boolean;
@@ -173,7 +172,7 @@ export default function ReservationSuccessModal({
 
                 <div className="flex items-center gap-1 text-sm text-gray-600">
                   <span className="text-xs">#</span>
-                  <span>ISBN: {formatISBN(book.isbn)}</span>
+                  <span>ISBN: {book.isbn}</span>
                 </div>
               </div>
             </div>

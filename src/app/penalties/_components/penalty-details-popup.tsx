@@ -17,6 +17,7 @@ import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { useEffect } from "react";
 import Link from "next/link";
+import { formatISBN } from "~/lib/utils";
 
 interface PenaltyDetailsPopupProps {
   isOpen: boolean;
@@ -234,7 +235,7 @@ export default function PenaltyDetailsPopup({
                       className="truncate"
                       title={penalty.book.isbn ?? undefined}
                     >
-                      {penalty.book.isbn ?? "-"}
+                      {penalty.book.isbn ? formatISBN(penalty.book.isbn) : "-"}
                     </span>
                   </div>
                   <div className="text-muted-foreground col-span-2 flex items-center gap-1 text-[13px] leading-tight">

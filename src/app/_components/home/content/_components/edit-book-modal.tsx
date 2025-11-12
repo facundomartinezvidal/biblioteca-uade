@@ -20,6 +20,7 @@ import { api } from "~/trpc/react";
 import Image from "next/image";
 import { supabase } from "~/lib/supabase/client";
 import { Alert, AlertDescription } from "~/components/ui/alert";
+import { formatISBN, cleanISBN } from "~/lib/utils";
 
 interface EditBookModalProps {
   isOpen: boolean;
@@ -80,7 +81,7 @@ export function EditBookModal({
     defaultValues: {
       title: book.title,
       description: book.description ?? "",
-      isbn: book.isbn,
+      isbn: formatISBN(book.isbn),
       status: book.status as "AVAILABLE" | "NOT_AVAILABLE" | "RESERVED",
       year: book.year ?? new Date().getFullYear(),
       editorialId: book.editorialId ?? "",
@@ -105,7 +106,7 @@ export function EditBookModal({
         id: book.id,
         title: value.title.trim(),
         description: value.description?.trim() || undefined,
-        isbn: value.isbn.trim(),
+        isbn: cleanISBN(value.isbn.trim()),
         status: value.status,
         year: value.year || undefined,
         editorialId: value.editorialId?.trim() || undefined,
@@ -275,7 +276,11 @@ export function EditBookModal({
           <div className="flex-1 overflow-y-auto p-6">
             {updateError && (
               <Alert variant="destructive" className="mb-4">
-                <AlertDescription>{updateError}</AlertDescription>
+                <AlertDescription>
+                  {updateError.includes("invalid_string")
+                    ? "Por favor, ingrese un ISBN válido de 10 o 13 dígitos numéricos (puede incluir guiones)"
+                    : updateError}
+                </AlertDescription>
               </Alert>
             )}
             <div className="flex gap-6">
@@ -392,9 +397,17 @@ export function EditBookModal({
                       <Input
                         id="isbn"
                         value={field.state.value}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="ISBN"
+                        onChange={(e) => {
+                          const cleaned = cleanISBN(e.target.value);
+                          const formatted = formatISBN(cleaned);
+                          field.handleChange(formatted);
+                        }}
+                        placeholder="Ingrese el ISBN con o sin guiones"
+                        className="font-mono"
                       />
+                      <p className="text-xs text-gray-500">
+                        Puede ingresar 10 o 13 dígitos. Ej: 978-84-376-0498-5
+                      </p>
                     </div>
                   )}
                 </form.Field>

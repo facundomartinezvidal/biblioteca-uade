@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "~/trpc/react";
+import { useUser } from "~/lib/contexts";
 import { ProfileHeader } from "./_components/profile-header";
 import { StatsGrid } from "./_components/stats-grid";
 import { LoansTable } from "./_components/loans-table";
@@ -56,10 +57,12 @@ interface LoanItem {
 export default function ProfilePage() {
   const router = useRouter();
   const utils = api.useUtils();
-  const { data: user, isLoading: isLoadingUser } = api.user.getUser.useQuery();
+  // Use context user instead of separate query
+  const { user: contextUser, isLoading: isLoadingUser } = useUser();
+  
   const { data: stats, isLoading: isLoadingStats } =
     api.loans.getStats.useQuery(undefined, {
-      enabled: user?.role === "estudiante",
+      enabled: !!contextUser && contextUser.rol === "estudiante",
     });
   const {
     data: activeLoansData,
@@ -68,7 +71,7 @@ export default function ProfilePage() {
   } = api.loans.getByUserId.useQuery(
     { page: 1, limit: 100 },
     {
-      enabled: user?.role === "estudiante",
+      enabled: !!contextUser && contextUser.rol === "estudiante",
     },
   );
 
@@ -77,7 +80,7 @@ export default function ProfilePage() {
     isLoading: isLoadingAdminOverview,
     refetch: refetchAdminOverview,
   } = api.dashboard.getAdminOverview.useQuery(undefined, {
-    enabled: user?.role === "admin",
+    enabled: !!contextUser && contextUser.rol === "admin",
   });
 
   const [selectedLoan, setSelectedLoan] = useState<LoanItem | null>(null);
@@ -150,17 +153,17 @@ export default function ProfilePage() {
       <div className="container mx-auto px-8 py-8">
         <div className="flex flex-col gap-6">
           <ProfileHeader
-            name={user?.name ?? ""}
-            last_name={user?.last_name ?? ""}
-            institutional_email={user?.institutional_email ?? ""}
-            personal_email={user?.personal_email ?? ""}
-            phone={user?.phone ?? ""}
-            identity_card={user?.identity_card ?? ""}
-            legacy_number={user?.legacy_number ?? ""}
-            role={user?.role ?? ""}
+            name={contextUser?.name ?? ""}
+            last_name={contextUser?.last_name ?? ""}
+            institutional_email={contextUser?.email ?? ""}
+            personal_email={contextUser?.email ?? ""}
+            phone={contextUser?.phone ?? ""}
+            identity_card={contextUser?.identity_card ?? ""}
+            legacy_number={contextUser?.career ?? ""}
+            role={contextUser?.rol ?? ""}
           />
 
-          {user?.role === "admin" && (
+          {contextUser?.rol === "admin" && (
             <>
               {isLoadingAdminOverview ? (
                 <AdminDashboardSkeleton />
@@ -186,7 +189,7 @@ export default function ProfilePage() {
             </>
           )}
 
-          {user?.role === "estudiante" && (
+          {contextUser?.rol === "estudiante" && (
             <>
               {isLoadingStats ? (
                 <StatsGridSkeleton />

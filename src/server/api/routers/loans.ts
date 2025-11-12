@@ -15,7 +15,7 @@ import { roles } from "~/server/db/schemas/roles";
 import { penalties } from "~/server/db/schemas/penalties";
 import { sanctions } from "~/server/db/schemas/sanctions";
 import { notifications } from "~/server/db/schemas/notifications";
-import { eq, and, desc, or, ilike } from "drizzle-orm";
+import { eq, and, desc, or, ilike, count, gte, lte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 // Middleware para verificar rol de admin
@@ -566,44 +566,70 @@ export const loansRouter = createTRPCRouter({
   getStats: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.user.id;
 
-    const allLoans = await ctx.db
-      .select()
-      .from(loans)
-      .where(eq(loans.userId, userId));
+    // Optimized: Use aggregations instead of fetching all records
+    const [loanStats, penaltyStats] = await Promise.all([
+      ctx.db
+        .select({
+          status: loans.status,
+          count: count(),
+        })
+        .from(loans)
+        .where(eq(loans.userId, userId))
+        .groupBy(loans.status),
+      ctx.db
+        .select({
+          status: penalties.status,
+          count: count(),
+        })
+        .from(penalties)
+        .where(eq(penalties.userId, userId))
+        .groupBy(penalties.status),
+    ]);
 
-    const activeLoans = allLoans.filter(
-      (loan) => loan.status === "ACTIVE" || loan.status === "RESERVED",
-    ).length;
+    const loanStatusMap = loanStats.reduce<Record<string, number>>(
+      (acc, item) => {
+        acc[item.status] = Number(item.count ?? 0);
+        return acc;
+      },
+      {},
+    );
 
-    const finishedLoans = allLoans.filter(
-      (loan) => loan.status === "FINISHED",
-    ).length;
+    const penaltyStatusMap = penaltyStats.reduce<Record<string, number>>(
+      (acc, item) => {
+        acc[item.status] = Number(item.count ?? 0);
+        return acc;
+      },
+      {},
+    );
 
+    const activeLoans =
+      (loanStatusMap.ACTIVE ?? 0) + (loanStatusMap.RESERVED ?? 0);
+    const finishedLoans = loanStatusMap.FINISHED ?? 0;
+    const pendingFines =
+      (penaltyStatusMap.PENDING ?? 0) + (penaltyStatusMap.EXPIRED ?? 0);
+
+    // Optimized: Only fetch active/reserved loans for upcoming due calculation
     const now = new Date();
     const twoDaysFromNow = new Date(now);
     twoDaysFromNow.setDate(now.getDate() + 2);
 
-    const upcomingDue = allLoans.filter((loan) => {
-      if (loan.status !== "ACTIVE" && loan.status !== "RESERVED") return false;
-      const endDate = new Date(loan.endDate);
-      return endDate >= now && endDate <= twoDaysFromNow;
-    }).length;
-
-    // Obtener multas pendientes (no pagadas)
-    const allPenalties = await ctx.db
-      .select()
-      .from(penalties)
-      .where(eq(penalties.userId, userId));
-
-    const pendingFines = allPenalties.filter(
-      (penalty) => penalty.status === "PENDING" || penalty.status === "EXPIRED",
-    ).length;
+    const upcomingDueLoans = await ctx.db
+      .select({ id: loans.id })
+      .from(loans)
+      .where(
+        and(
+          eq(loans.userId, userId),
+          or(eq(loans.status, "ACTIVE"), eq(loans.status, "RESERVED")),
+          gte(loans.endDate, now.toISOString()),
+          lte(loans.endDate, twoDaysFromNow.toISOString()),
+        ),
+      );
 
     return {
       activeLoans,
       finishedLoans,
       pendingFines,
-      upcomingDue,
+      upcomingDue: upcomingDueLoans.length,
     };
   }),
 

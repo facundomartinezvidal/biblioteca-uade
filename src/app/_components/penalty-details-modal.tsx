@@ -14,6 +14,7 @@ import { Badge } from "~/components/ui/badge";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
+import { formatISBN } from "~/lib/utils";
 
 interface PenaltyDetailsModalProps {
   isOpen: boolean;
@@ -235,7 +236,7 @@ export default function PenaltyDetailsModal({
 
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Hash className="h-4 w-4" />
-                  <span>ISBN: {book.isbn}</span>
+                  <span>ISBN: {formatISBN(book.isbn)}</span>
                 </div>
               </div>
             </div>
