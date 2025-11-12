@@ -12,6 +12,7 @@ import { locations } from "~/server/db/schemas/locations";
 import { editorials } from "~/server/db/schemas/editorials";
 import { users } from "~/server/db/schemas/users";
 import { roles } from "~/server/db/schemas/roles";
+import { penalties } from "~/server/db/schemas/penalties";
 import { eq, and, desc, or, ilike } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
@@ -365,10 +366,20 @@ export const loansRouter = createTRPCRouter({
       return endDate >= now && endDate <= twoDaysFromNow;
     }).length;
 
+    // Obtener multas pendientes (no pagadas)
+    const allPenalties = await ctx.db
+      .select()
+      .from(penalties)
+      .where(eq(penalties.userId, userId));
+
+    const pendingFines = allPenalties.filter(
+      (penalty) => penalty.paid === false || penalty.paid === null,
+    ).length;
+
     return {
       activeLoans,
       finishedLoans,
-      pendingFines: 0,
+      pendingFines,
       upcomingDue,
     };
   }),

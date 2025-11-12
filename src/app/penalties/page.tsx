@@ -139,9 +139,12 @@ export default function PenaltiesPage() {
       await Promise.all([
         utils.penalties.getByUserId.invalidate(),
         utils.penalties.getStats.invalidate(),
+        utils.loans.getStats.invalidate(), // Invalidar stats del perfil
       ]);
       setIsPayModalOpen(false);
       setPenaltyToPay(null);
+      setIsDetailsModalOpen(false); // Cerrar también el modal de detalles
+      setSelectedPenalty(null);
     },
   });
 
@@ -182,11 +185,8 @@ export default function PenaltiesPage() {
   };
 
   const handlePayPenalty = (penaltyId: string) => {
-    const penalty = results.find((p) => p.id === penaltyId);
-    if (penalty) {
-      handleOpenPayModal(penaltyId, penalty.book.title, penalty.amount ?? "0");
-      setIsDetailsModalOpen(false);
-    }
+    // Pagar directamente desde el modal de detalles
+    markAsPaidMutation.mutate({ penaltyId });
   };
 
   return (
@@ -362,7 +362,7 @@ export default function PenaltiesPage() {
                                       ) : (
                                         <>
                                           <DollarSign className="mr-2 h-4 w-4" />
-                                          Pagar ${penalty.amount ?? "0"}
+                                          Pagar {penalty.amount ?? "0"}
                                         </>
                                       )}
                                     </DropdownMenuItem>

@@ -348,7 +348,7 @@ export default function PenaltyDetailsPopup({
                 ) : (
                   <>
                     <DollarSign className="mr-2 h-4 w-4" />
-                    Pagar ${penalty.amount ?? "0"}
+                    Pagar {penalty.amount ?? "0"}
                   </>
                 )}
               </Button>
