@@ -21,6 +21,7 @@ SELECT
     '92ea696c-6d69-4b4d-a6fa-d61b4dda4734',
     'ACTIVE',
     (NOW() - INTERVAL '6 days')::text,
+    (NOW() + INTERVAL '23 hours')::text
 FROM books 
 WHERE book_status = 'AVAILABLE' 
 LIMIT 1 OFFSET 0;
