@@ -70,6 +70,10 @@ export default function UsersPage() {
     router.push(`/loans/${userId}`);
   };
 
+  const handleViewPenalties = (userId: string) => {
+    router.push(`/penalties/${userId}`);
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <main className="container mx-auto px-8 py-8">
@@ -158,7 +162,9 @@ export default function UsersPage() {
                                   <Eye className="mr-2 h-4 w-4" />
                                   Ver Préstamos
                                 </DropdownMenuItem>
-                                <DropdownMenuItem disabled>
+                                <DropdownMenuItem
+                                  onClick={() => handleViewPenalties(student.id)}
+                                >
                                   <AlertCircle className="mr-2 h-4 w-4" />
                                   Ver Multas
                                 </DropdownMenuItem>

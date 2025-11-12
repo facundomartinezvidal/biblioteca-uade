@@ -9,7 +9,13 @@ import {
 } from "~/components/ui/table";
 import { Skeleton } from "~/components/ui/skeleton";
 
-export default function PenaltiesTableSkeleton() {
+type PenaltiesTableSkeletonProps = {
+  showActions?: boolean;
+};
+
+export default function PenaltiesTableSkeleton({
+  showActions = true,
+}: PenaltiesTableSkeletonProps) {
   return (
     <Card className="shadow-sm">
       <CardContent className="px-6 py-4">
@@ -24,7 +30,11 @@ export default function PenaltiesTableSkeleton() {
                 <TableHead className="min-w-[120px]">Creada</TableHead>
                 <TableHead className="min-w-[120px]">Vence</TableHead>
                 <TableHead className="min-w-[120px]">Monto</TableHead>
-                <TableHead className="w-[80px] text-right">Acciones</TableHead>
+                {showActions && (
+                  <TableHead className="w-[80px] text-right">
+                    Acciones
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -64,9 +74,11 @@ export default function PenaltiesTableSkeleton() {
                     <Skeleton className="h-4 w-16" />
                   </TableCell>
 
-                  <TableCell className="w-[80px] text-right">
-                    <Skeleton className="ml-auto h-8 w-8 rounded" />
-                  </TableCell>
+                  {showActions && (
+                    <TableCell className="w-[80px] text-right">
+                      <Skeleton className="ml-auto h-8 w-8 rounded" />
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
