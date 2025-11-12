@@ -161,48 +161,11 @@ export function HomeAdminContent() {
   return (
     <div className="min-h-screen bg-white">
       <main className="container mx-auto px-8 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <BookOpen className="text-berkeley-blue h-6 w-6" />
-            <h1 className="text-2xl font-semibold tracking-tight">Libros</h1>
-          </div>
-
-          {/* Botones de acción */}
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() => setShowAddBookModal(true)}
-              className="bg-berkeley-blue hover:bg-berkeley-blue/90"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Agregar Libro
-            </Button>
-            <Button
-              onClick={() => setShowAddAuthorModal(true)}
-              variant="outline"
-              className="border-berkeley-blue text-berkeley-blue hover:bg-berkeley-blue/10"
-            >
-              <UserPlus className="mr-2 h-4 w-4" />
-              Autor
-            </Button>
-            <Button
-              onClick={() => setShowAddEditorialModal(true)}
-              variant="outline"
-              className="border-berkeley-blue text-berkeley-blue hover:bg-berkeley-blue/10"
-            >
-              <Building2 className="mr-2 h-4 w-4" />
-              Editorial
-            </Button>
-            <Button
-              onClick={() => setShowAddGenderModal(true)}
-              variant="outline"
-              className="border-berkeley-blue text-berkeley-blue hover:bg-berkeley-blue/10"
-            >
-              <Tags className="mr-2 h-4 w-4" />
-              Género
-            </Button>
-          </div>
+        <div className="flex items-center gap-2 mb-6">
+          <BookOpen className="text-berkeley-blue h-6 w-6" />
+          <h1 className="text-2xl font-semibold tracking-tight">Catálogo</h1>
         </div>
+        <AdminCatalogTabs />
         <p className="text-muted-foreground mt-1 text-sm">
           Administra el catálogo de libros de la biblioteca
         </p>
