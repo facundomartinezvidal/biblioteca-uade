@@ -11,6 +11,7 @@ import { catalogRouter } from "./routers/catalog";
 import { userRouter } from "./routers/user";
 import { favoritesRouter } from "./routers/favorites";
 import { penaltiesRouter } from "./routers/penalties";
+import { sanctionsRouter } from "./routers/sanctions";
 
 /**
  * This is the primary router for your server.
@@ -26,6 +27,7 @@ export const appRouter = createTRPCRouter({
   user: userRouter,
   favorites: favoritesRouter,
   penalties: penaltiesRouter,
+  sanctions: sanctionsRouter,
 });
 
 // export type definition of API

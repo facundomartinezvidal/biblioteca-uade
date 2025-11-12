@@ -19,6 +19,7 @@ export default function PenaltiesTableSkeleton() {
               <TableRow>
                 <TableHead>ID Préstamo</TableHead>
                 <TableHead>Libro</TableHead>
+                <TableHead>Sanción</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="min-w-[120px]">Creada</TableHead>
                 <TableHead className="min-w-[120px]">Vence</TableHead>
@@ -41,6 +42,10 @@ export default function PenaltiesTableSkeleton() {
                         <Skeleton className="h-3 w-24" />
                       </div>
                     </div>
+                  </TableCell>
+
+                  <TableCell>
+                    <Skeleton className="h-4 w-28" />
                   </TableCell>
 
                   <TableCell>

@@ -44,10 +44,17 @@ type PenaltyItem = {
   id: string;
   userId: string | null;
   loanId: string | null;
-  amount: string | null;
-  paid: boolean | null;
+  sanctionId: string | null;
+  status: "PENDING" | "PAID" | "EXPIRED";
   createdAt: Date | null;
   expiresIn: Date | null;
+  sanction: {
+    id: string;
+    name: string;
+    type: string;
+    description: string | null;
+    amount: string;
+  } | null;
   loan: {
     id: string;
     endDate: string;
@@ -84,11 +91,18 @@ type PenaltyItem = {
   } | null;
 };
 
-const getStatusBadge = (paid: boolean | null) => {
-  if (paid) {
+const getStatusBadge = (status: "PENDING" | "PAID" | "EXPIRED") => {
+  if (status === "PAID") {
     return (
       <Badge className="bg-berkeley-blue/10 text-berkeley-blue border-0 text-sm">
         Pagada
+      </Badge>
+    );
+  }
+  if (status === "EXPIRED") {
+    return (
+      <Badge className="border-0 bg-orange-600 text-white text-sm">
+        Vencida
       </Badge>
     );
   }
@@ -110,9 +124,9 @@ export default function PenaltiesPage() {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [search, setSearch] = useState("");
-  const [paidFilter, setPaidFilter] = useState<"all" | "paid" | "pending">(
-    "all",
-  );
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "PENDING" | "PAID" | "EXPIRED"
+  >("all");
 
   const [selectedPenalty, setSelectedPenalty] = useState<PenaltyItem | null>(
     null,
@@ -128,8 +142,7 @@ export default function PenaltiesPage() {
   const { data, isLoading, refetch } = api.penalties.getByUserId.useQuery({
     page,
     limit,
-    paid:
-      paidFilter === "all" ? undefined : paidFilter === "paid" ? true : false,
+    status: statusFilter === "all" ? undefined : statusFilter,
     search: search.trim() || undefined,
   });
 
@@ -157,7 +170,7 @@ export default function PenaltiesPage() {
   // Reset page to 1 when search or filter changes
   useEffect(() => {
     setPage(1);
-  }, [search, paidFilter]);
+  }, [search, statusFilter]);
 
   const handleViewMore = (penalty: PenaltyItem) => {
     setSelectedPenalty(penalty);
@@ -225,9 +238,9 @@ export default function PenaltiesPage() {
               Filtrar por:
             </span>
             <Select
-              value={paidFilter}
+              value={statusFilter}
               onValueChange={(v) =>
-                setPaidFilter(v as "all" | "paid" | "pending")
+                setStatusFilter(v as "all" | "PENDING" | "PAID" | "EXPIRED")
               }
             >
               <SelectTrigger className="w-[180px]">
@@ -235,8 +248,9 @@ export default function PenaltiesPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="pending">Pendiente</SelectItem>
-                <SelectItem value="paid">Pagada</SelectItem>
+                <SelectItem value="PENDING">Pendiente</SelectItem>
+                <SelectItem value="PAID">Pagada</SelectItem>
+                <SelectItem value="EXPIRED">Vencida</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -254,6 +268,7 @@ export default function PenaltiesPage() {
                     <TableRow>
                       <TableHead>ID Préstamo</TableHead>
                       <TableHead>Libro</TableHead>
+                      <TableHead>Sanción</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead className="min-w-[120px]">Creada</TableHead>
                       <TableHead className="min-w-[120px]">Vence</TableHead>
@@ -266,7 +281,7 @@ export default function PenaltiesPage() {
                   <TableBody>
                     {results.length > 0 ? (
                       results.map((penalty) => {
-                        const canPay = !penalty.paid;
+                        const canPay = penalty.status === "PENDING";
                         const isPaying =
                           markAsPaidMutation.isPending &&
                           markAsPaidMutation.variables?.penaltyId ===
@@ -307,8 +322,12 @@ export default function PenaltiesPage() {
                               </div>
                             </TableCell>
 
+                            <TableCell className="text-sm text-gray-700">
+                              {penalty.sanction?.name ?? "Sin especificar"}
+                            </TableCell>
+
                             <TableCell>
-                              {getStatusBadge(penalty.paid)}
+                              {getStatusBadge(penalty.status)}
                             </TableCell>
 
                             <TableCell className="text-sm text-gray-600">
@@ -320,7 +339,7 @@ export default function PenaltiesPage() {
                             </TableCell>
 
                             <TableCell className="text-sm text-gray-600">
-                              ${penalty.amount ?? "0"}
+                              ${penalty.sanction?.amount ?? "0"}
                             </TableCell>
 
                             <TableCell className="w-[80px] text-right">
@@ -348,7 +367,7 @@ export default function PenaltiesPage() {
                                         handleOpenPayModal(
                                           penalty.id,
                                           penalty.book.title,
-                                          penalty.amount ?? "0",
+                                          penalty.sanction?.amount ?? "0",
                                         )
                                       }
                                       disabled={isPaying}
@@ -362,7 +381,7 @@ export default function PenaltiesPage() {
                                       ) : (
                                         <>
                                           <DollarSign className="mr-2 h-4 w-4" />
-                                          Pagar {penalty.amount ?? "0"}
+                                          Pagar {penalty.sanction?.amount ?? "0"}
                                         </>
                                       )}
                                     </DropdownMenuItem>

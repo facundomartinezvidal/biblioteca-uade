@@ -373,7 +373,7 @@ export const loansRouter = createTRPCRouter({
       .where(eq(penalties.userId, userId));
 
     const pendingFines = allPenalties.filter(
-      (penalty) => penalty.paid === false || penalty.paid === null,
+      (penalty) => penalty.status === "PENDING" || penalty.status === "EXPIRED",
     ).length;
 
     return {

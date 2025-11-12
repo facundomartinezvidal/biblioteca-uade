@@ -25,10 +25,17 @@ interface PenaltyDetailsPopupProps {
     id: string;
     userId: string | null;
     loanId: string | null;
-    amount: string | null;
-    paid: boolean | null;
+    sanctionId: string | null;
+    status: "PENDING" | "PAID" | "EXPIRED";
     createdAt: Date | null;
     expiresIn: Date | null;
+    sanction: {
+      id: string;
+      name: string;
+      type: string;
+      description: string | null;
+      amount: string;
+    } | null;
     loan: {
       id: string;
       endDate: string;
@@ -68,12 +75,17 @@ interface PenaltyDetailsPopupProps {
   isLoadingPay?: boolean;
 }
 
-const getStatusBadge = (paid?: boolean | null) => {
-  if (paid) {
+const getStatusBadge = (status: "PENDING" | "PAID" | "EXPIRED") => {
+  if (status === "PAID") {
     return (
       <Badge className="bg-berkeley-blue/10 text-berkeley-blue border-0">
         Pagada
       </Badge>
+    );
+  }
+  if (status === "EXPIRED") {
+    return (
+      <Badge className="border-0 bg-orange-600 text-white">Vencida</Badge>
     );
   }
   return <Badge className="border-0 bg-red-600 text-white">Pendiente</Badge>;
@@ -120,7 +132,7 @@ export default function PenaltyDetailsPopup({
         .join(" ")
     : "Autor desconocido";
 
-  const canPay = !penalty.paid;
+  const canPay = penalty.status === "PENDING";
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
@@ -190,7 +202,7 @@ export default function PenaltyDetailsPopup({
                     </div>
                   )}
                 </div>
-                {getStatusBadge(penalty.paid)}
+                {getStatusBadge(penalty.status)}
               </div>
 
               <div>
@@ -247,6 +259,18 @@ export default function PenaltyDetailsPopup({
                       {penalty.loanId ?? "N/A"}
                     </code>
                   </div>
+                  
+                  {penalty.sanction && (
+                    <div className="flex items-center justify-between rounded-lg bg-amber-50 p-3">
+                      <span className="text-sm font-medium text-gray-600">
+                        Tipo de Sanción
+                      </span>
+                      <span className="text-sm font-semibold text-amber-900">
+                        {penalty.sanction.name}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between rounded-lg bg-blue-50 p-3">
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-5 w-5 text-blue-600" />
@@ -255,7 +279,7 @@ export default function PenaltyDetailsPopup({
                       </span>
                     </div>
                     <span className="text-lg font-bold text-gray-900">
-                      ${penalty.amount ?? "0"}
+                      ${penalty.sanction?.amount ?? "0"}
                     </span>
                   </div>
 
@@ -299,9 +323,15 @@ export default function PenaltyDetailsPopup({
                           <span>•</span>
                           <span>
                             <span className="font-medium">Motivo:</span>{" "}
-                            Devolución tardía del libro.
+                            {penalty.sanction?.name ?? "No especificado"}
                           </span>
                         </div>
+                        {penalty.sanction?.description && (
+                          <div className="mb-1 flex items-start gap-2">
+                            <span>•</span>
+                            <span>{penalty.sanction.description}</span>
+                          </div>
+                        )}
                         <div className="flex items-start gap-2">
                           <span>•</span>
                           <span>
@@ -348,7 +378,7 @@ export default function PenaltyDetailsPopup({
                 ) : (
                   <>
                     <DollarSign className="mr-2 h-4 w-4" />
-                    Pagar {penalty.amount ?? "0"}
+                    Pagar {penalty.sanction?.amount ?? "0"}
                   </>
                 )}
               </Button>

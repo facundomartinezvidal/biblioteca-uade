@@ -5,6 +5,7 @@ import {
 } from "~/server/api/trpc";
 import { z } from "zod";
 import { penalties } from "~/server/db/schemas/penalties";
+import { sanctions } from "~/server/db/schemas/sanctions";
 import { loans } from "~/server/db/schemas/loans";
 import { books } from "~/server/db/schemas/books";
 import { authors } from "~/server/db/schemas/authors";
@@ -43,7 +44,7 @@ export const penaltiesRouter = createTRPCRouter({
       z.object({
         page: z.number().min(1).default(1),
         limit: z.number().min(1).max(100).default(10),
-        paid: z.boolean().optional(),
+        status: z.enum(["PENDING", "PAID", "EXPIRED"]).optional(),
         search: z.string().optional(),
       }),
     )
@@ -53,8 +54,8 @@ export const penaltiesRouter = createTRPCRouter({
 
       const conditions = [eq(penalties.userId, userId)];
 
-      if (input.paid !== undefined) {
-        conditions.push(eq(penalties.paid, input.paid));
+      if (input.status) {
+        conditions.push(eq(penalties.status, input.status));
       }
 
       if (input.search) {
@@ -77,10 +78,18 @@ export const penaltiesRouter = createTRPCRouter({
           id: penalties.id,
           userId: penalties.userId,
           loanId: penalties.loanId,
-          amount: penalties.amount,
-          paid: penalties.paid,
+          sanctionId: penalties.sanctionId,
+          amount: sanctions.amount,
+          status: penalties.status,
           createdAt: penalties.createdAt,
           expiresIn: penalties.expiresIn,
+          sanction: {
+            id: sanctions.id,
+            name: sanctions.name,
+            type: sanctions.type,
+            description: sanctions.description,
+            amount: sanctions.amount,
+          },
           loan: {
             id: loans.id,
             endDate: loans.endDate,
@@ -117,6 +126,7 @@ export const penaltiesRouter = createTRPCRouter({
           editorial: editorials.name,
         })
         .from(penalties)
+        .leftJoin(sanctions, eq(penalties.sanctionId, sanctions.id))
         .innerJoin(loans, eq(penalties.loanId, loans.id))
         .innerJoin(books, eq(loans.bookId, books.id))
         .leftJoin(authors, eq(books.authorId, authors.id))
@@ -157,7 +167,7 @@ export const penaltiesRouter = createTRPCRouter({
       z.object({
         page: z.number().min(1).default(1),
         limit: z.number().min(1).max(100).default(10),
-        paid: z.boolean().optional(),
+        status: z.enum(["PENDING", "PAID", "EXPIRED"]).optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -165,8 +175,8 @@ export const penaltiesRouter = createTRPCRouter({
       const offset = (input.page - 1) * input.limit;
 
       const whereConditions =
-        input.paid !== undefined
-          ? and(eq(penalties.userId, userId), eq(penalties.paid, input.paid))
+        input.status
+          ? and(eq(penalties.userId, userId), eq(penalties.status, input.status))
           : eq(penalties.userId, userId);
 
       const results = await ctx.db
@@ -174,10 +184,18 @@ export const penaltiesRouter = createTRPCRouter({
           id: penalties.id,
           userId: penalties.userId,
           loanId: penalties.loanId,
-          amount: penalties.amount,
-          paid: penalties.paid,
+          sanctionId: penalties.sanctionId,
+          amount: sanctions.amount,
+          status: penalties.status,
           createdAt: penalties.createdAt,
           expiresIn: penalties.expiresIn,
+          sanction: {
+            id: sanctions.id,
+            name: sanctions.name,
+            type: sanctions.type,
+            description: sanctions.description,
+            amount: sanctions.amount,
+          },
           loan: {
             id: loans.id,
             endDate: loans.endDate,
@@ -214,6 +232,7 @@ export const penaltiesRouter = createTRPCRouter({
           editorial: editorials.name,
         })
         .from(penalties)
+        .leftJoin(sanctions, eq(penalties.sanctionId, sanctions.id))
         .innerJoin(loans, eq(penalties.loanId, loans.id))
         .innerJoin(books, eq(loans.bookId, books.id))
         .leftJoin(authors, eq(books.authorId, authors.id))
@@ -254,10 +273,18 @@ export const penaltiesRouter = createTRPCRouter({
           id: penalties.id,
           userId: penalties.userId,
           loanId: penalties.loanId,
-          amount: penalties.amount,
-          paid: penalties.paid,
+          sanctionId: penalties.sanctionId,
+          amount: sanctions.amount,
+          status: penalties.status,
           createdAt: penalties.createdAt,
           expiresIn: penalties.expiresIn,
+          sanction: {
+            id: sanctions.id,
+            name: sanctions.name,
+            type: sanctions.type,
+            description: sanctions.description,
+            amount: sanctions.amount,
+          },
           loan: {
             id: loans.id,
             endDate: loans.endDate,
@@ -294,6 +321,7 @@ export const penaltiesRouter = createTRPCRouter({
           editorial: editorials.name,
         })
         .from(penalties)
+        .leftJoin(sanctions, eq(penalties.sanctionId, sanctions.id))
         .innerJoin(loans, eq(penalties.loanId, loans.id))
         .innerJoin(books, eq(loans.bookId, books.id))
         .leftJoin(authors, eq(books.authorId, authors.id))
@@ -334,7 +362,7 @@ export const penaltiesRouter = createTRPCRouter({
         });
       }
 
-      if (existingPenalty[0]!.paid) {
+      if (existingPenalty[0]!.status === "PAID") {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Esta multa ya fue pagada",
@@ -343,7 +371,7 @@ export const penaltiesRouter = createTRPCRouter({
 
       await ctx.db
         .update(penalties)
-        .set({ paid: true })
+        .set({ status: "PAID" })
         .where(eq(penalties.id, input.penaltyId));
 
       return { success: true };
@@ -353,23 +381,35 @@ export const penaltiesRouter = createTRPCRouter({
     const userId = ctx.user.id;
 
     const allPenalties = await ctx.db
-      .select()
+      .select({
+        id: penalties.id,
+        sanctionId: penalties.sanctionId,
+        userId: penalties.userId,
+        loanId: penalties.loanId,
+        status: penalties.status,
+        createdAt: penalties.createdAt,
+        expiresIn: penalties.expiresIn,
+        sanctionAmount: sanctions.amount,
+      })
       .from(penalties)
+      .leftJoin(sanctions, eq(penalties.sanctionId, sanctions.id))
       .where(eq(penalties.userId, userId));
 
     const pendingPenalties = allPenalties.filter(
-      (penalty) => !penalty.paid,
+      (penalty) => penalty.status === "PENDING",
     ).length;
 
-    const paidPenalties = allPenalties.filter((penalty) => penalty.paid).length;
+    const paidPenalties = allPenalties.filter(
+      (penalty) => penalty.status === "PAID",
+    ).length;
 
     const totalAmount = allPenalties.reduce((sum, penalty) => {
-      return sum + (penalty.paid ? 0 : parseFloat(penalty.amount ?? "0"));
+      return sum + (penalty.status !== "PAID" ? parseFloat(penalty.sanctionAmount ?? "0") : 0);
     }, 0);
 
     const now = new Date();
     const expiringSoon = allPenalties.filter((penalty) => {
-      if (penalty.paid || !penalty.expiresIn) return false;
+      if (penalty.status === "PAID" || !penalty.expiresIn) return false;
       const expirationDate = new Date(penalty.expiresIn);
       const threeDaysFromNow = new Date(now);
       threeDaysFromNow.setDate(now.getDate() + 3);
@@ -390,7 +430,7 @@ export const penaltiesRouter = createTRPCRouter({
         userId: z.string(),
         page: z.number().min(1).default(1),
         limit: z.number().min(1).max(100).default(10),
-        paid: z.boolean().optional(),
+        status: z.enum(["PENDING", "PAID", "EXPIRED"]).optional(),
         search: z.string().optional(),
       }),
     )
@@ -399,8 +439,8 @@ export const penaltiesRouter = createTRPCRouter({
 
       const conditions = [eq(penalties.userId, input.userId)];
 
-      if (input.paid !== undefined) {
-        conditions.push(eq(penalties.paid, input.paid));
+      if (input.status) {
+        conditions.push(eq(penalties.status, input.status));
       }
 
       if (input.search) {
@@ -423,10 +463,18 @@ export const penaltiesRouter = createTRPCRouter({
           id: penalties.id,
           userId: penalties.userId,
           loanId: penalties.loanId,
-          amount: penalties.amount,
-          paid: penalties.paid,
+          sanctionId: penalties.sanctionId,
+          amount: sanctions.amount,
+          status: penalties.status,
           createdAt: penalties.createdAt,
           expiresIn: penalties.expiresIn,
+          sanction: {
+            id: sanctions.id,
+            name: sanctions.name,
+            type: sanctions.type,
+            description: sanctions.description,
+            amount: sanctions.amount,
+          },
           loan: {
             id: loans.id,
             endDate: loans.endDate,
@@ -463,6 +511,7 @@ export const penaltiesRouter = createTRPCRouter({
           editorial: editorials.name,
         })
         .from(penalties)
+        .leftJoin(sanctions, eq(penalties.sanctionId, sanctions.id))
         .innerJoin(loans, eq(penalties.loanId, loans.id))
         .innerJoin(books, eq(loans.bookId, books.id))
         .leftJoin(authors, eq(books.authorId, authors.id))
