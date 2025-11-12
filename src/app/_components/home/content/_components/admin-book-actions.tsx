@@ -1,6 +1,12 @@
 "use client";
 
-import { MoreHorizontal, Pencil, Trash2, BookmarkPlus } from "lucide-react";
+import {
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  BookmarkPlus,
+  Loader2,
+} from "lucide-react";
 import { Button } from "~/components/ui/button";
 import {
   DropdownMenu,
@@ -26,15 +32,21 @@ import { api } from "~/trpc/react";
 interface AdminBookActionsProps {
   bookId: string;
   bookTitle: string;
+  bookAuthor?: string;
+  bookImageUrl?: string | null;
+  bookStatus: string;
   onEdit: () => void;
   onDeleteSuccess?: () => void;
+  onReserveClick: () => void;
 }
 
 export function AdminBookActions({
   bookId,
   bookTitle,
+  bookStatus,
   onEdit,
   onDeleteSuccess,
+  onReserveClick,
 }: AdminBookActionsProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -47,13 +59,11 @@ export function AdminBookActions({
     },
   });
 
-  const handleReserve = () => {
-    // TODO: implementar reserva desde admin
-  };
-
   const handleDelete = () => {
     deleteBookMutation.mutate({ id: bookId });
   };
+
+  const isAvailable = bookStatus === "AVAILABLE";
 
   return (
     <>
@@ -71,9 +81,9 @@ export function AdminBookActions({
             <Pencil className="mr-2 h-4 w-4" />
             Editar
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleReserve}>
+          <DropdownMenuItem onClick={onReserveClick} disabled={!isAvailable}>
             <BookmarkPlus className="mr-2 h-4 w-4" />
-            Reservar
+            Prestar
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -104,7 +114,14 @@ export function AdminBookActions({
               className="bg-red-600 hover:bg-red-700"
               disabled={deleteBookMutation.isPending}
             >
-              {deleteBookMutation.isPending ? "Eliminando..." : "Eliminar"}
+              {deleteBookMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Eliminando
+                </>
+              ) : (
+                "Eliminar"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

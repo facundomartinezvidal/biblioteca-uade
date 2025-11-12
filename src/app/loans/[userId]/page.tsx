@@ -1,15 +1,6 @@
 "use client";
 
-import {
-  History,
-  Search,
-  RefreshCw,
-  Loader2,
-  MoreHorizontal,
-  Eye,
-  X,
-} from "lucide-react";
-import { Button } from "~/components/ui/button";
+import { History, Search } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { Badge } from "~/components/ui/badge";
 import {
@@ -20,12 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
 import { Card, CardContent } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
 import Image from "next/image";
@@ -39,10 +24,11 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { api } from "~/trpc/react";
-import { useRouter, useParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import LoansTableSkeleton from "../_components/loans-table-skeleton";
 import LoanDetailsPopup from "../_components/loan-details-popup";
 import CancelReservationModal from "../_components/cancel-reservation-modal";
+import { AdminLoanActions } from "../_components/admin-loan-actions";
 
 type LoanStatus = "ACTIVE" | "RESERVED" | "FINISHED" | "EXPIRED" | "CANCELLED";
 type LoanItem = {
@@ -125,7 +111,6 @@ const formatDate = (dateString: string) => {
 };
 
 export default function LoanUserDetailsPage() {
-  const router = useRouter();
   const params = useParams();
   const userId = params.userId as string;
   const utils = api.useUtils();
@@ -168,6 +153,23 @@ export default function LoanUserDetailsPage() {
     },
   });
 
+  const reserveAgainMutation =
+    api.loans.createReservationForStudent.useMutation({
+      onSuccess: async () => {
+        await refetch();
+        await Promise.all([
+          utils.loans.getByUserIdAdmin.invalidate(),
+          utils.books.getAllAdmin.invalidate(),
+          utils.books.getAll.invalidate(),
+        ]);
+        setLoadingReserveId(null);
+        handleCloseDetailsModal();
+      },
+      onError: () => {
+        setLoadingReserveId(null);
+      },
+    });
+
   const results = data?.results ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -202,7 +204,7 @@ export default function LoanUserDetailsPage() {
 
   const handleReserveAgain = (bookId: string) => {
     setLoadingReserveId(bookId);
-    router.push(`/reserve/${bookId}`);
+    reserveAgainMutation.mutate({ bookId, studentId: userId });
   };
 
   const studentName = studentData
@@ -277,6 +279,7 @@ export default function LoanUserDetailsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-[100px]">ID</TableHead>
                       <TableHead>Libro</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead className="min-w-[120px]">Desde</TableHead>
@@ -289,15 +292,11 @@ export default function LoanUserDetailsPage() {
                   <TableBody>
                     {results.length > 0 ? (
                       results.map((loan: LoanItem) => {
-                        const canCancel = loan.status === "RESERVED";
-                        const canReserve =
-                          loan.status === "FINISHED" ||
-                          loan.status === "CANCELLED";
-                        const isLoadingReserve =
-                          loadingReserveId === loan.book.id;
-
                         return (
                           <TableRow key={loan.id}>
+                            <TableCell className="font-mono text-xs text-gray-500">
+                              {loan.id.substring(0, 8)}...
+                            </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-3">
                                 <div className="relative h-14 w-10 flex-shrink-0 overflow-hidden rounded bg-gray-200">
@@ -345,61 +344,17 @@ export default function LoanUserDetailsPage() {
                             </TableCell>
 
                             <TableCell className="w-[80px] text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    disabled
-                                  >
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Abrir menú</span>
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onClick={() => handleViewMore(loan)}
-                                  >
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    Ver Más
-                                  </DropdownMenuItem>
-                                  {canCancel && (
-                                    <DropdownMenuItem
-                                      onClick={() =>
-                                        handleOpenCancelModal(
-                                          loan.id,
-                                          loan.book.title,
-                                        )
-                                      }
-                                      className="text-red-600"
-                                    >
-                                      <X className="mr-2 h-4 w-4" />
-                                      Cancelar Reserva
-                                    </DropdownMenuItem>
-                                  )}
-                                  {canReserve && (
-                                    <DropdownMenuItem
-                                      onClick={() =>
-                                        handleReserveAgain(loan.book.id)
-                                      }
-                                      disabled={isLoadingReserve}
-                                    >
-                                      {isLoadingReserve ? (
-                                        <>
-                                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                          Reservando...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <RefreshCw className="mr-2 h-4 w-4" />
-                                          Reservar Nuevamente
-                                        </>
-                                      )}
-                                    </DropdownMenuItem>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                              <AdminLoanActions
+                                loanId={loan.id}
+                                loanStatus={loan.status}
+                                bookTitle={loan.book.title}
+                                bookId={loan.book.id}
+                                userId={loan.userId ?? undefined}
+                                onViewMore={() => handleViewMore(loan)}
+                                onSuccess={() => {
+                                  // Refrescar datos después de una acción exitosa
+                                }}
+                              />
                             </TableCell>
                           </TableRow>
                         );
@@ -407,7 +362,7 @@ export default function LoanUserDetailsPage() {
                     ) : (
                       <TableRow>
                         <TableCell
-                          colSpan={5}
+                          colSpan={6}
                           className="py-8 text-center text-gray-500"
                         >
                           Este estudiante no tiene préstamos registrados

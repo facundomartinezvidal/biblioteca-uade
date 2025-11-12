@@ -10,6 +10,7 @@ import {
 } from "~/lib/table-utils";
 import { AdminBookActions } from "./admin-book-actions";
 import { EditBookModal } from "./edit-book-modal";
+import { AdminReserveModal } from "./admin-reserve-modal";
 import { useState } from "react";
 
 interface AdminBookRowProps {
@@ -52,6 +53,13 @@ export function AdminBookRow({
   onDeleteSuccess,
 }: AdminBookRowProps) {
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showReserveModal, setShowReserveModal] = useState(false);
+
+  const fullAuthorName = formatAuthorName(
+    author,
+    authorMiddleName,
+    authorLastName,
+  );
 
   return (
     <>
@@ -76,9 +84,7 @@ export function AdminBookRow({
               <p className="truncate text-sm font-medium text-gray-900">
                 {title}
               </p>
-              <p className="truncate text-sm text-gray-600">
-                {formatAuthorName(author, authorMiddleName, authorLastName)}
-              </p>
+              <p className="truncate text-sm text-gray-600">{fullAuthorName}</p>
             </div>
           </div>
         </TableCell>
@@ -98,8 +104,12 @@ export function AdminBookRow({
           <AdminBookActions
             bookId={id}
             bookTitle={title}
+            bookAuthor={fullAuthorName}
+            bookImageUrl={imageUrl}
+            bookStatus={status}
             onEdit={() => setShowEditModal(true)}
             onDeleteSuccess={onDeleteSuccess}
+            onReserveClick={() => setShowReserveModal(true)}
           />
         </TableCell>
       </TableRow>
@@ -122,6 +132,19 @@ export function AdminBookRow({
           imageUrl,
           author,
           gender,
+        }}
+      />
+
+      <AdminReserveModal
+        isOpen={showReserveModal}
+        onClose={() => setShowReserveModal(false)}
+        bookId={id}
+        bookTitle={title}
+        bookAuthor={fullAuthorName}
+        bookImageUrl={imageUrl}
+        onSuccess={() => {
+          // Opcionalmente mostrar un toast de éxito
+          onDeleteSuccess?.(); // Reutilizamos para refrescar la tabla
         }}
       />
     </>
