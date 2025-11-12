@@ -7,7 +7,7 @@ import {
   Eye,
   DollarSign,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Badge } from "~/components/ui/badge";
@@ -130,6 +130,7 @@ export default function PenaltiesPage() {
     limit,
     paid:
       paidFilter === "all" ? undefined : paidFilter === "paid" ? true : false,
+    search: search.trim() || undefined,
   });
 
   const markAsPaidMutation = api.penalties.markAsPaid.useMutation({
@@ -150,18 +151,10 @@ export default function PenaltiesPage() {
   const hasNextPage = page < totalPages;
   const hasPreviousPage = page > 1;
 
-  const displayedResults = results.filter((penalty) => {
-    const query = search.trim().toLowerCase();
-    if (!query) return true;
-    const authorName = penalty.author
-      ? `${penalty.author.name} ${penalty.author.middleName ?? ""} ${penalty.author.lastName}`
-      : "";
-    return (
-      penalty.book.title.toLowerCase().includes(query) ||
-      authorName.toLowerCase().includes(query) ||
-      (penalty.book.isbn ?? "").toLowerCase().includes(query)
-    );
-  });
+  // Reset page to 1 when search or filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [search, paidFilter]);
 
   const handleViewMore = (penalty: PenaltyItem) => {
     setSelectedPenalty(penalty);
@@ -189,7 +182,7 @@ export default function PenaltiesPage() {
   };
 
   const handlePayPenalty = (penaltyId: string) => {
-    const penalty = displayedResults.find((p) => p.id === penaltyId);
+    const penalty = results.find((p) => p.id === penaltyId);
     if (penalty) {
       handleOpenPayModal(penaltyId, penalty.book.title, penalty.amount ?? "0");
       setIsDetailsModalOpen(false);
@@ -270,8 +263,8 @@ export default function PenaltiesPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {displayedResults.length > 0 ? (
-                      displayedResults.map((penalty) => {
+                    {results.length > 0 ? (
+                      results.map((penalty) => {
                         const canPay = !penalty.paid;
                         const isPaying =
                           markAsPaidMutation.isPending &&

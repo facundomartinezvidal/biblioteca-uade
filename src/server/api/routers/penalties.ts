@@ -44,16 +44,33 @@ export const penaltiesRouter = createTRPCRouter({
         page: z.number().min(1).default(1),
         limit: z.number().min(1).max(100).default(10),
         paid: z.boolean().optional(),
+        search: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
       const userId = ctx.user.id;
       const offset = (input.page - 1) * input.limit;
 
-      const whereConditions =
-        input.paid !== undefined
-          ? and(eq(penalties.userId, userId), eq(penalties.paid, input.paid))
-          : eq(penalties.userId, userId);
+      const conditions = [eq(penalties.userId, userId)];
+
+      if (input.paid !== undefined) {
+        conditions.push(eq(penalties.paid, input.paid));
+      }
+
+      if (input.search) {
+        const searchTerm = input.search.trim();
+        conditions.push(
+          or(
+            ilike(books.title, `%${searchTerm}%`),
+            ilike(books.isbn, `%${searchTerm}%`),
+            ilike(authors.name, `%${searchTerm}%`),
+            ilike(authors.middleName, `%${searchTerm}%`),
+            ilike(authors.lastName, `%${searchTerm}%`),
+          )!,
+        );
+      }
+
+      const whereConditions = and(...conditions);
 
       const results = await ctx.db
         .select({
@@ -114,6 +131,9 @@ export const penaltiesRouter = createTRPCRouter({
       const totalResults = await ctx.db
         .select({ count: penalties.id })
         .from(penalties)
+        .innerJoin(loans, eq(penalties.loanId, loans.id))
+        .innerJoin(books, eq(loans.bookId, books.id))
+        .leftJoin(authors, eq(books.authorId, authors.id))
         .where(whereConditions);
 
       const formattedResults = results.map((result) => ({

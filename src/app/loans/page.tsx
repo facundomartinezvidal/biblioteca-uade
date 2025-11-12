@@ -28,7 +28,7 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { Card, CardContent } from "~/components/ui/card";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PaginationControls from "../_components/home/pagination-controls";
 import {
   Select,
@@ -146,6 +146,7 @@ export default function LoansPage() {
     page,
     limit,
     status: statusFilter === "all" ? undefined : statusFilter,
+    search: search.trim() || undefined,
   });
 
   const cancelMutation = api.loans.cancelReservation.useMutation({
@@ -169,18 +170,10 @@ export default function LoansPage() {
   const hasNextPage = page < totalPages;
   const hasPreviousPage = page > 1;
 
-  const displayedResults = results.filter((loan) => {
-    const query = search.trim().toLowerCase();
-    if (!query) return true;
-    const authorName = loan.author
-      ? `${loan.author.name} ${loan.author.middleName ?? ""} ${loan.author.lastName}`
-      : "";
-    return (
-      loan.book.title.toLowerCase().includes(query) ||
-      authorName.toLowerCase().includes(query) ||
-      (loan.book.isbn ?? "").toLowerCase().includes(query)
-    );
-  });
+  // Reset page to 1 when search or filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter]);
 
   const handleViewMore = (loan: LoanItem) => {
     setSelectedLoan(loan);
@@ -282,8 +275,8 @@ export default function LoansPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {displayedResults.length > 0 ? (
-                      displayedResults.map((loan) => {
+                    {results.length > 0 ? (
+                      results.map((loan) => {
                         const canCancel = loan.status === "RESERVED";
                         const canReserve =
                           loan.status === "FINISHED" ||

@@ -45,15 +45,33 @@ export const loansRouter = createTRPCRouter({
         status: z
           .enum(["RESERVED", "ACTIVE", "FINISHED", "EXPIRED", "CANCELLED"])
           .optional(),
+        search: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
       const userId = ctx.user.id;
       const offset = (input.page - 1) * input.limit;
 
-      const whereConditions = input.status
-        ? and(eq(loans.userId, userId), eq(loans.status, input.status))
-        : eq(loans.userId, userId);
+      const conditions = [eq(loans.userId, userId)];
+
+      if (input.status) {
+        conditions.push(eq(loans.status, input.status));
+      }
+
+      if (input.search) {
+        const searchTerm = input.search.trim();
+        conditions.push(
+          or(
+            ilike(books.title, `%${searchTerm}%`),
+            ilike(books.isbn, `%${searchTerm}%`),
+            ilike(authors.name, `%${searchTerm}%`),
+            ilike(authors.middleName, `%${searchTerm}%`),
+            ilike(authors.lastName, `%${searchTerm}%`),
+          )!,
+        );
+      }
+
+      const whereConditions = and(...conditions);
 
       const results = await ctx.db
         .select({
@@ -105,6 +123,8 @@ export const loansRouter = createTRPCRouter({
       const totalResults = await ctx.db
         .select({ count: loans.id })
         .from(loans)
+        .innerJoin(books, eq(loans.bookId, books.id))
+        .leftJoin(authors, eq(books.authorId, authors.id))
         .where(whereConditions);
 
       const formattedResults = results.map((result) => ({
