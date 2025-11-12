@@ -75,9 +75,8 @@ export function AdminBooksFilters({
     yearToFilter !== undefined;
 
   return (
-    <div className="mt-6 mb-6 space-y-4">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        {/* Search */}
+    <div className="mt-6 mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div className="flex w-full max-w-2xl flex-row items-center gap-6">
         <div className="relative w-full max-w-md">
           <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
           <Input
