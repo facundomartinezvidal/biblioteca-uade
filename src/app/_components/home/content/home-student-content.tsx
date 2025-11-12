@@ -148,6 +148,10 @@ export function HomeStudentContent() {
   const { data: favoritesData, isLoading: isLoadingFavorites } =
     api.favorites.getFavorites.useQuery();
   const { data: favoriteIds } = api.favorites.getFavoriteIds.useQuery();
+  const {
+    data: recommendedData,
+    isLoading: isLoadingRecommended,
+  } = api.books.getRecommended.useQuery({ limit: pageSize });
 
   // Fetch user reservations to check which books are reserved/active by current user
   const { data: userActiveLoansData } = api.loans.getActive.useQuery();
@@ -273,10 +277,7 @@ export function HomeStudentContent() {
 
   const favoriteBooks = favoritesData ?? [];
 
-  const recommendedEnabled = false;
-  const recommendedBooks = recommendedEnabled
-    ? books.filter((book) => book.status === "AVAILABLE").slice(-2)
-    : [];
+  const recommendedBooks = recommendedData?.response ?? [];
 
   return (
     <div>
@@ -298,9 +299,9 @@ export function HomeStudentContent() {
           onGenreChange={setFormGenre}
           onAvailabilityChange={setFormAvailability}
           onEditorialChange={setFormEditorial}
+          onLocationChange={setFormLocation}
           onYearFromChange={setFormYearFrom}
           onYearToChange={setFormYearTo}
-          onLocationChange={setFormLocation}
           onFilterCancel={clearFilters}
           onFilterSubmit={applyFilters}
         />
@@ -355,10 +356,15 @@ export function HomeStudentContent() {
           <TabsContent value="recomended" className="mt-6">
             <StudentBooksRecommendedTab
               books={recommendedBooks}
-              isLoading={isLoading}
+              isLoading={isLoadingRecommended}
               onReserve={handleReserve}
               onViewMore={handleViewMore}
               reserveLoadingIds={reserveLoadingIds}
+              favoriteIds={favoriteIds ?? []}
+              onToggleFavorite={handleToggleFavorite}
+              favoriteLoadingIds={favoriteLoadingIds}
+              userReservedBookIds={userReservedBookIds}
+              userActiveBookIds={userActiveBookIds}
             />
           </TabsContent>
         </Tabs>

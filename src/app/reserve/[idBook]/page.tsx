@@ -52,8 +52,7 @@ export default function ReservePage() {
   );
 
   const { data: recommendedBooksData, isLoading: recommendedLoading } =
-    api.books.getAll.useQuery({
-      page: 1,
+    api.books.getRecommended.useQuery({
       limit: 10,
     });
 
