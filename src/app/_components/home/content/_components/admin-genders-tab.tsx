@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import {
@@ -32,19 +32,18 @@ export function AdminGendersTab() {
   const [deleteGender, setDeleteGender] = useState<Gender | null>(null);
   const utils = api.useUtils();
 
-  const { data, isLoading } = api.catalog.getAllGenders.useQuery();
-  const allGenders = data?.response ?? [];
-  // Filtrado frontend
-  const filtered = search.trim()
-    ? allGenders.filter(g => g.name && g.name.toLowerCase().includes(search.trim().toLowerCase()))
-    : allGenders;
-  // Paginación frontend
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const genders = filtered.slice((page - 1) * pageSize, page * pageSize);
-  useEffect(() => { setPage(1); }, [search]);
+  const { data, isLoading } = api.catalog.getAllGenders.useQuery({
+    search: search.trim() || undefined,
+    page,
+    limit: pageSize,
+  });
+
+  const genders = data?.response ?? [];
+  const pagination = data?.pagination;
+
   useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [totalPages, page]);
+    setPage(1);
+  }, [search]);
 
   // Mutations
   const createGender = api.catalog.createGender.useMutation({
@@ -150,14 +149,16 @@ export function AdminGendersTab() {
           </div>
         </CardContent>
       </Card>
-      {totalPages > 1 && (
+      {pagination && pagination.totalPages > 1 && (
         <PaginationControls
           className="mt-6"
-          currentPage={page}
-          totalPages={totalPages}
-          hasNextPage={page < totalPages}
-          hasPreviousPage={page > 1}
-          onPageChange={p => { if (p >= 1 && p <= totalPages) setPage(p); }}
+          currentPage={pagination.page}
+          totalPages={pagination.totalPages}
+          hasNextPage={pagination.hasNextPage}
+          hasPreviousPage={pagination.hasPreviousPage}
+          onPageChange={p => {
+            if (p >= 1 && p <= pagination.totalPages) setPage(p);
+          }}
         />
       )}
       {/* Modal de agregar/editar */}

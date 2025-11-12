@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import {
@@ -34,26 +34,18 @@ export function AdminAuthorsTab() {
   const [deleteAuthor, setDeleteAuthor] = useState<Author | null>(null);
   const utils = api.useUtils();
 
-  const { data, isLoading } = api.catalog.getAllAuthors.useQuery();
-  const allAuthors = data?.response ?? [];
-  // Filtrado frontend
-  const filtered = search.trim()
-    ? allAuthors.filter(a => {
-        const term = search.trim().toLowerCase();
-        return (
-          (a.name && a.name.toLowerCase().includes(term)) ||
-          (a.middleName && a.middleName.toLowerCase().includes(term)) ||
-          (a.lastName && a.lastName.toLowerCase().includes(term))
-        );
-      })
-    : allAuthors;
-  // Paginación frontend
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const authors = filtered.slice((page - 1) * pageSize, page * pageSize);
-  useEffect(() => { setPage(1); }, [search]);
+  const { data, isLoading } = api.catalog.getAllAuthors.useQuery({
+    search: search.trim() || undefined,
+    page,
+    limit: pageSize,
+  });
+
+  const authors = data?.response ?? [];
+  const pagination = data?.pagination;
+
   useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [totalPages, page]);
+    setPage(1);
+  }, [search]);
 
   // Mutations
   const createAuthor = api.catalog.createAuthor.useMutation({
@@ -69,7 +61,7 @@ export function AdminAuthorsTab() {
   // Form state
   const [form, setForm] = useState({ name: "", middleName: "", lastName: "" });
   useEffect(() => {
-    if (editAuthor) setForm({ name: editAuthor.name, middleName: editAuthor.middleName || "", lastName: editAuthor.lastName });
+    if (editAuthor) setForm({ name: editAuthor.name, middleName: editAuthor.middleName ?? "", lastName: editAuthor.lastName });
     else setForm({ name: "", middleName: "", lastName: "" });
   }, [editAuthor, showAddModal]);
 
@@ -165,14 +157,16 @@ export function AdminAuthorsTab() {
           </div>
         </CardContent>
       </Card>
-      {totalPages > 1 && (
+      {pagination && pagination.totalPages > 1 && (
         <PaginationControls
           className="mt-6"
-          currentPage={page}
-          totalPages={totalPages}
-          hasNextPage={page < totalPages}
-          hasPreviousPage={page > 1}
-          onPageChange={p => { if (p >= 1 && p <= totalPages) setPage(p); }}
+          currentPage={pagination.page}
+          totalPages={pagination.totalPages}
+          hasNextPage={pagination.hasNextPage}
+          hasPreviousPage={pagination.hasPreviousPage}
+          onPageChange={p => {
+            if (p >= 1 && p <= pagination.totalPages) setPage(p);
+          }}
         />
       )}
       {/* Modal de agregar/editar */}
