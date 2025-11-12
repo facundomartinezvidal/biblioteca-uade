@@ -1,7 +1,5 @@
 "use client";
 
-import { Clock } from "lucide-react";
-import { ComingSoon } from "~/app/_components/coming-soon";
 import { StudentBooksGrid } from "./student-books-grid";
 
 interface Book {
@@ -26,6 +24,11 @@ interface StudentBooksRecommendedTabProps {
   onReserve: (book: Book) => void;
   onViewMore: (book: Book) => void;
   reserveLoadingIds?: Set<string>;
+  favoriteIds?: string[];
+  onToggleFavorite?: (bookId: string) => void;
+  favoriteLoadingIds?: Set<string>;
+  userReservedBookIds?: string[];
+  userActiveBookIds?: string[];
 }
 
 export function StudentBooksRecommendedTab({
@@ -34,15 +37,21 @@ export function StudentBooksRecommendedTab({
   onReserve,
   onViewMore,
   reserveLoadingIds = new Set(),
+  favoriteIds = [],
+  onToggleFavorite,
+  favoriteLoadingIds,
+  userReservedBookIds = [],
+  userActiveBookIds = [],
 }: StudentBooksRecommendedTabProps) {
   const emptyMessage = (
-    <div className="col-span-2 flex items-center justify-center py-12">
-      <ComingSoon
-        icon={<Clock className="h-6 w-6" />}
-        title="Recomendados"
-        subtitle="Próximamente"
-        description="Estamos trabajando en recomendaciones personalizadas para sugerirte lecturas basadas en tus intereses."
-      />
+    <div className="col-span-2 rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+      <p className="font-medium text-foreground">
+        Aún no hay recomendaciones personalizadas
+      </p>
+      <p className="mt-2">
+        Explora la biblioteca y realiza préstamos para descubrir sugerencias
+        alineadas con tus intereses.
+      </p>
     </div>
   );
 
@@ -55,6 +64,11 @@ export function StudentBooksRecommendedTab({
       onReserve={onReserve}
       reserveLoadingIds={reserveLoadingIds}
       onViewMore={onViewMore}
+      favoriteIds={favoriteIds}
+      onToggleFavorite={onToggleFavorite}
+      favoriteLoadingIds={favoriteLoadingIds}
+      userReservedBookIds={userReservedBookIds}
+      userActiveBookIds={userActiveBookIds}
     />
   );
 }
