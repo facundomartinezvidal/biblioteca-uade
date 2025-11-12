@@ -83,9 +83,10 @@ export function AdminReserveModal({
     api.loans.createReservationForStudent.useMutation({
       onSuccess: async () => {
         await Promise.all([
-          utils.books.getAllAdmin.invalidate(),
-          utils.books.getAll.invalidate(),
-          utils.loans.getByUserIdAdmin.invalidate(),
+          utils.loans.invalidate(), // Invalida todas las queries de loans
+          utils.books.invalidate(), // Invalida todas las queries de books
+          utils.dashboard.invalidate(), // Invalida dashboard
+          utils.notifications.invalidate(), // Invalida notificaciones
         ]);
         onSuccess?.();
         toast.success("Préstamo creado exitosamente");
@@ -239,7 +240,7 @@ export function AdminReserveModal({
                 <li>
                   • El préstamo se creará en estado ACTIVO (libro entregado)
                 </li>
-                <li>• Tendrá una duración de 14 días desde la fecha actual</li>
+                <li>• Tendrá una duración de 7 días desde la fecha actual</li>
                 <li>
                   • El estudiante podrá ver el préstamo activo en su historial
                 </li>

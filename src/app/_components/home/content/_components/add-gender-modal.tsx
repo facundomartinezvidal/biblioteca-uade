@@ -31,7 +31,10 @@ export function AddGenderModal({
   const utils = api.useUtils();
   const createGenderMutation = api.catalog.createGender.useMutation({
     onSuccess: async () => {
-      await utils.catalog.getAllGenders.invalidate();
+      await Promise.all([
+        utils.catalog.invalidate(), // Invalida todas las queries de catalog
+        utils.books.invalidate(), // Invalida todas las queries de books
+      ]);
       onSuccess?.();
       onClose();
       form.reset();

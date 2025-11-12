@@ -103,7 +103,10 @@ export function AddBookModal({
 
   const createBookMutation = api.books.createBook.useMutation({
     onSuccess: async () => {
-      await utils.books.getAllAdmin.invalidate();
+      await Promise.all([
+        utils.books.invalidate(), // Invalida todas las queries de books
+        utils.dashboard.invalidate(), // Invalida dashboard
+      ]);
       onSuccess?.();
       handleClose();
     },

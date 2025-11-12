@@ -28,6 +28,7 @@ import {
 } from "~/components/ui/alert-dialog";
 import { useState } from "react";
 import { api } from "~/trpc/react";
+import { toast } from "sonner";
 
 interface AdminBookActionsProps {
   bookId: string;
@@ -53,9 +54,17 @@ export function AdminBookActions({
   const utils = api.useUtils();
   const deleteBookMutation = api.books.deleteBook.useMutation({
     onSuccess: async () => {
-      await utils.books.getAllAdmin.invalidate();
+      await Promise.all([
+        utils.books.invalidate(), // Invalida todas las queries de books
+        utils.loans.invalidate(), // Invalida todas las queries de loans
+        utils.dashboard.invalidate(), // Invalida dashboard
+      ]);
+      toast.success("Libro eliminado exitosamente");
       onDeleteSuccess?.();
       setShowDeleteDialog(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Error al eliminar el libro");
     },
   });
 
@@ -97,7 +106,12 @@ export function AdminBookActions({
       </DropdownMenu>
 
       {/* Alert Dialog para confirmar eliminación */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialog open={showDeleteDialog} onOpenChange={(open) => {
+        // Solo permitir cerrar si no está en proceso de eliminación
+        if (!deleteBookMutation.isPending) {
+          setShowDeleteDialog(open);
+        }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
@@ -108,9 +122,14 @@ export function AdminBookActions({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteBookMutation.isPending}>
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
               className="bg-red-600 hover:bg-red-700"
               disabled={deleteBookMutation.isPending}
             >

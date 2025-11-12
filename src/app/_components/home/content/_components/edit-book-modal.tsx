@@ -129,7 +129,10 @@ export function EditBookModal({
 
   const updateBookMutation = api.books.updateBook.useMutation({
     onSuccess: async () => {
-      await utils.books.getAllAdmin.invalidate();
+      await Promise.all([
+        utils.books.invalidate(), // Invalida todas las queries de books
+        utils.dashboard.invalidate(), // Invalida dashboard
+      ]);
       onSuccess?.();
       onClose();
     },
