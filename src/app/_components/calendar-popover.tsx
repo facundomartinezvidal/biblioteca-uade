@@ -7,9 +7,10 @@ import {
   Clock,
   AlertCircle,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "~/components/ui/button";
-import { Calendar } from "~/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
@@ -17,24 +18,52 @@ import {
 } from "~/components/ui/popover";
 import { cn } from "~/lib/utils";
 import {
-  format,
-  isSameDay,
-  parseISO,
+  addMonths,
   differenceInDays,
-  isAfter,
+  eachDayOfInterval,
+  endOfDay,
+  endOfMonth,
+  endOfWeek,
+  format,
+  isBefore,
+  isSameDay,
+  isSameMonth,
+  isValid,
+  isWithinInterval,
+  parseISO,
   startOfDay,
+  startOfMonth,
+  startOfWeek,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { api } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
+import { api, type RouterOutputs } from "~/trpc/react";
+
+type LoanItem = RouterOutputs["loans"]["getByUserId"]["results"][number];
 
 interface CalendarPopoverProps {
   className?: string;
 }
 
+type LoanWithComputedDates = {
+  loan: LoanItem;
+  startDate: Date;
+  endDate: Date;
+  dueDate: Date | null;
+};
+
+const normalizeDate = (value: string | Date | null | undefined) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  const parsed = parseISO(value);
+  return isValid(parsed) ? parsed : null;
+};
+
 export default function CalendarPopover({ className }: CalendarPopoverProps) {
   const [date, setDate] = useState<Date>();
   const [open, setOpen] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
+  const weekdayLabels = ["L", "M", "X", "J", "V", "S", "D"];
 
   const { data: activeLoans, isLoading: isLoadingActive } =
     api.loans.getByUserId.useQuery({
@@ -56,62 +85,120 @@ export default function CalendarPopover({ className }: CalendarPopoverProps) {
     return [...active, ...reserved];
   }, [activeLoans, reservedLoans]);
 
-  const datesWithLoans = useMemo(() => {
-    return allLoans.map((loan) => ({
-      date: parseISO(loan.endDate),
+  const loansWithDates = useMemo<LoanWithComputedDates[]>(() => {
+    return allLoans
+      .map((loan) => {
+        const start = normalizeDate(loan.createdAt);
+        const due = normalizeDate(loan.endDate);
+
+        if (!start && !due) return null;
+
+        const startDate = startOfDay(start ?? due ?? new Date());
+        const endDate = endOfDay(due ?? start ?? new Date());
+
+        return {
       loan,
-    }));
-  }, [allLoans]);
-
-  const getLoansForDate = (checkDate: Date) => {
-    return datesWithLoans.filter(({ date }) => isSameDay(date, checkDate));
-  };
-
-  const upcomingLoans = useMemo(() => {
-    const today = startOfDay(new Date());
-    const upcoming = allLoans
-      .map((loan) => ({
-        ...loan,
-        endDate: parseISO(loan.endDate),
-        daysUntilDue: differenceInDays(parseISO(loan.endDate), today),
-      }))
-      .filter((loan) => isAfter(loan.endDate, today))
-      .sort((a, b) => a.daysUntilDue - b.daysUntilDue)
-      .slice(0, 3);
-
-    return upcoming;
+          startDate,
+          endDate,
+          dueDate: due ? startOfDay(due) : null,
+        };
+      })
+      .filter(Boolean) as LoanWithComputedDates[];
   }, [allLoans]);
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
+    if (!selectedDate) {
+      setDate(undefined);
+      return;
+    }
+
+    if (date && isSameDay(selectedDate, date)) {
+      setDate(undefined);
+      return;
+    }
+
     setDate(selectedDate);
+    setCurrentMonth(startOfMonth(selectedDate));
   };
 
-  const selectedDateLoans = date ? getLoansForDate(date) : [];
+  const handleMonthChange = (value: number) => {
+    setCurrentMonth((prev) => startOfMonth(addMonths(prev, value)));
+  };
+
+  const weeks = useMemo(() => {
+    const start = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 1 });
+    const end = endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 1 });
+    const days = eachDayOfInterval({ start, end });
+    const result: Date[][] = [];
+
+    for (let i = 0; i < days.length; i += 7) {
+      result.push(days.slice(i, i + 7));
+    }
+
+    return result;
+  }, [currentMonth]);
+
+  const getDayHighlights = (day: Date) => {
+    let isInLoanPeriod = false;
+    let hasActiveDue = false;
+    let hasReservedDue = false;
+
+    for (const loanData of loansWithDates) {
+      if (
+        !isInLoanPeriod &&
+        isWithinInterval(day, {
+          start: loanData.startDate,
+          end: loanData.endDate,
+        })
+      ) {
+        isInLoanPeriod = true;
+      }
+
+      if (loanData.dueDate && isSameDay(day, loanData.dueDate)) {
+        if (loanData.loan.status === "ACTIVE") {
+          hasActiveDue = true;
+        } else if (loanData.loan.status === "RESERVED") {
+          hasReservedDue = true;
+        }
+      }
+
+      if (isInLoanPeriod && hasActiveDue && hasReservedDue) {
+        break;
+      }
+    }
+
+    return { isInLoanPeriod, hasActiveDue, hasReservedDue };
+  };
+
+  const today = useMemo(() => startOfDay(new Date()), []);
+
+  const upcomingLoans = useMemo(() => {
+    return loansWithDates
+      .filter(({ dueDate }) => dueDate && !isBefore(dueDate, today))
+      .map(({ loan, dueDate }) => ({
+        ...loan,
+        dueDate: dueDate!,
+        daysUntilDue: differenceInDays(dueDate!, today),
+      }))
+      .sort((a, b) => a.daysUntilDue - b.daysUntilDue)
+      .slice(0, 3);
+  }, [loansWithDates, today]);
+
+  const selectedDateLoans = useMemo(() => {
+    if (!date) return [];
+
+    return loansWithDates
+      .filter(({ startDate, endDate }) =>
+        isWithinInterval(date, { start: startDate, end: endDate }),
+      )
+      .map((loanData) => ({
+        ...loanData,
+        isDueDate:
+          loanData.dueDate !== null && isSameDay(loanData.dueDate, date),
+      }));
+  }, [date, loansWithDates]);
+
   const isLoading = isLoadingActive || isLoadingReserved;
-
-  const activeDates = useMemo(() => {
-    return datesWithLoans
-      .filter(({ loan }) => loan.status === "ACTIVE")
-      .map(({ date }) => date);
-  }, [datesWithLoans]);
-
-  const reservedDates = useMemo(() => {
-    return datesWithLoans
-      .filter(({ loan }) => loan.status === "RESERVED")
-      .map(({ date }) => date);
-  }, [datesWithLoans]);
-
-  const modifiers = {
-    active: activeDates,
-    reserved: reservedDates,
-  };
-
-  const modifiersClassNames = {
-    active:
-      "relative after:absolute after:bottom-0.5 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-green-500",
-    reserved:
-      "relative before:absolute before:bottom-0.5 before:left-1/3 before:-translate-x-1/2 before:h-1 before:w-1 before:rounded-full before:bg-amber-500",
-  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -162,26 +249,103 @@ export default function CalendarPopover({ className }: CalendarPopoverProps) {
                   </div>
                   <div className="flex flex-wrap gap-3 text-xs">
                     <div className="flex items-center gap-1.5">
-                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                      <span className="text-gray-700">Préstamo Activo</span>
+                      <span className="h-[11px] w-[11px] rounded-full bg-sky-400"></span>
+                      <span className="text-gray-700">Duración del préstamo</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <div className="h-2 w-2 rounded-full bg-amber-500"></div>
+                      <span className="h-[11px] w-[11px] rounded-full bg-green-500"></span>
+                      <span className="text-gray-700">Finalización</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-[11px] w-[11px] rounded-full bg-amber-500"></span>
                       <span className="text-gray-700">Reservado</span>
                     </div>
                   </div>
                 </div>
               )}
 
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={handleDateSelect}
-                className="rounded-lg border border-gray-200"
-                modifiers={modifiers}
-                modifiersClassNames={modifiersClassNames}
-                locale={es}
-              />
+              <div className="rounded-xl border border-gray-200">
+                <div className="flex items-center justify-between px-4 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => handleMonthChange(-1)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+                    aria-label="Mes anterior"
+                  >
+                    <ChevronLeft className="h-4 w-4" aria-hidden />
+                  </button>
+                  <span className="text-sm font-semibold capitalize text-gray-900">
+                    {format(currentMonth, "MMMM yyyy", { locale: es })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleMonthChange(1)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+                    aria-label="Mes siguiente"
+                  >
+                    <ChevronRight className="h-4 w-4" aria-hidden />
+                  </button>
+                </div>
+                <div className="mt-3 grid grid-cols-7 gap-0 px-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  {weekdayLabels.map((label) => (
+                    <div key={label} className="flex h-9 items-center justify-center">
+                      {label}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-1 space-y-1 px-3 pb-4">
+                  {weeks.map((week, weekIndex) => (
+                    <div
+                      key={`week-${weekIndex}`}
+                      className="grid grid-cols-7 gap-0 text-sm"
+                    >
+                      {week.map((day) => {
+                        const { isInLoanPeriod, hasActiveDue, hasReservedDue } =
+                          getDayHighlights(day);
+                        const isCurrentMonth = isSameMonth(day, currentMonth);
+                        const isSelected = date ? isSameDay(day, date) : false;
+                        const isToday = isSameDay(day, today);
+
+                        const dayClasses = cn(
+                          "relative mx-auto flex h-10 w-10 items-center justify-center rounded-md text-sm font-medium transition-colors",
+                          isCurrentMonth ? "text-gray-900" : "text-gray-300",
+                          isInLoanPeriod && !isSelected &&
+                            "bg-sky-100 text-sky-900",
+                          isSelected &&
+                            "bg-sky-600 text-white shadow focus:outline-none",
+                          !isSelected && "hover:bg-sky-100",
+                          isToday && !isSelected && "ring-1 ring-sky-500/70",
+                        );
+
+                        return (
+                          <button
+                            key={day.toISOString()}
+                            type="button"
+                            onClick={() => handleDateSelect(day)}
+                            className={dayClasses}
+                            aria-pressed={isSelected}
+                            aria-label={format(day, "d 'de' MMMM yyyy", { locale: es })}
+                          >
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full">
+                              {format(day, "d")}
+                            </span>
+                            {(hasActiveDue || hasReservedDue) && (
+                              <span className="absolute -bottom-1.5 flex gap-1">
+                                {hasActiveDue && (
+                                  <span className="h-[11px] w-[11px] rounded-full border border-white bg-emerald-500 shadow-sm" />
+                                )}
+                                {hasReservedDue && (
+                                  <span className="h-[11px] w-[11px] rounded-full border border-white bg-amber-500 shadow-sm" />
+                                )}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               {upcomingLoans.length > 0 && !date && (
                 <div className="mt-4 border-t border-gray-200 pt-4">
@@ -248,7 +412,7 @@ export default function CalendarPopover({ className }: CalendarPopoverProps) {
                                     ? "Vence hoy"
                                     : loan.daysUntilDue === 1
                                       ? "Vence mañana"
-                                      : `${loan.daysUntilDue} días`}
+                                    : `Faltan ${loan.daysUntilDue} días`}
                                 </span>
                               </div>
                             </div>
@@ -281,7 +445,7 @@ export default function CalendarPopover({ className }: CalendarPopoverProps) {
 
                   {selectedDateLoans.length > 0 ? (
                     <div className="space-y-2">
-                      {selectedDateLoans.map(({ loan }) => {
+                      {selectedDateLoans.map(({ loan, dueDate, startDate, endDate, isDueDate }) => {
                         return (
                           <div
                             key={loan.id}
@@ -330,12 +494,26 @@ export default function CalendarPopover({ className }: CalendarPopoverProps) {
                                       : "Reservado"}
                                   </Badge>
                                   <span className="text-xs text-gray-500">
-                                    Desde{" "}
-                                    {format(
-                                      parseISO(loan.createdAt),
-                                      "dd/MM/yyyy",
-                                    )}
+                                    Desde {format(startDate, "dd/MM/yyyy")}
                                   </span>
+                                  {dueDate ? (
+                                    <span
+                                      className={cn(
+                                        "flex items-center gap-1 text-xs",
+                                        isDueDate
+                                          ? "font-semibold text-red-600"
+                                          : "text-gray-500",
+                                      )}
+                                    >
+                                      <Clock className="h-3 w-3" />
+                                      Hasta {format(dueDate, "dd/MM/yyyy")}
+                                      {isDueDate && " · Vence"}
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-gray-500">
+                                      Hasta {format(endDate, "dd/MM/yyyy")}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>

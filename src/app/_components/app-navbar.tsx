@@ -199,7 +199,11 @@ export default function AppNavbar() {
               <Bell className="h-4 w-4" />
               <span className="sr-only">Notifications</span>
             </Button>
-            {/* {user?.rol === "estudiante" && <CalendarPopover />} */}
+            {isLoadingUser ? (
+              <Skeleton className="h-8 w-8 rounded-md" />
+            ) : user?.rol === "estudiante" ? (
+              <CalendarPopover className="h-8 w-8" />
+            ) : null}
 
             <Button
               variant="ghost"
