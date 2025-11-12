@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
+import { api } from "~/trpc/react";
 
 type ImprovedFiltersSidebarProps = {
   onCancel?: () => void;
@@ -17,11 +18,13 @@ type ImprovedFiltersSidebarProps = {
   onGenreChange?: (value: string | undefined) => void;
   onAvailabilityChange?: (value: string | undefined) => void;
   onEditorialChange?: (value: string | undefined) => void;
+  onLocationChange?: (value: string | undefined) => void;
   onYearFromChange?: (value: number | undefined) => void;
   onYearToChange?: (value: number | undefined) => void;
   selectedGenre?: string;
   selectedAvailability?: string;
   selectedEditorial?: string;
+  selectedLocation?: string;
   selectedYearFrom?: number;
   selectedYearTo?: number;
 };
@@ -36,10 +39,25 @@ export default function ImprovedFiltersSidebar(
     onGenreChange,
     onAvailabilityChange,
     onEditorialChange,
+    onLocationChange,
     selectedGenre,
     selectedAvailability,
     selectedEditorial,
+    selectedLocation,
   } = props;
+
+  const { data: locationsData } = api.catalog.getAllLocations.useQuery();
+  const locations = locationsData?.response ?? [];
+
+  const formatLocationLabel = (campus: string, address: string) => {
+    const campusNames: Record<string, string> = {
+      MONSERRAT: "Sede Monserrat",
+      RECOLETA: "Sede Recoleta",
+      COSTA: "Sede Costa",
+    };
+    const campusName = campusNames[campus] ?? campus;
+    return `${campusName} - ${address}`;
+  };
 
   return (
     <div
@@ -102,6 +120,20 @@ export default function ImprovedFiltersSidebar(
           <SelectItem value="paidos">Paidós</SelectItem>
           <SelectItem value="fce">Fondo de Cultura Económica</SelectItem>
           <SelectItem value="siglo-xxi">Siglo XXI</SelectItem>
+        </SelectContent>
+      </Select>
+
+      {/* Location */}
+      <Select value={selectedLocation} onValueChange={onLocationChange}>
+        <SelectTrigger className="w-[240px]">
+          <SelectValue placeholder="Ubicación" />
+        </SelectTrigger>
+        <SelectContent>
+          {locations.map((location) => (
+            <SelectItem key={location.id} value={location.id}>
+              {formatLocationLabel(location.campus, location.address)}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 

@@ -28,6 +28,7 @@ interface Book {
   genderId: string | null;
   gender?: string | null;
   location?: string | null;
+  locationId?: string | null;
   imageUrl?: string | null;
 }
 
@@ -110,6 +111,7 @@ export function AdminBooksTable({
                     genderId={book.genderId}
                     gender={book.gender}
                     location={book.location}
+                    locationId={book.locationId}
                     imageUrl={book.imageUrl}
                     onDeleteSuccess={onDeleteSuccess}
                   />

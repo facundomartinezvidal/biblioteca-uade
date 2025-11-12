@@ -25,6 +25,7 @@ type BookSummary = {
   description?: string | null;
   isbn?: string | null;
   location?: string | null;
+  locationCampus?: string | null;
   imageUrl?: string | null;
   status?: string | null;
 };
@@ -209,12 +210,12 @@ export default function ReservePage() {
           onClose={() => setShowSuccessModal(false)}
           book={{
             title: book.title,
-            author: book.author,
+            author: book.author ?? "",
             editor: book.editorial ?? "",
             authorMiddleName: book.authorMiddleName ?? undefined,
             authorLastName: book.authorLastName ?? undefined,
             isbn: book.isbn,
-            gender: book.gender,
+            gender: book.gender ?? "",
             imageUrl: book.imageUrl ?? undefined,
           }}
         />

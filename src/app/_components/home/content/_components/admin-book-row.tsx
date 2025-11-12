@@ -29,6 +29,7 @@ interface AdminBookRowProps {
   genderId: string | null;
   gender?: string | null;
   location?: string | null;
+  locationId?: string | null;
   imageUrl?: string | null;
   onDeleteSuccess?: () => void;
 }
@@ -49,6 +50,7 @@ export function AdminBookRow({
   genderId,
   gender,
   location,
+  locationId,
   imageUrl,
   onDeleteSuccess,
 }: AdminBookRowProps) {
@@ -129,6 +131,7 @@ export function AdminBookRow({
           authorId: authorId ?? "",
           genderId: genderId ?? "",
           location,
+          locationId: locationId ?? "",
           imageUrl,
           author,
           gender,
