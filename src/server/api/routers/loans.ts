@@ -14,6 +14,7 @@ import { users } from "~/server/db/schemas/users";
 import { roles } from "~/server/db/schemas/roles";
 import { penalties } from "~/server/db/schemas/penalties";
 import { sanctions } from "~/server/db/schemas/sanctions";
+import { notifications } from "~/server/db/schemas/notifications";
 import { eq, and, desc, or, ilike } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
@@ -384,7 +385,7 @@ export const loansRouter = createTRPCRouter({
 
       const now = new Date();
       const endDate = new Date(now);
-      endDate.setDate(endDate.getDate() + 14); // 14 días para préstamos activos
+      endDate.setDate(endDate.getDate() + 7); // 7 días para préstamos activos (igual que reservas)
 
       const newLoan = await ctx.db
         .insert(loans)
@@ -430,7 +431,7 @@ export const loansRouter = createTRPCRouter({
 
       const now = new Date();
       const endDate = new Date(now);
-      endDate.setDate(endDate.getDate() + 14); // 14 días para préstamos activos
+      endDate.setDate(endDate.getDate() + 7); // 7 días para préstamos activos (igual que reservas)
 
       await ctx.db
         .update(loans)
@@ -524,13 +525,28 @@ export const loansRouter = createTRPCRouter({
       const now = new Date();
 
       // Crear la multa por libro dañado
-      await ctx.db.insert(penalties).values({
-        userId: loan[0].userId,
-        loanId: input.loanId,
-        sanctionId: damagedBookSanction[0].id,
-        status: "PENDING",
-        createdAt: now,
-      });
+      const newPenalty = await ctx.db
+        .insert(penalties)
+        .values({
+          userId: loan[0].userId,
+          loanId: input.loanId,
+          sanctionId: damagedBookSanction[0].id,
+          status: "PENDING",
+          createdAt: now,
+        })
+        .returning();
+
+      // Crear notificación para el usuario
+      if (newPenalty[0]) {
+        await ctx.db.insert(notifications).values({
+          userId: loan[0].userId,
+          type: "PENALTY_APPLIED",
+          title: "Nueva multa aplicada",
+          message: `Se te ha aplicado una multa de $${damagedBookSanction[0].amount} por libro dañado.`,
+          penaltyId: newPenalty[0].id,
+          loanId: input.loanId,
+        });
+      }
 
       // Marcar el préstamo como finalizado
       await ctx.db

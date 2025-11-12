@@ -23,9 +23,11 @@ export const penaltyStatusEnum = pgEnum("penalty_status", [
 ]);
 
 export const notificationTypeEnum = pgEnum("notification_type", [
-  "LOANS_DEADLINE",
-  "LOANS_EXPIRED",
-  "USER_PENALIZED",
+  "LOAN_DEADLINE",
+  "LOAN_EXPIRED",
+  "PENALTY_APPLIED",
+  "PENALTY_DEADLINE",
+  "PENALTY_EXPIRED",
 ]);
 
 export const sanctionTypeEnum = pgEnum("sanction_type", [

@@ -1,6 +1,12 @@
 import { createTRPCRouter, publicProcedure } from "../trpc";
 import type { RouterInput, RouterOutput } from "../root";
-import { authors, books, editorials, genders } from "~/server/db/schemas";
+import {
+  authors,
+  books,
+  editorials,
+  genders,
+  locations,
+} from "~/server/db/schemas";
 import { loans } from "~/server/db/schemas/loans";
 import { eq, or, ilike, and, count, gte, lte, inArray } from "drizzle-orm";
 import { z } from "zod";
@@ -20,6 +26,7 @@ export const booksRouter = createTRPCRouter({
         genre: z.string().optional(),
         status: z.enum(["AVAILABLE", "NOT_AVAILABLE", "RESERVED"]).optional(),
         editorial: z.string().optional(),
+        locationId: z.string().optional(),
         yearFrom: z.number().min(1800).max(2030).optional(),
         yearTo: z.number().min(1800).max(2030).optional(),
         page: z.number().min(1).default(1),
@@ -32,6 +39,7 @@ export const booksRouter = createTRPCRouter({
         genre,
         status,
         editorial,
+        locationId,
         yearFrom,
         yearTo,
         page,
@@ -120,6 +128,10 @@ export const booksRouter = createTRPCRouter({
         conditions.push(ilike(editorials.name, `%${editorial}%`));
       }
 
+      if (locationId) {
+        conditions.push(eq(books.locationId, locationId));
+      }
+
       if (yearFrom) {
         conditions.push(gte(books.year, yearFrom));
       }
@@ -138,6 +150,7 @@ export const booksRouter = createTRPCRouter({
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
+        .leftJoin(locations, eq(books.locationId, locations.id))
         .where(whereClause);
 
       const totalCount = totalCountResult[0]?.count ?? 0;
@@ -156,7 +169,8 @@ export const booksRouter = createTRPCRouter({
           year: books.year,
           editorial: editorials.name,
           gender: genders.name,
-          location: books.locationId,
+          location: locations.address,
+          locationCampus: locations.campus,
           imageUrl: books.imageUrl,
           createdAt: books.createdAt,
         })
@@ -164,6 +178,7 @@ export const booksRouter = createTRPCRouter({
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
+        .leftJoin(locations, eq(books.locationId, locations.id))
         .where(whereClause)
         .limit(limit)
         .offset(offset);
@@ -189,12 +204,13 @@ export const booksRouter = createTRPCRouter({
       z.object({
         search: z.string().optional(),
         status: z.enum(["AVAILABLE", "NOT_AVAILABLE", "RESERVED"]).optional(),
+        locationId: z.string().optional(),
         page: z.number().min(1).default(1),
         limit: z.number().min(1).max(100).default(10),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { search, status, page, limit } = input;
+      const { search, status, locationId, page, limit } = input;
       const offset = (page - 1) * limit;
 
       const conditions = [];
@@ -215,6 +231,10 @@ export const booksRouter = createTRPCRouter({
         conditions.push(eq(books.status, status));
       }
 
+      if (locationId) {
+        conditions.push(eq(books.locationId, locationId));
+      }
+
       const whereClause =
         conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -224,6 +244,7 @@ export const booksRouter = createTRPCRouter({
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
+        .leftJoin(locations, eq(books.locationId, locations.id))
         .where(whereClause);
 
       const totalCount = totalCountResult[0]?.count ?? 0;
@@ -244,7 +265,9 @@ export const booksRouter = createTRPCRouter({
           editorialId: books.editorialId,
           gender: genders.name,
           genderId: books.genderId,
-          location: books.locationId,
+          location: locations.address,
+          locationCampus: locations.campus,
+          locationId: books.locationId,
           imageUrl: books.imageUrl,
           createdAt: books.createdAt,
         })
@@ -252,6 +275,7 @@ export const booksRouter = createTRPCRouter({
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
+        .leftJoin(locations, eq(books.locationId, locations.id))
         .where(whereClause)
         .limit(limit)
         .offset(offset);
@@ -291,7 +315,9 @@ export const booksRouter = createTRPCRouter({
           editorialId: books.editorialId,
           gender: genders.name,
           genderId: books.genderId,
-          location: books.locationId,
+          location: locations.address,
+          locationCampus: locations.campus,
+          locationId: books.locationId,
           imageUrl: books.imageUrl,
           createdAt: books.createdAt,
         })
@@ -299,7 +325,8 @@ export const booksRouter = createTRPCRouter({
         .where(eq(books.id, input.id))
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
-        .leftJoin(genders, eq(books.genderId, genders.id));
+        .leftJoin(genders, eq(books.genderId, genders.id))
+        .leftJoin(locations, eq(books.locationId, locations.id));
       return {
         success: true,
         method: "GET",

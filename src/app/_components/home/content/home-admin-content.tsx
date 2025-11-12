@@ -1,12 +1,21 @@
 "use client";
 
-import { BookOpen, Plus, UserPlus, Tags, Building2 } from "lucide-react";
+import {
+  BookOpen,
+  Plus,
+  UserPlus,
+  Tags,
+  Building2,
+  Search,
+  X,
+} from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import PaginationControls from "~/app/_components/home/pagination-controls";
 import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
 import { api } from "~/trpc/react";
+import ImprovedFiltersSidebar from "~/app/_components/home/improved-filters-sidebar";
 import {
-  AdminBooksFilters,
   AdminBooksTable,
   AddBookModal,
   AddAuthorModal,
@@ -16,11 +25,46 @@ import {
 
 export function HomeAdminContent() {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "AVAILABLE" | "NOT_AVAILABLE" | "RESERVED"
-  >("all");
+
+  // Form filter states (temporary, before applying)
+  const [formGenre, setFormGenre] = useState<string | undefined>(undefined);
+  const [formAvailability, setFormAvailability] = useState<string | undefined>(
+    undefined,
+  );
+  const [formEditorial, setFormEditorial] = useState<string | undefined>(
+    undefined,
+  );
+  const [formYearFrom, setFormYearFrom] = useState<number | undefined>(
+    undefined,
+  );
+  const [formYearTo, setFormYearTo] = useState<number | undefined>(undefined);
+  const [formLocation, setFormLocation] = useState<string | undefined>(
+    undefined,
+  );
+
+  // Applied filter states (actually used in queries)
+  const [appliedGenre, setAppliedGenre] = useState<string | undefined>(
+    undefined,
+  );
+  const [appliedAvailability, setAppliedAvailability] = useState<
+    "AVAILABLE" | "NOT_AVAILABLE" | "RESERVED" | undefined
+  >(undefined);
+  const [appliedEditorial, setAppliedEditorial] = useState<string | undefined>(
+    undefined,
+  );
+  const [appliedYearFrom, setAppliedYearFrom] = useState<number | undefined>(
+    undefined,
+  );
+  const [appliedYearTo, setAppliedYearTo] = useState<number | undefined>(
+    undefined,
+  );
+  const [appliedLocation, setAppliedLocation] = useState<string | undefined>(
+    undefined,
+  );
+
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
+  const [filterKey, setFilterKey] = useState(0);
 
   const [showAddBookModal, setShowAddBookModal] = useState(false);
   const [showAddAuthorModal, setShowAddAuthorModal] = useState(false);
@@ -33,11 +77,26 @@ export function HomeAdminContent() {
   const queryParams = useMemo(() => {
     return {
       search: search.trim() || undefined,
-      status: statusFilter === "all" ? undefined : statusFilter,
+      status: appliedAvailability,
+      locationId: appliedLocation,
+      genre: appliedGenre,
+      editorial: appliedEditorial,
+      yearFrom: appliedYearFrom,
+      yearTo: appliedYearTo,
       page,
       limit: pageSize,
     };
-  }, [search, statusFilter, page, pageSize]);
+  }, [
+    search,
+    appliedAvailability,
+    appliedLocation,
+    appliedGenre,
+    appliedEditorial,
+    appliedYearFrom,
+    appliedYearTo,
+    page,
+    pageSize,
+  ]);
 
   // Fetch books for admin
   const { data: booksData, isLoading } =
@@ -46,7 +105,51 @@ export function HomeAdminContent() {
   // Reset to first page when filters change
   useEffect(() => {
     setPage(1);
-  }, [search, statusFilter]);
+  }, [
+    search,
+    appliedAvailability,
+    appliedLocation,
+    appliedGenre,
+    appliedEditorial,
+    appliedYearFrom,
+    appliedYearTo,
+  ]);
+
+  const clearFilters = () => {
+    setSearch("");
+    setFormGenre(undefined);
+    setFormAvailability(undefined);
+    setFormEditorial(undefined);
+    setFormYearFrom(undefined);
+    setFormYearTo(undefined);
+    setFormLocation(undefined);
+    setAppliedGenre(undefined);
+    setAppliedAvailability(undefined);
+    setAppliedEditorial(undefined);
+    setAppliedYearFrom(undefined);
+    setAppliedYearTo(undefined);
+    setAppliedLocation(undefined);
+    setPage(1);
+    setFilterKey((prev) => prev + 1);
+  };
+
+  const applyFilters = () => {
+    setAppliedGenre(formGenre);
+    setAppliedEditorial(formEditorial);
+    setAppliedYearFrom(formYearFrom);
+    setAppliedYearTo(formYearTo);
+    setAppliedLocation(formLocation);
+
+    if (formAvailability === "disponible") {
+      setAppliedAvailability("AVAILABLE");
+    } else if (formAvailability === "no-disponible") {
+      setAppliedAvailability("NOT_AVAILABLE");
+    } else if (formAvailability === "reservado") {
+      setAppliedAvailability("RESERVED");
+    } else {
+      setAppliedAvailability(undefined);
+    }
+  };
 
   const books = booksData?.response ?? [];
   const pagination = booksData?.pagination;
@@ -104,13 +207,48 @@ export function HomeAdminContent() {
           Administra el catálogo de libros de la biblioteca
         </p>
 
-        {/* Filters Component */}
-        <AdminBooksFilters
-          search={search}
-          statusFilter={statusFilter}
-          onSearchChange={setSearch}
-          onStatusChange={setStatusFilter}
-        />
+        {/* Search and Filters */}
+        <div className="mt-6 mb-6 flex flex-row items-start gap-3">
+          {/* Search bar */}
+          <div className="relative w-[300px]">
+            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+            <Input
+              placeholder="Buscar por título, autor, ISBN..."
+              className="pr-10 pl-10"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            {search && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 transform rounded-full hover:bg-gray-100"
+                onClick={() => setSearch("")}
+              >
+                <X className="h-4 w-4 text-gray-500" />
+              </Button>
+            )}
+          </div>
+
+          {/* Filter Sidebar */}
+          <ImprovedFiltersSidebar
+            key={filterKey}
+            selectedGenre={formGenre}
+            selectedAvailability={formAvailability}
+            selectedEditorial={formEditorial}
+            selectedYearFrom={formYearFrom}
+            selectedYearTo={formYearTo}
+            selectedLocation={formLocation}
+            onGenreChange={setFormGenre}
+            onAvailabilityChange={setFormAvailability}
+            onEditorialChange={setFormEditorial}
+            onYearFromChange={setFormYearFrom}
+            onYearToChange={setFormYearTo}
+            onLocationChange={setFormLocation}
+            onCancel={clearFilters}
+            onSubmit={applyFilters}
+          />
+        </div>
 
         {/* Table Component */}
         <AdminBooksTable

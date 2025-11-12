@@ -10,12 +10,14 @@ interface StudentBooksSearchProps {
   formGenre?: string;
   formAvailability?: string;
   formEditorial?: string;
+  formLocation?: string;
   formYearFrom?: number;
   formYearTo?: number;
   onSearchChange: (value: string) => void;
   onGenreChange: (value: string | undefined) => void;
   onAvailabilityChange: (value: string | undefined) => void;
   onEditorialChange: (value: string | undefined) => void;
+  onLocationChange: (value: string | undefined) => void;
   onYearFromChange: (value: number | undefined) => void;
   onYearToChange: (value: number | undefined) => void;
   onFilterCancel: () => void;
@@ -28,12 +30,14 @@ export function StudentBooksSearch({
   formGenre,
   formAvailability,
   formEditorial,
+  formLocation,
   formYearFrom,
   formYearTo,
   onSearchChange,
   onGenreChange,
   onAvailabilityChange,
   onEditorialChange,
+  onLocationChange,
   onYearFromChange,
   onYearToChange,
   onFilterCancel,
@@ -42,7 +46,7 @@ export function StudentBooksSearch({
   return (
     <div className="mb-6 flex flex-wrap items-start gap-3">
       {/* Search Bar */}
-      <div className="relative min-w-[250px] flex-1">
+      <div className="relative w-[300px]">
         <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
         <Input
           placeholder="Buscar por título, autor, etc..."
@@ -66,6 +70,7 @@ export function StudentBooksSearch({
         onGenreChange={onGenreChange}
         onAvailabilityChange={onAvailabilityChange}
         onEditorialChange={onEditorialChange}
+        onLocationChange={onLocationChange}
         onYearFromChange={onYearFromChange}
         onYearToChange={onYearToChange}
         onCancel={onFilterCancel}
@@ -73,6 +78,7 @@ export function StudentBooksSearch({
         selectedGenre={formGenre}
         selectedAvailability={formAvailability}
         selectedEditorial={formEditorial}
+        selectedLocation={formLocation}
         selectedYearFrom={formYearFrom}
         selectedYearTo={formYearTo}
       />

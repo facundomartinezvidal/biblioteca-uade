@@ -34,6 +34,7 @@ interface PopUpBookProps {
     authorLastName?: string | null;
     gender?: string | null;
     location?: string | null;
+    locationCampus?: string | null;
   } | null;
   onReserve?: (bookId: string) => void;
   onToggleFavorite?: (bookId: string) => void;
@@ -123,6 +124,22 @@ export default function PopUpBook({
   const fullAuthor = [book.author, book.authorMiddleName, book.authorLastName]
     .filter(Boolean)
     .join(" ");
+
+  // Format location to show campus and address
+  const formatLocation = () => {
+    if (!book.location) return "No especificada";
+    if (!book.locationCampus) return book.location;
+
+    // Map campus enum to readable names
+    const campusNames: Record<string, string> = {
+      MONSERRAT: "Sede Monserrat",
+      RECOLETA: "Sede Recoleta",
+      COSTA: "Sede Costa",
+    };
+
+    const campusName = campusNames[book.locationCampus] ?? book.locationCampus;
+    return `${campusName} - ${book.location}`;
+  };
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
@@ -236,13 +253,8 @@ export default function PopUpBook({
                   </div>
                   <div className="text-muted-foreground col-span-2 flex items-center gap-1 text-[13px] leading-tight">
                     <MapPin className="h-3.5 w-3.5 text-gray-500" />
-                    <span
-                      className="truncate"
-                      title={book.location ?? "No especificada"}
-                    >
-                      {book.location?.split(",").slice(1).join(",").trim() ??
-                        book.location ??
-                        "No especificada"}
+                    <span className="truncate" title={formatLocation()}>
+                      {formatLocation()}
                     </span>
                   </div>
                 </div>

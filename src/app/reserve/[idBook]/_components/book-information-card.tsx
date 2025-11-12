@@ -14,6 +14,7 @@ interface BookInformationCardProps {
     year?: number | null;
     editorial?: string | null;
     location?: string | null;
+    locationCampus?: string | null;
     description?: string | null;
     imageUrl?: string | null;
   };
@@ -24,9 +25,25 @@ export function BookInformationCard({ book }: BookInformationCardProps) {
     .filter(Boolean)
     .join(" ");
 
-  const locationFormatted = book.location
-    ? book.location.split(",").slice(1).join(",").trim() || book.location
-    : "No especificada";
+  // Format location to show campus and address
+  const formatLocation = () => {
+    if (!book.location) return "No especificada";
+    if (!book.locationCampus) return book.location;
+
+    // Map campus enum to readable names
+    const campusNames: Record<string, string> = {
+      MONSERRAT: "Sede Monserrat",
+      RECOLETA: "Sede Recoleta",
+      COSTA: "Sede Costa",
+    };
+
+    const campusName = campusNames[book.locationCampus] ?? book.locationCampus;
+    return campusName;
+  };
+
+  const formatAddress = () => {
+    return book.location ?? "No especificada";
+  };
 
   return (
     <div className="flex flex-col">
@@ -96,15 +113,13 @@ export function BookInformationCard({ book }: BookInformationCardProps) {
                   </div>
                   <div>
                     <span className="font-semibold text-gray-700">Sede</span>
-                    <p className="text-gray-600">
-                      {book.location ?? "No especificada"}
-                    </p>
+                    <p className="text-gray-600">{formatLocation()}</p>
                   </div>
                   <div>
                     <span className="font-semibold text-gray-700">
                       Ubicación
                     </span>
-                    <p className="text-gray-600">{locationFormatted}</p>
+                    <p className="text-gray-600">{formatAddress()}</p>
                   </div>
                 </div>
               </div>

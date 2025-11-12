@@ -13,6 +13,7 @@ import { favoritesRouter } from "./routers/favorites";
 import { penaltiesRouter } from "./routers/penalties";
 import { sanctionsRouter } from "./routers/sanctions";
 import { dashboardRouter } from "./routers/dashboard";
+import { notificationsRouter } from "./routers/notifications";
 
 /**
  * This is the primary router for your server.
@@ -30,6 +31,7 @@ export const appRouter = createTRPCRouter({
   penalties: penaltiesRouter,
   sanctions: sanctionsRouter,
   dashboard: dashboardRouter,
+  notifications: notificationsRouter,
 });
 
 // export type definition of API
