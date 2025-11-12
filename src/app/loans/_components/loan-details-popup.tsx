@@ -247,6 +247,14 @@ export default function LoanDetailsPopup({
                 </div>
 
                 <div className="mt-4 space-y-3 border-t pt-4">
+                  <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3">
+                    <span className="text-sm font-medium text-gray-600">
+                      ID del Préstamo
+                    </span>
+                    <code className="text-xs font-mono text-gray-900 bg-white px-2 py-1 rounded border">
+                      {loan.id}
+                    </code>
+                  </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-600">
                       Fecha de reserva

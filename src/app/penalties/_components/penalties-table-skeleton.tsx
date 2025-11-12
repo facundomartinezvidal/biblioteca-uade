@@ -17,6 +17,7 @@ export default function PenaltiesTableSkeleton() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>ID Préstamo</TableHead>
                 <TableHead>Libro</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="min-w-[120px]">Creada</TableHead>
@@ -28,6 +29,10 @@ export default function PenaltiesTableSkeleton() {
             <TableBody>
               {Array.from({ length: 5 }).map((_, index) => (
                 <TableRow key={index}>
+                  <TableCell>
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
+
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Skeleton className="h-14 w-10 flex-shrink-0 rounded" />

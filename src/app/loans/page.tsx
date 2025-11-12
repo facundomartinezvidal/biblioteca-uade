@@ -265,6 +265,7 @@ export default function LoansPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>ID Préstamo</TableHead>
                       <TableHead>Libro</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead className="min-w-[120px]">Desde</TableHead>
@@ -286,6 +287,9 @@ export default function LoansPage() {
 
                         return (
                           <TableRow key={loan.id}>
+                            <TableCell className="text-sm text-gray-600 font-mono">
+                              {loan.id.slice(0, 8)}...
+                            </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-3">
                                 <div className="relative h-14 w-10 flex-shrink-0 overflow-hidden rounded bg-gray-200">

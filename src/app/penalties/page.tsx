@@ -252,6 +252,7 @@ export default function PenaltiesPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>ID Préstamo</TableHead>
                       <TableHead>Libro</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead className="min-w-[120px]">Creada</TableHead>
@@ -273,6 +274,9 @@ export default function PenaltiesPage() {
 
                         return (
                           <TableRow key={penalty.id}>
+                            <TableCell className="text-sm text-gray-600 font-mono">
+                              {penalty.loanId ? penalty.loanId.slice(0, 8) + "..." : "N/A"}
+                            </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-3">
                                 <div className="relative h-14 w-10 flex-shrink-0 overflow-hidden rounded bg-gray-200">
