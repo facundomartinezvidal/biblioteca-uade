@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Alert, AlertDescription } from "~/components/ui/alert";
@@ -14,12 +15,14 @@ interface BaseItem { id: string; name: string; middleName?: string | null; lastN
 interface ManageCatalogModalsProps {
   open: boolean;
   onClose: () => void;
-  type: "author" | "gender" | "editorial";
+  // If provided, start on this tab; otherwise render all in a tabbed UI starting in "author"
+  type?: "author" | "gender" | "editorial";
 }
 
 // Reusable list + edit/delete modal for catalog entities
 export function ManageCatalogModals({ open, onClose, type }: ManageCatalogModalsProps) {
   const [mounted, setMounted] = useState(false);
+  const [activeType, setActiveType] = useState<"author" | "gender" | "editorial">(type ?? "author");
   const [editingItem, setEditingItem] = useState<BaseItem | null>(null);
   const [name, setName] = useState("");
   const [middleName, setMiddleName] = useState("");
@@ -30,14 +33,19 @@ export function ManageCatalogModals({ open, onClose, type }: ManageCatalogModals
 
   const utils = api.useUtils();
 
-  // Queries
-  const authorsQuery = api.catalog.getAllAuthors.useQuery(undefined, { enabled: type === "author" });
-  const gendersQuery = api.catalog.getAllGenders.useQuery(undefined, { enabled: type === "gender" });
-  const editorialsQuery = api.catalog.getAllEditorials.useQuery(undefined, { enabled: type === "editorial" });
+  // Sync initial tab when prop changes
+  useEffect(() => {
+    if (type) setActiveType(type);
+  }, [type]);
 
-  const rawList: BaseItem[] = (type === "author"
+  // Queries gated by active tab
+  const authorsQuery = api.catalog.getAllAuthors.useQuery(undefined, { enabled: activeType === "author" && open });
+  const gendersQuery = api.catalog.getAllGenders.useQuery(undefined, { enabled: activeType === "gender" && open });
+  const editorialsQuery = api.catalog.getAllEditorials.useQuery(undefined, { enabled: activeType === "editorial" && open });
+
+  const rawList: BaseItem[] = (activeType === "author"
     ? authorsQuery.data?.response?.map(a => ({ id: a.id, name: a.name, middleName: a.middleName, lastName: a.lastName }))
-    : type === "gender"
+    : activeType === "gender"
     ? gendersQuery.data?.response?.map(g => ({ id: g.id, name: g.name }))
     : editorialsQuery.data?.response?.map(e => ({ id: e.id, name: e.name }))
   ) || [];
@@ -97,19 +105,19 @@ export function ManageCatalogModals({ open, onClose, type }: ManageCatalogModals
     if (!editingItem) return;
     if (!name.trim()) { setErrorMsg("El nombre es obligatorio"); return; }
 
-    if (type === "author") {
+    if (activeType === "author") {
       if (!lastName.trim()) { setErrorMsg("El apellido es obligatorio"); return; }
       updateAuthor.mutate({ id: editingItem.id, name: name.trim(), middleName: middleName.trim() || undefined, lastName: lastName.trim() });
-    } else if (type === "gender") {
+    } else if (activeType === "gender") {
       updateGender.mutate({ id: editingItem.id, name: name.trim() });
-    } else if (type === "editorial") {
+    } else if (activeType === "editorial") {
       updateEditorial.mutate({ id: editingItem.id, name: name.trim() });
     }
   };
 
   const handleDelete = (item: BaseItem) => {
-    if (type === "author") deleteAuthor.mutate({ id: item.id });
-    else if (type === "gender") deleteGender.mutate({ id: item.id });
+    if (activeType === "author") deleteAuthor.mutate({ id: item.id });
+    else if (activeType === "gender") deleteGender.mutate({ id: item.id });
     else deleteEditorial.mutate({ id: item.id });
   };
 
@@ -128,15 +136,24 @@ export function ManageCatalogModals({ open, onClose, type }: ManageCatalogModals
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-lg bg-white shadow-xl">
         <div className="flex items-center justify-between border-b p-4">
-          <h2 className="text-lg font-semibold capitalize">Gestionar {type === "gender" ? "géneros" : type === "author" ? "autores" : "editoriales"}</h2>
+          <h2 className="text-lg font-semibold">Gestionar Catálogo</h2>
           <Button variant="ghost" size="icon" onClick={onClose}><X className="h-5 w-5" /></Button>
         </div>
-        <div className="flex flex-1 flex-col md:flex-row min-h-0">
+        <Tabs value={activeType} onValueChange={(v) => setActiveType(v as any)} className="flex flex-1 flex-col min-h-0">
+          <div className="border-b px-4 pt-3">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="author">Autores</TabsTrigger>
+              <TabsTrigger value="editorial">Editoriales</TabsTrigger>
+              <TabsTrigger value="gender">Géneros</TabsTrigger>
+            </TabsList>
+          </div>
+          <TabsContent value={activeType} className="flex-1 min-h-0">
+            <div className="flex flex-1 flex-col md:flex-row min-h-0">
           <div className="w-full md:w-1/2 border-r p-4 flex flex-col min-h-0">
             <div className="mb-3 flex items-center gap-2">
               <div className="flex-1">
                 <Input
-                  placeholder={`Buscar ${type === "author" ? "autor" : type === "gender" ? "género" : "editorial"}`}
+                  placeholder={`Buscar ${activeType === "author" ? "autor" : activeType === "gender" ? "género" : "editorial"}`}
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   className="h-9"
@@ -152,7 +169,7 @@ export function ManageCatalogModals({ open, onClose, type }: ManageCatalogModals
                   {list.map(item => (
                     <li key={item.id} className="flex items-center justify-between rounded border px-3 py-2 text-sm bg-white hover:bg-gray-50 transition-colors">
                       <span className="truncate max-w-[60%]">
-                        {type === "author" ? `${item.name} ${item.middleName ?? ""} ${item.lastName ?? ""}`.trim() : item.name}
+                        {activeType === "author" ? `${item.name} ${item.middleName ?? ""} ${item.lastName ?? ""}`.trim() : item.name}
                       </span>
                       <div className="flex items-center gap-2">
                         <Button variant="outline" size="icon" onClick={() => startEdit(item)}><Pencil className="h-4 w-4" /></Button>
@@ -173,7 +190,7 @@ export function ManageCatalogModals({ open, onClose, type }: ManageCatalogModals
                   <Label htmlFor="name">Nombre *</Label>
                   <Input id="name" value={name} onChange={e => setName(e.target.value)} />
                 </div>
-                {type === "author" && (
+                {activeType === "author" && (
                   <>
                     <div className="space-y-2">
                       <Label htmlFor="middleName">Segundo Nombre</Label>
@@ -195,7 +212,9 @@ export function ManageCatalogModals({ open, onClose, type }: ManageCatalogModals
               </div>
             )}
           </div>
-        </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>,
     document.body

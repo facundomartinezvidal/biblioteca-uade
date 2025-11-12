@@ -27,7 +27,7 @@ export function HomeAdminContent() {
   const [showAddAuthorModal, setShowAddAuthorModal] = useState(false);
   const [showAddGenderModal, setShowAddGenderModal] = useState(false);
   const [showAddEditorialModal, setShowAddEditorialModal] = useState(false);
-  const [manageType, setManageType] = useState<"author"|"gender"|"editorial"|null>(null);
+  const [showManageCatalog, setShowManageCatalog] = useState(false);
 
   const utils = api.useUtils();
 
@@ -81,45 +81,27 @@ export function HomeAdminContent() {
               variant="outline"
               className="border-berkeley-blue text-berkeley-blue hover:bg-berkeley-blue/10"
             >
-              <UserPlus className="mr-2 h-4 w-4" />
-              Autor
+              <UserPlus className="mr-2 h-4 w-4" /> Autor
             </Button>
             <Button
               onClick={() => setShowAddEditorialModal(true)}
               variant="outline"
               className="border-berkeley-blue text-berkeley-blue hover:bg-berkeley-blue/10"
             >
-              <Building2 className="mr-2 h-4 w-4" />
-              Editorial
+              <Building2 className="mr-2 h-4 w-4" /> Editorial
             </Button>
             <Button
               onClick={() => setShowAddGenderModal(true)}
               variant="outline"
               className="border-berkeley-blue text-berkeley-blue hover:bg-berkeley-blue/10"
             >
-              <Tags className="mr-2 h-4 w-4" />
-              Género
+              <Tags className="mr-2 h-4 w-4" /> Género
             </Button>
             <Button
-              onClick={() => setManageType("author")}
-              variant="outline"
-              className="border-berkeley-blue text-berkeley-blue hover:bg-berkeley-blue/10"
+              onClick={() => setShowManageCatalog(true)}
+              className="bg-berkeley-blue hover:bg-berkeley-blue/90"
             >
-              <Settings className="mr-2 h-4 w-4" /> Gest. Autores
-            </Button>
-            <Button
-              onClick={() => setManageType("editorial")}
-              variant="outline"
-              className="border-berkeley-blue text-berkeley-blue hover:bg-berkeley-blue/10"
-            >
-              <Settings className="mr-2 h-4 w-4" /> Gest. Editoriales
-            </Button>
-            <Button
-              onClick={() => setManageType("gender")}
-              variant="outline"
-              className="border-berkeley-blue text-berkeley-blue hover:bg-berkeley-blue/10"
-            >
-              <Settings className="mr-2 h-4 w-4" /> Gest. Géneros
+              <Settings className="mr-2 h-4 w-4" /> Gestionar Catálogo
             </Button>
           </div>
         </div>
@@ -174,11 +156,10 @@ export function HomeAdminContent() {
           isOpen={showAddGenderModal}
           onClose={() => setShowAddGenderModal(false)}
         />
-        {manageType && (
+        {showManageCatalog && (
           <ManageCatalogModals
-            open={!!manageType}
-            type={manageType}
-            onClose={() => setManageType(null)}
+            open={showManageCatalog}
+            onClose={() => setShowManageCatalog(false)}
           />
         )}
       </main>

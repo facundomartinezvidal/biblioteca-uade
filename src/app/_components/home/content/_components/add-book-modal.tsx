@@ -40,9 +40,10 @@ export function AddBookModal({
 
   const utils = api.useUtils();
 
-  const { data: authorsData } = api.catalog.getAllAuthors.useQuery();
-  const { data: gendersData } = api.catalog.getAllGenders.useQuery();
-  const { data: editorialsData } = api.catalog.getAllEditorials.useQuery();
+  // Solo cargar catálogos cuando el modal está abierto para evitar conexiones innecesarias
+  const { data: authorsData } = api.catalog.getAllAuthors.useQuery(undefined, { enabled: isOpen });
+  const { data: gendersData } = api.catalog.getAllGenders.useQuery(undefined, { enabled: isOpen });
+  const { data: editorialsData } = api.catalog.getAllEditorials.useQuery(undefined, { enabled: isOpen });
 
   const authors = authorsData?.response ?? [];
   const genders = gendersData?.response ?? [];
