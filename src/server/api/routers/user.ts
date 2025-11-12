@@ -5,28 +5,9 @@ import type { RouterOutput } from "../root";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
+import { adminProcedure } from "../procedures/admin";
+
 export type getUserOutput = RouterOutput["user"]["getUser"];
-
-// Middleware para verificar rol de admin
-const enforceUserIsAdmin = protectedProcedure.use(async ({ ctx, next }) => {
-  const userWithRole = await ctx.db
-    .select({
-      rol: roles.nombre_rol,
-    })
-    .from(users)
-    .where(eq(users.id, ctx.user.id))
-    .innerJoin(roles, eq(users.id_rol, roles.id_rol))
-    .limit(1);
-
-  if (!userWithRole[0] || userWithRole[0].rol === "estudiante") {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "No tienes permisos para acceder a este recurso",
-    });
-  }
-
-  return next({ ctx });
-});
 
 export const userRouter = createTRPCRouter({
   getUser: protectedProcedure.query(async ({ ctx }) => {
@@ -58,7 +39,7 @@ export const userRouter = createTRPCRouter({
     };
   }),
 
-  getAllStudents: enforceUserIsAdmin
+  getAllStudents: adminProcedure
     .input(
       z.object({
         page: z.number().min(1).default(1),
@@ -128,7 +109,7 @@ export const userRouter = createTRPCRouter({
       };
     }),
 
-  getStudentById: enforceUserIsAdmin
+  getStudentById: adminProcedure
     .input(z.object({ userId: z.string() }))
     .query(async ({ ctx, input }) => {
       const result = await ctx.db
