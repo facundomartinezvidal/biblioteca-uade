@@ -52,9 +52,25 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Add timeout to prevent hanging
+  let user = null;
+  try {
+    const getUserWithTimeout = Promise.race([
+      supabase.auth.getUser(),
+      new Promise<{ data: { user: null } }>((_, reject) =>
+        setTimeout(
+          () => reject(new Error("Auth timeout in TRPC context")),
+          5000,
+        ),
+      ),
+    ]);
+
+    const result = await getUserWithTimeout;
+    user = result.data.user;
+  } catch (error) {
+    console.error("Failed to get user in TRPC context:", error);
+    // Continue without user - will be caught by protectedProcedure if needed
+  }
 
   return {
     db,
@@ -114,16 +130,17 @@ export const createTRPCRouter = t.router;
 const timingMiddleware = t.middleware(async ({ next, path }) => {
   const start = Date.now();
 
-  if (t._config.isDev) {
-    // artificial delay in dev
-    const waitMs = Math.floor(Math.random() * 400) + 100;
-    await new Promise((resolve) => setTimeout(resolve, waitMs));
-  }
+  // Removed artificial delay to improve performance
 
   const result = await next();
 
   const end = Date.now();
-  console.log(`[TRPC] ${path} took ${end - start}ms to execute`);
+  const duration = end - start;
+
+  // Only log slow queries
+  if (duration > 1000) {
+    console.warn(`[TRPC SLOW] ${path} took ${duration}ms to execute`);
+  }
 
   return result;
 });

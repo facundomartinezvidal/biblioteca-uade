@@ -33,12 +33,14 @@ const conn =
   globalForDb.conn ??
   postgres(databaseUrl, {
     // Limit concurrent connections from this process (helpful in dev & serverless)
-    max: Number.parseInt(process.env.DB_MAX_CONNECTIONS ?? "5", 10),
+    max: Number.parseInt(process.env.DB_MAX_CONNECTIONS ?? "10", 10),
     // Disable prepared statements when going through PgBouncer transaction pooling
     prepare: false,
-    // Optional timeouts (in seconds)
-    idle_timeout: 20,
-    connect_timeout: 10,
+    // Optimized timeouts (in seconds)
+    idle_timeout: 10,
+    connect_timeout: 5,
+    // Keep connections alive
+    keep_alive: 30,
   });
 if (process.env.NODE_ENV !== "production") globalForDb.conn = conn;
 

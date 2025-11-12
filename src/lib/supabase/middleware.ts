@@ -37,9 +37,28 @@ export async function updateSession(request: NextRequest) {
 
   // IMPORTANT: If you remove getUser() and you use server-side rendering
   // with the Supabase client, your users may be randomly logged out.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+
+  // Add timeout to prevent hanging
+  const getUserWithTimeout = async () => {
+    const timeout = new Promise(
+      (_, reject) => setTimeout(() => reject(new Error("Auth timeout")), 5000), // Reduced to 5 seconds
+    );
+
+    const userPromise = supabase.auth.getUser();
+
+    return Promise.race([userPromise, timeout]);
+  };
+
+  let user: { id: string } | null = null;
+  try {
+    const result = await getUserWithTimeout();
+    user = (result as Awaited<ReturnType<typeof supabase.auth.getUser>>).data
+      .user;
+  } catch (error) {
+    console.error("Auth check failed:", error);
+    // If auth check fails, treat as not authenticated
+  }
+
   const publicRoutes = [
     "/auth",
     "/auth/login",

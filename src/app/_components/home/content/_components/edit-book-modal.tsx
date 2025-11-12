@@ -199,7 +199,7 @@ export function EditBookModal({
       setUploadProgress(50);
 
       const { error: uploadError } = await supabase.storage
-        .from("book_image")
+        .from("book-covers")
         .upload(storagePath, file, {
           contentType: `image/${fileExtension}`,
           upsert: true,
@@ -211,7 +211,7 @@ export function EditBookModal({
 
       setUploadProgress(80);
 
-      const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/book_image/${storagePath}`;
+      const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/book-covers/${storagePath}`;
 
       form.setFieldValue("imageUrl", publicUrl);
       setUploadProgress(100);
