@@ -12,6 +12,7 @@ import { AdminBookActions } from "./admin-book-actions";
 import { EditBookModal } from "./edit-book-modal";
 import { AdminReserveModal } from "./admin-reserve-modal";
 import { useState } from "react";
+import { formatISBN } from "~/lib/utils";
 
 interface AdminBookRowProps {
   id: string;
@@ -90,10 +91,13 @@ export function AdminBookRow({
             </div>
           </div>
         </TableCell>
-        <TableCell className="text-sm">{isbn}</TableCell>
+        <TableCell className="text-sm">{formatISBN(isbn)}</TableCell>
         <TableCell className="text-sm">{year ?? "-"}</TableCell>
         <TableCell className="text-sm">
           {editorial ?? "Sin editorial"}
+        </TableCell>
+        <TableCell className="text-sm">
+          {gender ?? "Sin género"}
         </TableCell>
         <TableCell>
           <Badge

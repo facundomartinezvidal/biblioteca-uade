@@ -54,6 +54,7 @@ export function AdminBooksTable({
                 <TableHead>ISBN</TableHead>
                 <TableHead>Año</TableHead>
                 <TableHead>Editorial</TableHead>
+                <TableHead>Género</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-center">Acciones</TableHead>
               </TableRow>
@@ -77,6 +78,9 @@ export function AdminBooksTable({
                     </TableCell>
                     <TableCell>
                       <Skeleton className="h-4 w-12" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-32" />
                     </TableCell>
                     <TableCell>
                       <Skeleton className="h-4 w-32" />
@@ -119,7 +123,7 @@ export function AdminBooksTable({
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={7}
                     className="py-8 text-center text-gray-500"
                   >
                     No hay libros disponibles

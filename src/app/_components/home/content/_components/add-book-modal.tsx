@@ -13,6 +13,7 @@ import { api } from "~/trpc/react";
 import Image from "next/image";
 import { supabase } from "~/lib/supabase/client";
 import { Alert, AlertDescription } from "~/components/ui/alert";
+import { formatISBN, cleanISBN } from "~/lib/utils";
 
 interface AddBookModalProps {
   isOpen: boolean;
@@ -76,7 +77,7 @@ export function AddBookModal({
 
       const cleanedValue = {
         title: value.title.trim(),
-        isbn: value.isbn.trim(),
+        isbn: cleanISBN(value.isbn.trim()),
         description: value.description?.trim() || undefined,
         status: "AVAILABLE" as const,
         year: value.year || undefined,
@@ -254,7 +255,7 @@ export function AddBookModal({
               <Alert variant="destructive" className="mb-4">
                 <AlertDescription>
                   {createError.includes("invalid_string")
-                    ? "El ISBN debe ser numérico y contener exactamente 10 o 13 dígitos"
+                    ? "Por favor, ingrese un ISBN válido de 10 o 13 dígitos numéricos (puede incluir guiones)"
                     : createError}
                 </AlertDescription>
               </Alert>
@@ -375,9 +376,17 @@ export function AddBookModal({
                       <Input
                         id="isbn"
                         value={field.state.value}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="ISBN"
+                        onChange={(e) => {
+                          const cleaned = cleanISBN(e.target.value);
+                          const formatted = formatISBN(cleaned);
+                          field.handleChange(formatted);
+                        }}
+                        placeholder="Ingrese el ISBN con o sin guiones"
+                        className="font-mono"
                       />
+                      <p className="text-xs text-gray-500">
+                        Puede ingresar 10 o 13 dígitos. Ej: 978-84-376-0498-5
+                      </p>
                     </div>
                   )}
                 </form.Field>

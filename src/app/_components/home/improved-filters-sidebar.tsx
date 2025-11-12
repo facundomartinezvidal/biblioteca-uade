@@ -49,6 +49,12 @@ export default function ImprovedFiltersSidebar(
   const { data: locationsData } = api.catalog.getAllLocations.useQuery();
   const locations = locationsData?.response ?? [];
 
+  const { data: gendersData } = api.catalog.getAllGenders.useQuery();
+  const genders = gendersData?.response ?? [];
+
+  const { data: editorialsData } = api.catalog.getAllEditorials.useQuery();
+  const editorials = editorialsData?.response ?? [];
+
   const formatLocationLabel = (campus: string, address: string) => {
     const campusNames: Record<string, string> = {
       MONSERRAT: "Sede Monserrat",
@@ -77,18 +83,11 @@ export default function ImprovedFiltersSidebar(
           <SelectValue placeholder="Género" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="ficcion">Ficción</SelectItem>
-          <SelectItem value="no-ficcion">No ficción</SelectItem>
-          <SelectItem value="novela">Novela</SelectItem>
-          <SelectItem value="ensayo">Ensayo</SelectItem>
-          <SelectItem value="poesia">Poesía</SelectItem>
-          <SelectItem value="biografia">Biografía</SelectItem>
-          <SelectItem value="historia">Historia</SelectItem>
-          <SelectItem value="ciencias">Ciencias</SelectItem>
-          <SelectItem value="filosofia">Filosofía</SelectItem>
-          <SelectItem value="arte">Arte</SelectItem>
-          <SelectItem value="tecnologia">Tecnología</SelectItem>
-          <SelectItem value="educacion">Educación</SelectItem>
+          {genders.map((gender) => (
+            <SelectItem key={gender.id} value={gender.id}>
+              {gender.name}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 
@@ -110,16 +109,11 @@ export default function ImprovedFiltersSidebar(
           <SelectValue placeholder="Editorial" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="penguin">Penguin Random House</SelectItem>
-          <SelectItem value="planeta">Planeta</SelectItem>
-          <SelectItem value="alfaguara">Alfaguara</SelectItem>
-          <SelectItem value="anagrama">Anagrama</SelectItem>
-          <SelectItem value="tusquets">Tusquets</SelectItem>
-          <SelectItem value="sudamericana">Sudamericana</SelectItem>
-          <SelectItem value="critica">Crítica</SelectItem>
-          <SelectItem value="paidos">Paidós</SelectItem>
-          <SelectItem value="fce">Fondo de Cultura Económica</SelectItem>
-          <SelectItem value="siglo-xxi">Siglo XXI</SelectItem>
+          {editorials.map((editorial) => (
+            <SelectItem key={editorial.id} value={editorial.id}>
+              {editorial.name}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 

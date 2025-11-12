@@ -119,7 +119,7 @@ export const booksRouter = createTRPCRouter({
       }
 
       if (genre) {
-        conditions.push(ilike(genders.name, `%${genre}%`));
+        conditions.push(eq(books.genderId, genre));
       }
 
       // Filtro especial para RESERVED: solo mostrar libros reservados por el usuario actual
@@ -178,7 +178,7 @@ export const booksRouter = createTRPCRouter({
       }
 
       if (editorial) {
-        conditions.push(ilike(editorials.name, `%${editorial}%`));
+        conditions.push(eq(books.editorialId, editorial));
       }
 
       if (locationId) {
@@ -499,12 +499,16 @@ export const booksRouter = createTRPCRouter({
         search: z.string().optional(),
         status: z.enum(["AVAILABLE", "NOT_AVAILABLE", "RESERVED"]).optional(),
         locationId: z.string().optional(),
+        genre: z.string().optional(),
+        editorial: z.string().optional(),
+        yearFrom: z.number().optional(),
+        yearTo: z.number().optional(),
         page: z.number().min(1).default(1),
         limit: z.number().min(1).max(100).default(10),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { search, status, locationId, page, limit } = input;
+      const { search, status, locationId, genre, editorial, yearFrom, yearTo, page, limit } = input;
       const offset = (page - 1) * limit;
 
       const conditions = [];
@@ -527,6 +531,22 @@ export const booksRouter = createTRPCRouter({
 
       if (locationId) {
         conditions.push(eq(books.locationId, locationId));
+      }
+
+      if (genre) {
+        conditions.push(eq(books.genderId, genre));
+      }
+
+      if (editorial) {
+        conditions.push(eq(books.editorialId, editorial));
+      }
+
+      if (yearFrom) {
+        conditions.push(gte(books.year, yearFrom));
+      }
+
+      if (yearTo) {
+        conditions.push(lte(books.year, yearTo));
       }
 
       const whereClause =

@@ -16,6 +16,7 @@ import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { formatISBN } from "~/lib/utils";
 
 interface PopUpBookProps {
   isOpen: boolean;
@@ -248,7 +249,7 @@ export default function PopUpBook({
                   <div className="text-muted-foreground flex items-center gap-1 text-[13px] leading-tight">
                     <Hash className="h-3.5 w-3.5 text-gray-500" />
                     <span className="truncate" title={book.isbn ?? undefined}>
-                      {book.isbn ?? "-"}
+                      {book.isbn ? formatISBN(book.isbn) : "-"}
                     </span>
                   </div>
                   <div className="text-muted-foreground col-span-2 flex items-center gap-1 text-[13px] leading-tight">

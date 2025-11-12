@@ -1,4 +1,4 @@
-import { count, eq } from "drizzle-orm";
+import { count, eq, gte, sql } from "drizzle-orm";
 
 import { createTRPCRouter } from "../trpc";
 import { adminProcedure } from "../procedures/admin";
@@ -14,69 +14,87 @@ import {
 
 export const dashboardRouter = createTRPCRouter({
   getAdminOverview: adminProcedure.query(async ({ ctx }) => {
-    const [
-      bookStatusCounts,
-      loanStatusCounts,
-      penaltyStatusCounts,
-      studentCountResult,
-      authorCountResult,
-      loansCreatedAtResult,
-      genreCountsRaw,
-    ] = await Promise.all([
-      ctx.db
-        .select({
-          status: books.status,
-          count: count(),
-        })
-        .from(books)
-        .groupBy(books.status),
-      ctx.db
-        .select({
-          status: loans.status,
-          count: count(),
-        })
-        .from(loans)
-        .groupBy(loans.status),
-      ctx.db
-        .select({
-          status: penalties.status,
-          count: count(),
-        })
-        .from(penalties)
-        .groupBy(penalties.status),
-      ctx.db
-        .select({ count: count() })
-        .from(users)
-        .innerJoin(roles, eq(users.id_rol, roles.id_rol))
-        .where(eq(roles.nombre_rol, "estudiante")),
-      ctx.db.select({ count: count() }).from(authors),
-      ctx.db.select({ createdAt: loans.createdAt }).from(loans),
-      ctx.db
-        .select({
-          genreId: genders.id,
-          genreName: genders.name,
-          count: count(),
-        })
-        .from(loans)
-        .leftJoin(books, eq(loans.bookId, books.id))
-        .leftJoin(genders, eq(books.genderId, genders.id))
-        .groupBy(genders.id, genders.name),
-    ]);
+    // Calculate date range for last 6 months
+    const now = new Date();
+    const sixMonthsAgo = new Date(
+      now.getFullYear(),
+      now.getMonth() - 5,
+      1,
+      0,
+      0,
+      0,
+      0,
+    );
 
-    const toRecord = <T extends string>(
-      items: { status: T; count: number | null }[],
-    ) =>
-      items.reduce<Record<T, number>>(
-        (acc, item) => {
-          acc[item.status] = Number(item.count ?? 0);
-          return acc;
-        },
-        {} as Record<T, number>,
-      );
+    // Execute queries sequentially for better error tracking
+    const bookStatusCounts = await ctx.db
+      .select({
+        status: books.status,
+        count: count(),
+      })
+      .from(books)
+      .groupBy(books.status);
 
-    const bookStatusRecord = toRecord(bookStatusCounts);
-    const loanStatusRecord = toRecord(loanStatusCounts);
-    const penaltyStatusRecord = toRecord(penaltyStatusCounts);
+    const loanStatusCounts = await ctx.db
+      .select({
+        status: loans.status,
+        count: count(),
+      })
+      .from(loans)
+      .groupBy(loans.status);
+
+    const penaltyStatusCounts = await ctx.db
+      .select({
+        status: penalties.status,
+        count: count(),
+      })
+      .from(penalties)
+      .groupBy(penalties.status);
+
+    const studentCountResult = await ctx.db
+      .select({ count: count() })
+      .from(users)
+      .innerJoin(roles, eq(users.id_rol, roles.id_rol))
+      .where(eq(roles.nombre_rol, "estudiante"));
+
+    const authorCountResult = await ctx.db.select({ count: count() }).from(authors);
+
+    const genreCountsRaw = await ctx.db
+      .select({
+        genreName: genders.name,
+        count: count(),
+      })
+      .from(loans)
+      .leftJoin(books, eq(loans.bookId, books.id))
+      .leftJoin(genders, eq(books.genderId, genders.id))
+      .where(sql`${genders.name} IS NOT NULL`)
+      .groupBy(genders.name)
+      .orderBy(sql`COUNT(*) DESC`)
+      .limit(5);
+
+    // Process book status
+    const bookStatusRecord = bookStatusCounts.reduce<
+      Record<string, number>
+    >((acc, item) => {
+      acc[item.status] = Number(item.count ?? 0);
+      return acc;
+    }, {});
+
+    // Process loan status
+    const loanStatusRecord = loanStatusCounts.reduce<
+      Record<string, number>
+    >((acc, item) => {
+      acc[item.status] = Number(item.count ?? 0);
+      return acc;
+    }, {});
+
+    // Process penalty status
+    const penaltyStatusRecord = penaltyStatusCounts.reduce<
+      Record<string, number>
+    >((acc, item) => {
+      acc[item.status] = Number(item.count ?? 0);
+      return acc;
+    }, {});
 
     const summary = {
       totalBooks: Object.values(bookStatusRecord).reduce(
@@ -95,53 +113,51 @@ export const dashboardRouter = createTRPCRouter({
       totalAuthors: Number(authorCountResult[0]?.count ?? 0),
     };
 
-    const now = new Date();
+    // Generate month keys for the chart
+    const currentDate = new Date();
     const monthKeys = Array.from({ length: 6 }, (_, index) => {
-      const date = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1);
-      const key = `${date.getFullYear()}-${date.getMonth()}`;
+      const date = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth() - (5 - index),
+        1,
+      );
+      const monthNum = date.getMonth() + 1; // SQL months are 1-based
+      const year = date.getFullYear();
+      const key = `${year}-${monthNum.toString().padStart(2, "0")}`;
       const formatter = new Intl.DateTimeFormat("es-AR", { month: "short" });
       const label = formatter.format(date);
       return {
         key,
+        year,
+        month: monthNum,
         label: label.charAt(0).toUpperCase() + label.slice(1),
       };
     });
 
+    // OPTIMIZED: Use substring on text field instead of EXTRACT on timestamp
+    // This is much faster since created_at is stored as text (ISO string)
+    const loansPerMonthResults = await ctx.db
+      .select({
+        yearMonth: sql<string>`SUBSTRING(${loans.createdAt}, 1, 7)`, // Gets "YYYY-MM" from ISO string
+        count: count(),
+      })
+      .from(loans)
+      .where(gte(loans.createdAt, sixMonthsAgo.toISOString()))
+      .groupBy(sql`SUBSTRING(${loans.createdAt}, 1, 7)`);
+
+    // Create a map for quick lookup
     const loansPerMonthMap = new Map<string, number>();
-
-    for (const loan of loansCreatedAtResult) {
-      const createdAt = new Date(loan.createdAt);
-      if (Number.isNaN(createdAt.getTime())) continue;
-
-      const key = `${createdAt.getFullYear()}-${createdAt.getMonth()}`;
-      const oldestKey = monthKeys[0]?.key;
-
-      if (!oldestKey) continue;
-
-      const [oldestYear, oldestMonth] = oldestKey
-        .split("-")
-        .map((value) => Number.parseInt(value, 10));
-
-      if (oldestYear === undefined || oldestMonth === undefined) continue;
-
-      const oldestDate = new Date(oldestYear, oldestMonth, 1);
-      const firstDayOfKey = new Date(
-        createdAt.getFullYear(),
-        createdAt.getMonth(),
-        1,
-      );
-
-      if (firstDayOfKey < oldestDate) continue;
-
-      loansPerMonthMap.set(key, (loansPerMonthMap.get(key) ?? 0) + 1);
+    for (const result of loansPerMonthResults) {
+      loansPerMonthMap.set(result.yearMonth, Number(result.count ?? 0));
     }
 
+    // Map the results to the month keys
     const loansByMonth = monthKeys.map(({ key, label }) => ({
       month: label,
       count: loansPerMonthMap.get(key) ?? 0,
     }));
 
-    const loanStatusLabels: Record<keyof typeof loanStatusRecord, string> = {
+    const loanStatusLabels: Record<string, string> = {
       RESERVED: "Reservas",
       ACTIVE: "Activos",
       FINISHED: "Finalizados",
@@ -149,22 +165,16 @@ export const dashboardRouter = createTRPCRouter({
       CANCELLED: "Cancelados",
     };
 
-    const loansByStatus = (
-      Object.keys(loanStatusLabels) as Array<keyof typeof loanStatusLabels>
-    ).map((status) => ({
+    const loansByStatus = Object.keys(loanStatusLabels).map((status) => ({
       status,
-      label: loanStatusLabels[status],
+      label: loanStatusLabels[status]!,
       count: loanStatusRecord[status] ?? 0,
     }));
 
-    const genreDistribution = genreCountsRaw
-      .filter((item) => !!item.genreName)
-      .map((item) => ({
-        genre: item.genreName ?? "Sin género",
-        count: Number(item.count ?? 0),
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
+    const genreDistribution = genreCountsRaw.map((item) => ({
+      genre: item.genreName ?? "Sin género",
+      count: Number(item.count ?? 0),
+    }));
 
     return {
       summary,
