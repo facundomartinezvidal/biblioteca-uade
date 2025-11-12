@@ -1,14 +1,14 @@
 "use client";
 
 import {
-  History,
+  AlertTriangle,
   Search,
-  RefreshCw,
-  Loader2,
   MoreHorizontal,
   Eye,
-  X,
+  DollarSign,
+  Loader2,
 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Badge } from "~/components/ui/badge";
@@ -28,7 +28,6 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { Card, CardContent } from "~/components/ui/card";
 import Image from "next/image";
-import { useState, useEffect } from "react";
 import PaginationControls from "../_components/home/pagination-controls";
 import {
   Select,
@@ -38,18 +37,31 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { api } from "~/trpc/react";
-import { useRouter } from "next/navigation";
-import LoansTableSkeleton from "./_components/loans-table-skeleton";
-import LoanDetailsPopup from "./_components/loan-details-popup";
-import CancelReservationModal from "./_components/cancel-reservation-modal";
+import PenaltiesTableSkeleton from "./_components/penalties-table-skeleton";
+import PenaltyDetailsPopup from "./_components/penalty-details-popup";
+import PayPenaltyModal from "./_components/pay-penalty-modal";
 
-type LoanStatus = "ACTIVE" | "RESERVED" | "FINISHED" | "EXPIRED" | "CANCELLED";
-type LoanItem = {
+type PenaltyItem = {
   id: string;
-  userId: string;
-  endDate: string;
-  status: LoanStatus;
-  createdAt: string;
+  userId: string | null;
+  loanId: string | null;
+  sanctionId: string | null;
+  status: "PENDING" | "PAID" | "EXPIRED";
+  createdAt: Date | null;
+  expiresIn: Date | null;
+  sanction: {
+    id: string;
+    name: string;
+    type: string;
+    description: string | null;
+    amount: string;
+  } | null;
+  loan: {
+    id: string;
+    endDate: string;
+    status: string;
+    createdAt: string;
+  } | null;
   book: {
     id: string;
     title: string;
@@ -57,9 +69,9 @@ type LoanItem = {
     isbn: string;
     status: string;
     year: number | null;
-    editorial: string;
     imageUrl: string | null;
     createdAt: string;
+    editorial: string;
   };
   author: {
     id: string;
@@ -80,44 +92,26 @@ type LoanItem = {
   } | null;
 };
 
-// Function to get status color
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "ACTIVE":
-      return "bg-berkeley-blue text-white";
-    case "RESERVED":
-      return "bg-berkeley-blue/10 text-berkeley-blue";
-    case "FINISHED":
-      return "bg-gray-600 text-white";
-    case "EXPIRED":
-      return "bg-red-600 text-white";
-    case "CANCELLED":
-      return "bg-red-600 text-white";
-    default:
-      return "bg-gray-500 text-white";
+const getStatusBadge = (status: "PENDING" | "PAID" | "EXPIRED") => {
+  if (status === "PAID") {
+    return (
+      <Badge className="bg-berkeley-blue/10 text-berkeley-blue border-0 text-sm">
+        Pagada
+      </Badge>
+    );
   }
+  if (status === "EXPIRED") {
+    return (
+      <Badge className="border-0 bg-orange-600 text-sm text-white">
+        Vencida
+      </Badge>
+    );
+  }
+  return <Badge className="border-0 bg-red-600 text-sm">Pendiente</Badge>;
 };
 
-// Function to get status text
-const getStatusText = (status: string) => {
-  switch (status) {
-    case "ACTIVE":
-      return "Activo";
-    case "RESERVED":
-      return "Reservado";
-    case "FINISHED":
-      return "Finalizado";
-    case "EXPIRED":
-      return "Vencido";
-    case "CANCELLED":
-      return "Cancelado";
-    default:
-      return status;
-  }
-};
-
-// Function to format dates
-const formatDate = (dateString: string) => {
+const formatDate = (dateString: string | Date | null) => {
+  if (!dateString) return "N/A";
   const date = new Date(dateString);
   return date.toLocaleDateString("es-ES", {
     day: "numeric",
@@ -126,41 +120,45 @@ const formatDate = (dateString: string) => {
   });
 };
 
-export default function LoansPage() {
-  const router = useRouter();
+export default function PenaltiesPage() {
   const utils = api.useUtils();
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | LoanStatus>("all");
-  const [selectedLoan, setSelectedLoan] = useState<LoanItem | null>(null);
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "PENDING" | "PAID" | "EXPIRED"
+  >("all");
+
+  const [selectedPenalty, setSelectedPenalty] = useState<PenaltyItem | null>(
+    null,
+  );
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [loanToCancel, setLoanToCancel] = useState<{
+  const [isPayModalOpen, setIsPayModalOpen] = useState(false);
+  const [penaltyToPay, setPenaltyToPay] = useState<{
     id: string;
     title: string;
+    amount: string;
   } | null>(null);
-  const [loadingReserveId, setLoadingReserveId] = useState<string | null>(null);
 
-  const { data, isLoading, refetch } = api.loans.getByUserId.useQuery({
+  const { data, isLoading, refetch } = api.penalties.getByUserId.useQuery({
     page,
     limit,
     status: statusFilter === "all" ? undefined : statusFilter,
     search: search.trim() || undefined,
   });
 
-  const cancelMutation = api.loans.cancelReservation.useMutation({
+  const markAsPaidMutation = api.penalties.markAsPaid.useMutation({
     onSuccess: async () => {
       await refetch();
       await Promise.all([
-        utils.books.getAll.invalidate(),
-        utils.books.getById.invalidate(),
-        utils.loans.getByUserId.invalidate(),
-        utils.loans.getActive.invalidate(),
-        utils.loans.getStats.invalidate(),
+        utils.penalties.getByUserId.invalidate(),
+        utils.penalties.getStats.invalidate(),
+        utils.loans.getStats.invalidate(), // Invalidar stats del perfil
       ]);
-      setIsCancelModalOpen(false);
-      setLoanToCancel(null);
+      setIsPayModalOpen(false);
+      setPenaltyToPay(null);
+      setIsDetailsModalOpen(false); // Cerrar también el modal de detalles
+      setSelectedPenalty(null);
     },
   });
 
@@ -175,30 +173,34 @@ export default function LoansPage() {
     setPage(1);
   }, [search, statusFilter]);
 
-  const handleViewMore = (loan: LoanItem) => {
-    setSelectedLoan(loan);
+  const handleViewMore = (penalty: PenaltyItem) => {
+    setSelectedPenalty(penalty);
     setIsDetailsModalOpen(true);
   };
 
   const handleCloseDetailsModal = () => {
     setIsDetailsModalOpen(false);
-    setSelectedLoan(null);
+    setSelectedPenalty(null);
   };
 
-  const handleOpenCancelModal = (loanId: string, bookTitle: string) => {
-    setLoanToCancel({ id: loanId, title: bookTitle });
-    setIsCancelModalOpen(true);
+  const handleOpenPayModal = (
+    penaltyId: string,
+    bookTitle: string,
+    amount: string,
+  ) => {
+    setPenaltyToPay({ id: penaltyId, title: bookTitle, amount });
+    setIsPayModalOpen(true);
   };
 
-  const handleConfirmCancel = () => {
-    if (loanToCancel) {
-      cancelMutation.mutate({ loanId: loanToCancel.id });
+  const handleConfirmPay = () => {
+    if (penaltyToPay) {
+      markAsPaidMutation.mutate({ penaltyId: penaltyToPay.id });
     }
   };
 
-  const handleReserveAgain = (bookId: string) => {
-    setLoadingReserveId(bookId);
-    router.push(`/reserve/${bookId}`);
+  const handlePayPenalty = (penaltyId: string) => {
+    // Pagar directamente desde el modal de detalles
+    markAsPaidMutation.mutate({ penaltyId });
   };
 
   return (
@@ -207,14 +209,15 @@ export default function LoansPage() {
         {/* Header */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <History className="h-6 w-6" />
+            <AlertTriangle className="h-6 w-6" />
             <h1 className="text-2xl font-semibold tracking-tight">
-              Historial de Préstamos
+              Multas y Sanciones
             </h1>
           </div>
         </div>
         <p className="text-muted-foreground mt-1 text-sm">
-          Encontrá el libro que estás buscando de la forma más rápida
+          Visualizá tus multas y sanciones. Podés filtrar y buscar por libro o
+          estado.
         </p>
 
         {/* Search + Filters */}
@@ -235,29 +238,28 @@ export default function LoansPage() {
             <span className="text-sm font-medium text-gray-700">
               Filtrar por:
             </span>
-
-            {/* Status filter */}
             <Select
               value={statusFilter}
-              onValueChange={(v) => setStatusFilter(v as LoanStatus | "all")}
+              onValueChange={(v) =>
+                setStatusFilter(v as "all" | "PENDING" | "PAID" | "EXPIRED")
+              }
             >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="ACTIVE">Activo</SelectItem>
-                <SelectItem value="RESERVED">Reservado</SelectItem>
-                <SelectItem value="FINISHED">Finalizado</SelectItem>
-                <SelectItem value="EXPIRED">Vencido</SelectItem>
-                <SelectItem value="CANCELLED">Cancelado</SelectItem>
+                <SelectItem value="PENDING">Pendiente</SelectItem>
+                <SelectItem value="PAID">Pagada</SelectItem>
+                <SelectItem value="EXPIRED">Vencida</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
+        {/* Penalties Table (styled like loans) */}
         {isLoading ? (
-          <LoansTableSkeleton />
+          <PenaltiesTableSkeleton />
         ) : (
           <Card className="shadow-sm">
             <CardContent className="px-6 py-4">
@@ -265,11 +267,14 @@ export default function LoansPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-[100px]">ID</TableHead>
                       <TableHead>ID Préstamo</TableHead>
                       <TableHead>Libro</TableHead>
+                      <TableHead>Sanción</TableHead>
                       <TableHead>Estado</TableHead>
-                      <TableHead className="min-w-[120px]">Desde</TableHead>
-                      <TableHead className="min-w-[120px]">Hasta</TableHead>
+                      <TableHead className="min-w-[120px]">Creada</TableHead>
+                      <TableHead className="min-w-[120px]">Vence</TableHead>
+                      <TableHead className="min-w-[120px]">Monto</TableHead>
                       <TableHead className="w-[80px] text-right">
                         Acciones
                       </TableHead>
@@ -277,26 +282,30 @@ export default function LoansPage() {
                   </TableHeader>
                   <TableBody>
                     {results.length > 0 ? (
-                      results.map((loan) => {
-                        const canCancel = loan.status === "RESERVED";
-                        const canReserve =
-                          loan.status === "FINISHED" ||
-                          loan.status === "CANCELLED";
-                        const isLoadingReserve =
-                          loadingReserveId === loan.book.id;
+                      results.map((penalty) => {
+                        const canPay = penalty.status === "PENDING";
+                        const isPaying =
+                          markAsPaidMutation.isPending &&
+                          markAsPaidMutation.variables?.penaltyId ===
+                            penalty.id;
 
                         return (
-                          <TableRow key={loan.id}>
-                            <TableCell className="text-sm text-gray-600 font-mono">
-                              {loan.id.slice(0, 8)}...
+                          <TableRow key={penalty.id}>
+                            <TableCell className="font-mono text-xs text-gray-500">
+                              {penalty.id.substring(0, 8)}...
+                            </TableCell>
+                            <TableCell className="font-mono text-sm text-gray-600">
+                              {penalty.loanId
+                                ? penalty.loanId.slice(0, 8) + "..."
+                                : "N/A"}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-3">
                                 <div className="relative h-14 w-10 flex-shrink-0 overflow-hidden rounded bg-gray-200">
-                                  {loan.book.imageUrl ? (
+                                  {penalty.book.imageUrl ? (
                                     <Image
-                                      src={loan.book.imageUrl}
-                                      alt={loan.book.title}
+                                      src={penalty.book.imageUrl}
+                                      alt={penalty.book.title}
                                       fill
                                       className="object-cover"
                                       onError={(e) => {
@@ -309,31 +318,35 @@ export default function LoansPage() {
                                 </div>
                                 <div className="min-w-0">
                                   <p className="truncate text-sm font-medium text-gray-900">
-                                    {loan.book.title}
+                                    {penalty.book.title}
                                   </p>
                                   <p className="truncate text-sm text-gray-600">
-                                    {loan.author
-                                      ? `${loan.author.name} ${loan.author.middleName ?? ""} ${loan.author.lastName}`
+                                    {penalty.author
+                                      ? `${penalty.author.name} ${penalty.author.middleName ?? ""} ${penalty.author.lastName}`
                                       : "Autor desconocido"}
                                   </p>
                                 </div>
                               </div>
                             </TableCell>
 
+                            <TableCell className="text-sm text-gray-700">
+                              {penalty.sanction?.name ?? "Sin especificar"}
+                            </TableCell>
+
                             <TableCell>
-                              <Badge
-                                className={`${getStatusColor(loan.status)} border-0 text-sm font-medium`}
-                              >
-                                {getStatusText(loan.status)}
-                              </Badge>
+                              {getStatusBadge(penalty.status)}
                             </TableCell>
 
                             <TableCell className="text-sm text-gray-600">
-                              {formatDate(loan.createdAt)}
+                              {formatDate(penalty.createdAt)}
                             </TableCell>
 
                             <TableCell className="text-sm text-gray-600">
-                              {formatDate(loan.endDate)}
+                              {formatDate(penalty.expiresIn)}
+                            </TableCell>
+
+                            <TableCell className="text-sm text-gray-600">
+                              ${penalty.sanction?.amount ?? "0"}
                             </TableCell>
 
                             <TableCell className="w-[80px] text-right">
@@ -350,41 +363,32 @@ export default function LoansPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem
-                                    onClick={() => handleViewMore(loan)}
+                                    onClick={() => handleViewMore(penalty)}
                                   >
                                     <Eye className="mr-2 h-4 w-4" />
                                     Ver Más
                                   </DropdownMenuItem>
-                                  {canCancel && (
+                                  {canPay && (
                                     <DropdownMenuItem
                                       onClick={() =>
-                                        handleOpenCancelModal(
-                                          loan.id,
-                                          loan.book.title,
+                                        handleOpenPayModal(
+                                          penalty.id,
+                                          penalty.book.title,
+                                          penalty.sanction?.amount ?? "0",
                                         )
                                       }
-                                      className="text-red-600"
+                                      disabled={isPaying}
                                     >
-                                      <X className="mr-2 h-4 w-4" />
-                                      Cancelar Reserva
-                                    </DropdownMenuItem>
-                                  )}
-                                  {canReserve && (
-                                    <DropdownMenuItem
-                                      onClick={() =>
-                                        handleReserveAgain(loan.book.id)
-                                      }
-                                      disabled={isLoadingReserve}
-                                    >
-                                      {isLoadingReserve ? (
+                                      {isPaying ? (
                                         <>
                                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                          Reservando...
+                                          Procesando
                                         </>
                                       ) : (
                                         <>
-                                          <RefreshCw className="mr-2 h-4 w-4" />
-                                          Reservar Nuevamente
+                                          <DollarSign className="mr-2 h-4 w-4" />
+                                          Pagar{" "}
+                                          {penalty.sanction?.amount ?? "0"}
                                         </>
                                       )}
                                     </DropdownMenuItem>
@@ -398,10 +402,10 @@ export default function LoansPage() {
                     ) : (
                       <TableRow>
                         <TableCell
-                          colSpan={5}
+                          colSpan={9}
                           className="py-8 text-center text-gray-500"
                         >
-                          No tienes préstamos registrados
+                          No se encontraron multas
                         </TableCell>
                       </TableRow>
                     )}
@@ -425,28 +429,26 @@ export default function LoansPage() {
         />
       </main>
 
-      {selectedLoan && (
-        <LoanDetailsPopup
+      {/* Penalty details popup */}
+      {selectedPenalty && (
+        <PenaltyDetailsPopup
           isOpen={isDetailsModalOpen}
           onClose={handleCloseDetailsModal}
-          loan={selectedLoan}
-          onCancel={(loanId) => {
-            handleCloseDetailsModal();
-            handleOpenCancelModal(loanId, selectedLoan.book.title);
-          }}
-          onReserve={handleReserveAgain}
-          isLoadingCancel={cancelMutation.isPending}
-          isLoadingReserve={loadingReserveId === selectedLoan.book.id}
+          penalty={selectedPenalty}
+          onPay={handlePayPenalty}
+          isLoadingPay={markAsPaidMutation.isPending}
         />
       )}
 
-      {loanToCancel && (
-        <CancelReservationModal
-          isOpen={isCancelModalOpen}
-          onClose={() => setIsCancelModalOpen(false)}
-          onConfirm={handleConfirmCancel}
-          bookTitle={loanToCancel.title}
-          isLoading={cancelMutation.isPending}
+      {/* Pay penalty confirmation modal */}
+      {penaltyToPay && (
+        <PayPenaltyModal
+          isOpen={isPayModalOpen}
+          onClose={() => setIsPayModalOpen(false)}
+          onConfirm={handleConfirmPay}
+          bookTitle={penaltyToPay.title}
+          amount={penaltyToPay.amount}
+          isLoading={markAsPaidMutation.isPending}
         />
       )}
     </div>

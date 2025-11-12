@@ -9,6 +9,7 @@ interface StatCardProps {
   title: string;
   bgColor: string;
   textColor: string;
+  onClick?: () => void;
 }
 
 export function StatCard({
@@ -20,13 +21,27 @@ export function StatCard({
   title,
   bgColor,
   textColor,
+  onClick,
 }: StatCardProps) {
+  const baseClasses = `rounded-md ${bgColor} p-4`;
+  const interactiveClasses = onClick
+    ? "cursor-pointer transition-all hover:scale-105 hover:shadow-md"
+    : "";
+
   return (
     <div
-      className={`rounded-md ${bgColor} p-4`}
+      className={`${baseClasses} ${interactiveClasses}`}
       role="region"
       aria-label={ariaLabel}
       title={title}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (onClick && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      tabIndex={onClick ? 0 : undefined}
     >
       <div
         className={`flex items-center justify-center gap-2 text-sm font-medium ${textColor}`}

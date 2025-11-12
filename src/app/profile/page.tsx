@@ -115,6 +115,10 @@ export default function ProfilePage() {
     router.push(`/reserve/${bookId}`);
   };
 
+  const handleViewPenalties = () => {
+    router.push("/penalties");
+  };
+
   const activeLoans =
     activeLoansData?.results.filter(
       (loan) => loan.status === "ACTIVE" || loan.status === "RESERVED",
@@ -172,6 +176,7 @@ export default function ProfilePage() {
                   finishedLoans={stats?.finishedLoans ?? 0}
                   pendingFines={stats?.pendingFines ?? 0}
                   upcomingDue={stats?.upcomingDue ?? 0}
+                  onPendingFinesClick={handleViewPenalties}
                 />
               )}
 
