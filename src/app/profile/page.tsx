@@ -138,11 +138,7 @@ export default function ProfilePage() {
         <div className="container mx-auto px-8 py-8">
           <div className="flex flex-col gap-6">
             <ProfileHeaderSkeleton />
-            <StatsGridSkeleton />
-            <div className="flex flex-col gap-4">
-              <div className="h-6 w-48 animate-pulse rounded-md bg-gray-200" />
-              <LoansTableSkeleton />
-            </div>
+            <AdminDashboardSkeleton />
           </div>
         </div>
       </div>
@@ -171,7 +167,7 @@ export default function ProfilePage() {
               ) : adminOverview ? (
                 <AdminDashboard data={adminOverview} />
               ) : (
-                <div className="rounded-xl border border-berkeley-blue/10 bg-slate-50 p-6 text-center text-sm text-slate-600">
+                <div className="border-berkeley-blue/10 rounded-xl border bg-slate-50 p-6 text-center text-sm text-slate-600">
                   <p className="font-medium text-slate-700">
                     No pudimos cargar el dashboard del administrador.
                   </p>
@@ -181,7 +177,7 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={() => void refetchAdminOverview()}
-                    className="mt-4 inline-flex items-center justify-center rounded-md bg-berkeley-blue px-4 py-2 text-sm font-medium text-white transition hover:bg-berkeley-blue/90"
+                    className="bg-berkeley-blue hover:bg-berkeley-blue/90 mt-4 inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-white transition"
                   >
                     Reintentar
                   </button>
