@@ -3,7 +3,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { GraduationCap, Loader2, LogOut, UserStarIcon } from "lucide-react";
+import {
+  Bell,
+  GraduationCap,
+  Loader2,
+  LogOut,
+  UserStarIcon,
+} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -22,6 +28,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { useUser } from "~/lib/contexts";
 import { NotificationsPopover } from "./notifications-popover";
+import CalendarPopover from "./calendar-popover";
 
 export default function AppNavbar() {
   const pathname = usePathname();
@@ -151,7 +158,7 @@ export default function AppNavbar() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-sm font-medium leading-none">
+                  <span className="text-sm leading-none font-medium">
                     {user.name} {user.last_name}
                   </span>
                 </div>
