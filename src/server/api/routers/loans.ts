@@ -13,6 +13,7 @@ import { editorials } from "~/server/db/schemas/editorials";
 import { users } from "~/server/db/schemas/users";
 import { roles } from "~/server/db/schemas/roles";
 import { penalties } from "~/server/db/schemas/penalties";
+import { sanctions } from "~/server/db/schemas/sanctions";
 import { eq, and, desc, or, ilike } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
@@ -338,6 +339,212 @@ export const loansRouter = createTRPCRouter({
         .where(eq(books.id, input.bookId));
 
       return { success: true, loan: newLoan[0] };
+    }),
+
+  createReservationForStudent: enforceUserIsAdmin
+    .input(z.object({ bookId: z.string(), studentId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // Verificar que el usuario sea un estudiante
+      const student = await ctx.db
+        .select({
+          id: users.id,
+          rol: roles.nombre_rol,
+        })
+        .from(users)
+        .where(eq(users.id, input.studentId))
+        .innerJoin(roles, eq(users.id_rol, roles.id_rol))
+        .limit(1);
+
+      if (!student[0] || student[0].rol !== "estudiante") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "El usuario seleccionado no es un estudiante",
+        });
+      }
+
+      const book = await ctx.db
+        .select()
+        .from(books)
+        .where(eq(books.id, input.bookId))
+        .limit(1);
+
+      if (book.length === 0) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Libro no encontrado",
+        });
+      }
+
+      if (book[0]!.status !== "AVAILABLE") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "El libro no está disponible para préstamo",
+        });
+      }
+
+      const now = new Date();
+      const endDate = new Date(now);
+      endDate.setDate(endDate.getDate() + 14); // 14 días para préstamos activos
+
+      const newLoan = await ctx.db
+        .insert(loans)
+        .values({
+          bookId: input.bookId,
+          userId: input.studentId,
+          status: "ACTIVE", // Directamente ACTIVO porque el admin entrega el libro
+          createdAt: now.toISOString(),
+          endDate: endDate.toISOString(),
+        })
+        .returning();
+
+      await ctx.db
+        .update(books)
+        .set({ status: "NOT_AVAILABLE" }) // NOT_AVAILABLE porque está prestado
+        .where(eq(books.id, input.bookId));
+
+      return { success: true, loan: newLoan[0] };
+    }),
+
+  activateLoan: enforceUserIsAdmin
+    .input(z.object({ loanId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const loan = await ctx.db
+        .select()
+        .from(loans)
+        .where(eq(loans.id, input.loanId))
+        .limit(1);
+
+      if (!loan[0]) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Préstamo no encontrado",
+        });
+      }
+
+      if (loan[0].status !== "RESERVED") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Solo se pueden activar préstamos en estado RESERVADO",
+        });
+      }
+
+      const now = new Date();
+      const endDate = new Date(now);
+      endDate.setDate(endDate.getDate() + 14); // 14 días para préstamos activos
+
+      await ctx.db
+        .update(loans)
+        .set({
+          status: "ACTIVE",
+          endDate: endDate.toISOString(),
+        })
+        .where(eq(loans.id, input.loanId));
+
+      await ctx.db
+        .update(books)
+        .set({ status: "NOT_AVAILABLE" })
+        .where(eq(books.id, loan[0].bookId));
+
+      return { success: true };
+    }),
+
+  finishLoan: enforceUserIsAdmin
+    .input(z.object({ loanId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const loan = await ctx.db
+        .select()
+        .from(loans)
+        .where(eq(loans.id, input.loanId))
+        .limit(1);
+
+      if (!loan[0]) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Préstamo no encontrado",
+        });
+      }
+
+      if (loan[0].status !== "ACTIVE") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Solo se pueden finalizar préstamos en estado ACTIVO",
+        });
+      }
+
+      await ctx.db
+        .update(loans)
+        .set({ status: "FINISHED" })
+        .where(eq(loans.id, input.loanId));
+
+      await ctx.db
+        .update(books)
+        .set({ status: "AVAILABLE" })
+        .where(eq(books.id, loan[0].bookId));
+
+      return { success: true };
+    }),
+
+  createPenaltyForDamagedBook: enforceUserIsAdmin
+    .input(z.object({ loanId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const loan = await ctx.db
+        .select()
+        .from(loans)
+        .where(eq(loans.id, input.loanId))
+        .limit(1);
+
+      if (!loan[0]) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Préstamo no encontrado",
+        });
+      }
+
+      if (loan[0].status !== "ACTIVE") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Solo se pueden multar préstamos en estado ACTIVO",
+        });
+      }
+
+      // Buscar la sanción por libro dañado
+      const damagedBookSanction = await ctx.db
+        .select()
+        .from(sanctions)
+        .where(eq(sanctions.type, "LIBRO_DANADO"))
+        .limit(1);
+
+      if (!damagedBookSanction[0]) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No se encontró la sanción por libro dañado",
+        });
+      }
+
+      const now = new Date();
+
+      // Crear la multa por libro dañado
+      await ctx.db.insert(penalties).values({
+        userId: loan[0].userId,
+        loanId: input.loanId,
+        sanctionId: damagedBookSanction[0].id,
+        status: "PENDING",
+        createdAt: now,
+      });
+
+      // Marcar el préstamo como finalizado
+      await ctx.db
+        .update(loans)
+        .set({ status: "FINISHED" })
+        .where(eq(loans.id, input.loanId));
+
+      // Marcar el libro como disponible (el admin puede decidir si prestarlo nuevamente)
+      await ctx.db
+        .update(books)
+        .set({ status: "AVAILABLE" })
+        .where(eq(books.id, loan[0].bookId));
+
+      return { success: true };
     }),
 
   getStats: protectedProcedure.query(async ({ ctx }) => {

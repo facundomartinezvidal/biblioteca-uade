@@ -6,6 +6,7 @@ import {
   MoreHorizontal,
   Eye,
   DollarSign,
+  Loader2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "~/components/ui/button";
@@ -266,6 +267,7 @@ export default function PenaltiesPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-[100px]">ID</TableHead>
                       <TableHead>ID Préstamo</TableHead>
                       <TableHead>Libro</TableHead>
                       <TableHead>Sanción</TableHead>
@@ -289,6 +291,9 @@ export default function PenaltiesPage() {
 
                         return (
                           <TableRow key={penalty.id}>
+                            <TableCell className="font-mono text-xs text-gray-500">
+                              {penalty.id.substring(0, 8)}...
+                            </TableCell>
                             <TableCell className="font-mono text-sm text-gray-600">
                               {penalty.loanId
                                 ? penalty.loanId.slice(0, 8) + "..."
@@ -373,12 +378,11 @@ export default function PenaltiesPage() {
                                         )
                                       }
                                       disabled={isPaying}
-                                      className="text-blue-600"
                                     >
                                       {isPaying ? (
                                         <>
-                                          <DollarSign className="mr-2 h-4 w-4 animate-pulse" />
-                                          Procesando...
+                                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                          Procesando
                                         </>
                                       ) : (
                                         <>
@@ -398,7 +402,7 @@ export default function PenaltiesPage() {
                     ) : (
                       <TableRow>
                         <TableCell
-                          colSpan={6}
+                          colSpan={9}
                           className="py-8 text-center text-gray-500"
                         >
                           No se encontraron multas
