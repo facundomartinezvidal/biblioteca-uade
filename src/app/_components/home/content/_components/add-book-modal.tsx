@@ -252,7 +252,11 @@ export function AddBookModal({
           <div className="flex-1 overflow-y-auto p-6">
             {createError && (
               <Alert variant="destructive" className="mb-4">
-                <AlertDescription>{createError}</AlertDescription>
+                <AlertDescription>
+                  {createError.includes("invalid_string")
+                    ? "El ISBN debe ser numérico y contener exactamente 10 o 13 dígitos"
+                    : createError}
+                </AlertDescription>
               </Alert>
             )}
             <div className="flex gap-6">

@@ -270,12 +270,15 @@ export function AdminDashboard({ data }: AdminDashboardProps) {
         <Card className="border-berkeley-blue/10 lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-base font-semibold">
-              Distribución por género (Top 5)
+              Géneros más prestados (Top 5)
             </CardTitle>
+            <p className="text-muted-foreground text-sm">
+              Distribución de préstamos según el género literario de los libros
+            </p>
           </CardHeader>
           <CardContent className="flex h-[320px] flex-col items-center justify-center gap-4 lg:flex-row">
             {charts.genreDistribution.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 No hay datos suficientes para mostrar esta gráfica todavía.
               </p>
             ) : (
@@ -316,7 +319,7 @@ export function AdminDashboard({ data }: AdminDashboardProps) {
                   {charts.genreDistribution.map((genre, index) => (
                     <div
                       key={genre.genre}
-                      className="flex items-center justify-between rounded-md border border-berkeley-blue/10 bg-slate-50 px-4 py-2 text-slate-700"
+                      className="border-berkeley-blue/10 flex items-center justify-between rounded-md border bg-slate-50 px-4 py-2 text-slate-700"
                     >
                       <span className="flex items-center gap-2 font-medium">
                         <span
@@ -340,5 +343,3 @@ export function AdminDashboard({ data }: AdminDashboardProps) {
     </div>
   );
 }
-
-
