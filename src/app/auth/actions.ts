@@ -35,6 +35,5 @@ export async function logoutAction() {
   const cookieStore = await cookies();
   cookieStore.delete("access_token");
   cookieStore.delete("refresh_token");
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
   redirect(CORE_FRONTEND_URL);
 }

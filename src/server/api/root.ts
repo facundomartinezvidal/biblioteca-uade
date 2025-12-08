@@ -11,7 +11,7 @@ import { catalogRouter } from "./routers/catalog";
 import { userRouter } from "./routers/user";
 import { favoritesRouter } from "./routers/favorites";
 import { penaltiesRouter } from "./routers/penalties";
-import { sanctionsRouter } from "./routers/sanctions";
+import { parametersRouter } from "./routers/parameters";
 import { dashboardRouter } from "./routers/dashboard";
 import { notificationsRouter } from "./routers/notifications";
 import { locationsRouter } from "./routers/locations";
@@ -30,7 +30,7 @@ export const appRouter = createTRPCRouter({
   user: userRouter,
   favorites: favoritesRouter,
   penalties: penaltiesRouter,
-  sanctions: sanctionsRouter,
+  parameters: parametersRouter,
   dashboard: dashboardRouter,
   notifications: notificationsRouter,
   locations: locationsRouter,

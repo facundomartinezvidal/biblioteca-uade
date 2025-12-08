@@ -16,5 +16,13 @@ export default function HomePage() {
     );
   }
 
-  return user?.rol === "admin" ? <HomeAdminContent /> : <HomeStudentContent />;
+  const userRole = user?.rol?.toUpperCase();
+  const userSubrol = user?.subrol 
+    ? String(user.subrol).toUpperCase() 
+    : undefined;
+
+  // Show admin content only for ADMINISTRADOR with BIBLIOTECARIO subrol
+  const isAdmin = userRole === "ADMINISTRADOR" && userSubrol === "BIBLIOTECARIO";
+
+  return isAdmin ? <HomeAdminContent /> : <HomeStudentContent />;
 }

@@ -3,6 +3,7 @@ import { favorites } from "~/server/db/schemas/favorites";
 import { books, authors, genders, editorials } from "~/server/db/schemas";
 import { eq, and, desc } from "drizzle-orm";
 import { z } from "zod";
+import { getLocationFromBackoffice } from "~/lib/backoffice-api";
 
 export const favoritesRouter = createTRPCRouter({
   // Agregar libro a favoritos
@@ -80,7 +81,7 @@ export const favoritesRouter = createTRPCRouter({
           status: books.status,
           year: books.year,
           imageUrl: books.imageUrl,
-          location: books.locationId,
+          locationId: books.locationId,
           author: authors.name,
           authorMiddleName: authors.middleName,
           authorLastName: authors.lastName,
@@ -100,7 +101,7 @@ export const favoritesRouter = createTRPCRouter({
         return [];
       }
 
-      return userFavorites
+      const favoritesData = userFavorites
         .filter((fav) => fav.bookId !== null)
         .map((fav) => ({
           id: fav.bookId!,
@@ -113,10 +114,36 @@ export const favoritesRouter = createTRPCRouter({
           gender: fav.gender ?? null,
           description: fav.description ?? null,
           isbn: fav.isbn ?? null,
-          location: fav.location ?? null,
+          locationId: fav.locationId ?? null,
           imageUrl: fav.imageUrl ?? null,
           status: fav.status ?? null,
         }));
+
+      // Enrich with location names from backoffice
+      const favoritesWithLocations = await Promise.all(
+        favoritesData.map(async (book) => {
+          let locationName = "No especificada";
+          if (book.locationId) {
+            try {
+              const location = await getLocationFromBackoffice(book.locationId);
+              if (location) {
+                locationName = `Sede ${location.nombre}`;
+              }
+            } catch (error) {
+              console.error(
+                `Error fetching location ${book.locationId}:`,
+                error,
+              );
+            }
+          }
+          return {
+            ...book,
+            location: locationName,
+          };
+        }),
+      );
+
+      return favoritesWithLocations;
     } catch (error) {
       console.error("Error fetching favorites:", error);
       return [];

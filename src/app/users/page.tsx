@@ -24,18 +24,6 @@ import { api } from "~/trpc/react";
 import { useRouter } from "next/navigation";
 import UsersTableSkeleton from "./_components/users-table-skeleton";
 
-type Student = {
-  id: string;
-  nombre: string;
-  apellido: string;
-  correo_institucional: string;
-  correo_personal: string;
-  dni: string;
-  legajo: string;
-  telefono_personal: string;
-  status: boolean;
-};
-
 export default function UsersPage() {
   const router = useRouter();
   const [page, setPage] = useState(1);
@@ -43,16 +31,13 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   const { data, isLoading } = api.user.getAllStudents.useQuery({
     page,
     limit,
     search: debouncedSearch,
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
   const results = data?.results ?? [];
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const hasNextPage = page < totalPages;
@@ -118,10 +103,8 @@ export default function UsersPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access */}
                     {results.length > 0 ? (
-                      /* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
-                      results.map((student: Student) => (
+                      results.map((student) => (
                         <TableRow key={student.id}>
                           <TableCell>
                             <p className="text-sm font-medium text-gray-900">

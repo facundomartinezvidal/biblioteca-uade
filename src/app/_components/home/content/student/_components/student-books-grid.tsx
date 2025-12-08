@@ -15,7 +15,6 @@ interface Book {
   description?: string | null;
   isbn?: string | null;
   location?: string | null;
-  locationCampus?: string | null;
   imageUrl?: string | null;
   status?: string | null;
 }
@@ -69,7 +68,6 @@ export function StudentBooksGrid({
                 description={book.description ?? ""}
                 isbn={book.isbn ?? ""}
                 location={book.location ?? ""}
-                locationCampus={book.locationCampus ?? undefined}
                 available={book.status === "AVAILABLE"}
                 status={
                   book.status as

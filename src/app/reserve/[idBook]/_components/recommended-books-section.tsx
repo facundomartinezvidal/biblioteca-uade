@@ -15,7 +15,6 @@ interface Book {
   description?: string | null;
   isbn: string;
   location?: string | null;
-  locationCampus?: string | null;
   imageUrl?: string | null;
   status?: string | null;
 }
@@ -68,7 +67,6 @@ export function RecommendedBooksSection({
               description={book.description ?? ""}
               isbn={book.isbn}
               location={book.location ?? ""}
-              locationCampus={book.locationCampus ?? undefined}
               available={book.status === "AVAILABLE"}
               coverUrl={book.imageUrl}
               isFavorite={favoriteIds.includes(book.id)}

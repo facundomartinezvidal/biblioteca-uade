@@ -4,6 +4,5 @@ export * from "./editorials";
 export * from "./genders";
 export * from "./favorites";
 export * from "./loans";
-export * from "./penalties";
-export * from "./sanctions";
+export * from "./user-parameters";
 export * from "./notifications";

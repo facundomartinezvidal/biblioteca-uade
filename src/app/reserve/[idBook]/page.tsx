@@ -25,7 +25,6 @@ type BookSummary = {
   description?: string | null;
   isbn?: string | null;
   location?: string | null;
-  locationCampus?: string | null;
   imageUrl?: string | null;
   status?: string | null;
 };

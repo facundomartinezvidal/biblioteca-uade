@@ -63,20 +63,31 @@ export function ManageCatalogModals({
     enabled: activeType === "editorial" && open,
   });
 
-  const rawList: BaseItem[] =
-    (activeType === "author"
-      ? authorsQuery.data?.response?.map((a) => ({
-          id: a.id,
-          name: a.name,
-          middleName: a.middleName,
-          lastName: a.lastName,
-        }))
-      : activeType === "gender"
-        ? gendersQuery.data?.response?.map((g) => ({ id: g.id, name: g.name }))
-        : editorialsQuery.data?.response?.map((e) => ({
-            id: e.id,
-            name: e.name,
-          }))) ?? [];
+  const rawList: BaseItem[] = useMemo(
+    () =>
+      (activeType === "author"
+        ? authorsQuery.data?.response?.map((a) => ({
+            id: a.id,
+            name: a.name,
+            middleName: a.middleName,
+            lastName: a.lastName,
+          }))
+        : activeType === "gender"
+          ? gendersQuery.data?.response?.map((g) => ({
+              id: g.id,
+              name: g.name,
+            }))
+          : editorialsQuery.data?.response?.map((e) => ({
+              id: e.id,
+              name: e.name,
+            }))) ?? [],
+    [
+      activeType,
+      authorsQuery.data?.response,
+      gendersQuery.data?.response,
+      editorialsQuery.data?.response,
+    ],
+  );
 
   const [search, setSearch] = useState("");
   const list = useMemo(() => {

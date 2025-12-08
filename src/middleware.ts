@@ -85,7 +85,6 @@ export async function middleware(request: NextRequest) {
   // 4. Try Refresh
   if (refreshTokenCookie) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
       const tokens: AuthTokens = await refreshToken(refreshTokenCookie.value);
 
       // If we are on a public route (like login), we can still refresh and redirect to home?
@@ -134,7 +133,6 @@ export async function middleware(request: NextRequest) {
   }
 
   // 6. Redirect to Core Login
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
   const coreLoginUrl = new URL(CORE_FRONTEND_URL);
   // Pass the current URL as a place to return to?
   // Core might support ?redirect=...

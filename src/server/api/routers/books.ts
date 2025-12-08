@@ -368,10 +368,15 @@ export const booksRouter = createTRPCRouter({
           (book) => !loanedBookIds.has(book.id),
         );
 
+        // Enrich with location names
+        const booksWithLocations = await enrichBooksWithLocations(
+          uniqueFallback.slice(0, limit),
+        );
+
         return {
           success: true,
           method: "GET",
-          response: uniqueFallback.slice(0, limit),
+          response: booksWithLocations,
         };
       }
 
@@ -503,15 +508,17 @@ export const booksRouter = createTRPCRouter({
         year: book.year,
         editorial: book.editorial,
         gender: book.gender,
-        location: book.location,
         locationId: book.locationId,
         imageUrl: book.imageUrl,
       }));
 
+      // Enrich with location names
+      const booksWithLocations = await enrichBooksWithLocations(sanitizedBooks);
+
       return {
         success: true,
         method: "GET",
-        response: sanitizedBooks,
+        response: booksWithLocations,
       };
     }),
   getAllAdmin: publicProcedure

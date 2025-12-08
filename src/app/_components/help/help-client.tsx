@@ -4,13 +4,7 @@ import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, Search, HelpCircle } from "lucide-react";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "~/components/ui/card";
+import { Card, CardContent } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 

@@ -16,10 +16,9 @@ export const loanStatusEnum = pgEnum("loan_status", [
   "CANCELLED",
 ]);
 
-export const penaltyStatusEnum = pgEnum("penalty_status", [
+export const userParameterStatusEnum = pgEnum("user_parameter_status", [
   "PENDING",
   "PAID",
-  "EXPIRED",
 ]);
 
 export const notificationTypeEnum = pgEnum("notification_type", [
@@ -28,12 +27,4 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "PENALTY_APPLIED",
   "PENALTY_DEADLINE",
   "PENALTY_EXPIRED",
-]);
-
-export const sanctionTypeEnum = pgEnum("sanction_type", [
-  "LIBRO_DANADO",
-  "RETIRO_ATRASADO",
-  "DEVOLUCION_TARDIA",
-  "RESERVA_CANCELADA",
-  "PAGO_ATRASADO",
 ]);

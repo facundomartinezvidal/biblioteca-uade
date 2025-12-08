@@ -48,7 +48,6 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
   if (token) {
     try {
       const { user: coreUser } = await getMe(token);
-      console.log("User from Core API:", coreUser); // Debug log
       user = coreUser;
     } catch (error) {
       console.error("Failed to get user in TRPC context:", error);

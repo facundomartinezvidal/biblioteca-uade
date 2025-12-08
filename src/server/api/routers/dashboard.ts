@@ -2,15 +2,7 @@ import { count, eq, gte, sql } from "drizzle-orm";
 
 import { createTRPCRouter } from "../trpc";
 import { adminProcedure } from "../procedures/admin";
-import {
-  authors,
-  books,
-  genders,
-  loans,
-  penalties,
-  roles,
-  users,
-} from "~/server/db/schemas";
+import { authors, books, genders, loans, userParameters } from "~/server/db/schemas";
 
 export const dashboardRouter = createTRPCRouter({
   getAdminOverview: adminProcedure.query(async ({ ctx }) => {
@@ -45,11 +37,11 @@ export const dashboardRouter = createTRPCRouter({
 
     const penaltyStatusCounts = await ctx.db
       .select({
-        status: penalties.status,
+        status: userParameters.status,
         count: count(),
       })
-      .from(penalties)
-      .groupBy(penalties.status);
+      .from(userParameters)
+      .groupBy(userParameters.status);
 
     // Student count is no longer available from local DB
     // Would need to fetch from backoffice API if needed

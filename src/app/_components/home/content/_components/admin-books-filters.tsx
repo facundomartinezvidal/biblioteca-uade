@@ -49,22 +49,13 @@ export function AdminBooksFilters({
   onYearToChange,
   onClearFilters,
 }: AdminBooksFiltersProps) {
-  const { data: locationsData } = api.catalog.getAllLocations.useQuery();
-  const locations = locationsData?.response ?? [];
+  const { data: locations } = api.locations.getAll.useQuery();
 
   const { data: genresData } = api.catalog.getAllGenders.useQuery();
   const genres = genresData?.response ?? [];
 
   const { data: editorialsData } = api.catalog.getAllEditorials.useQuery();
   const editorials = editorialsData?.response ?? [];
-
-  const formatLocationLabel = (campus: string, address: string) => {
-    let campusName = campus;
-    if (campus === "MONSERRAT") campusName = "Monserrat";
-    else if (campus === "COSTA") campusName = "Costa";
-    else if (campus === "RECOLETA") campusName = "Recoleta";
-    return `Sede ${campusName} - ${address}`;
-  };
 
   const hasActiveFilters =
     statusFilter !== "all" ||
@@ -147,9 +138,9 @@ export function AdminBooksFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas las sedes</SelectItem>
-              {locations.map((location) => (
+              {(locations ?? []).map((location) => (
                 <SelectItem key={location.id} value={location.id}>
-                  {formatLocationLabel(location.campus, location.address)}
+                  {`Sede ${location.name} - ${location.address}`}
                 </SelectItem>
               ))}
             </SelectContent>

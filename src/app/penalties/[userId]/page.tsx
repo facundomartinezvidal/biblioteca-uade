@@ -27,18 +27,11 @@ import { api } from "~/trpc/react";
 import { useRouter, useParams } from "next/navigation";
 import PenaltiesTableSkeleton from "../_components/penalties-table-skeleton";
 
-const getStatusBadge = (status: "PENDING" | "PAID" | "EXPIRED") => {
+const getStatusBadge = (status: "PENDING" | "PAID") => {
   if (status === "PAID") {
     return (
       <Badge className="bg-berkeley-blue/10 text-berkeley-blue border-0 text-sm">
         Pagada
-      </Badge>
-    );
-  }
-  if (status === "EXPIRED") {
-    return (
-      <Badge className="border-0 bg-orange-600 text-sm text-white">
-        Vencida
       </Badge>
     );
   }
@@ -65,7 +58,7 @@ export default function PenaltyUserDetailsPage() {
   const [limit] = useState(10);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<
-    "all" | "PENDING" | "PAID" | "EXPIRED"
+    "all" | "PENDING" | "PAID"
   >("all");
 
   const { data: studentData, isLoading: isLoadingStudent } =
@@ -109,7 +102,7 @@ export default function PenaltyUserDetailsPage() {
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-6 w-6" />
             <h1 className="text-2xl font-semibold tracking-tight">
-              Multas de{" "}
+              Multas y Sanciones de{" "}
               {isLoadingStudent
                 ? "..."
                 : `${studentData?.nombre ?? ""} ${studentData?.apellido ?? ""}`}
@@ -143,7 +136,7 @@ export default function PenaltyUserDetailsPage() {
             <Select
               value={statusFilter}
               onValueChange={(v) =>
-                setStatusFilter(v as "all" | "PENDING" | "PAID" | "EXPIRED")
+                setStatusFilter(v as "all" | "PENDING" | "PAID")
               }
             >
               <SelectTrigger className="w-[180px]">
@@ -153,7 +146,6 @@ export default function PenaltyUserDetailsPage() {
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="PENDING">Pendiente</SelectItem>
                 <SelectItem value="PAID">Pagada</SelectItem>
-                <SelectItem value="EXPIRED">Vencida</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -171,10 +163,10 @@ export default function PenaltyUserDetailsPage() {
                     <TableRow>
                       <TableHead>ID Préstamo</TableHead>
                       <TableHead>Libro</TableHead>
-                      <TableHead>Sanción</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Descripción</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead className="min-w-[120px]">Creada</TableHead>
-                      <TableHead className="min-w-[120px]">Vence</TableHead>
                       <TableHead className="min-w-[120px]">Monto</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -218,8 +210,12 @@ export default function PenaltyUserDetailsPage() {
                               </div>
                             </TableCell>
 
+                            <TableCell className="text-sm capitalize text-gray-700">
+                              {penalty.parameter?.type ?? "Sin especificar"}
+                            </TableCell>
+
                             <TableCell className="text-sm text-gray-700">
-                              {penalty.sanction?.name ?? "Sin especificar"}
+                              {penalty.parameter?.name ?? "Sin especificar"}
                             </TableCell>
 
                             <TableCell>
@@ -231,11 +227,7 @@ export default function PenaltyUserDetailsPage() {
                             </TableCell>
 
                             <TableCell className="text-sm text-gray-600">
-                              {formatDate(penalty.expiresIn)}
-                            </TableCell>
-
-                            <TableCell className="text-sm text-gray-600">
-                              ${penalty.sanction?.amount ?? "0"}
+                              ${penalty.parameter?.amount ?? "0"}
                             </TableCell>
                           </TableRow>
                         );

@@ -26,15 +26,12 @@ interface PenaltyDetailsPopupProps {
     id: string;
     userId: string | null;
     loanId: string | null;
-    sanctionId: string | null;
-    status: "PENDING" | "PAID" | "EXPIRED";
+    status: "PENDING" | "PAID";
     createdAt: Date | null;
-    expiresIn: Date | null;
-    sanction: {
+    parameter: {
       id: string;
       name: string;
       type: string;
-      description: string | null;
       amount: string;
     } | null;
     loan: {
@@ -76,16 +73,13 @@ interface PenaltyDetailsPopupProps {
   isLoadingPay?: boolean;
 }
 
-const getStatusBadge = (status: "PENDING" | "PAID" | "EXPIRED") => {
+const getStatusBadge = (status: "PENDING" | "PAID") => {
   if (status === "PAID") {
     return (
       <Badge className="bg-berkeley-blue/10 text-berkeley-blue border-0">
         Pagada
       </Badge>
     );
-  }
-  if (status === "EXPIRED") {
-    return <Badge className="border-0 bg-orange-600 text-white">Vencida</Badge>;
   }
   return <Badge className="border-0 bg-red-600 text-white">Pendiente</Badge>;
 };
@@ -259,13 +253,13 @@ export default function PenaltyDetailsPopup({
                     </code>
                   </div>
 
-                  {penalty.sanction && (
+                  {penalty.parameter && (
                     <div className="flex items-center justify-between rounded-lg bg-amber-50 p-3">
                       <span className="text-sm font-medium text-gray-600">
                         Tipo de Sanción
                       </span>
                       <span className="text-sm font-semibold text-amber-900">
-                        {penalty.sanction.name}
+                        {penalty.parameter.name}
                       </span>
                     </div>
                   )}
@@ -278,7 +272,7 @@ export default function PenaltyDetailsPopup({
                       </span>
                     </div>
                     <span className="text-lg font-bold text-gray-900">
-                      ${penalty.sanction?.amount ?? "0"}
+                      ${penalty.parameter?.amount ?? "0"}
                     </span>
                   </div>
 
@@ -288,14 +282,6 @@ export default function PenaltyDetailsPopup({
                     </span>
                     <span className="text-sm text-gray-900">
                       {formatDate(penalty.createdAt)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-600">
-                      Fecha de vencimiento
-                    </span>
-                    <span className="text-sm text-gray-900">
-                      {formatDate(penalty.expiresIn)}
                     </span>
                   </div>
                   {penalty.location && (
@@ -322,13 +308,13 @@ export default function PenaltyDetailsPopup({
                           <span>•</span>
                           <span>
                             <span className="font-medium">Motivo:</span>{" "}
-                            {penalty.sanction?.name ?? "No especificado"}
+                            {penalty.parameter?.name ?? "No especificado"}
                           </span>
                         </div>
-                        {penalty.sanction?.description && (
+                        {penalty.parameter?.type && (
                           <div className="mb-1 flex items-start gap-2">
                             <span>•</span>
-                            <span>{penalty.sanction.description}</span>
+                            <span>Tipo: {penalty.parameter.type}</span>
                           </div>
                         )}
                         <div className="flex items-start gap-2">
@@ -377,7 +363,7 @@ export default function PenaltyDetailsPopup({
                 ) : (
                   <>
                     <DollarSign className="mr-2 h-4 w-4" />
-                    Pagar {penalty.sanction?.amount ?? "0"}
+                    Pagar ${penalty.parameter?.amount ?? "0"}
                   </>
                 )}
               </Button>

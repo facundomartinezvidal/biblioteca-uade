@@ -32,7 +32,6 @@ export default function AppNavbar() {
   let navLinks: { href: string; label: string }[] = [];
   // Basic role check, adjust based on actual roles from Core
   const userRole = user?.rol?.toUpperCase() ?? "ALUMNO";
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   const userSubrol = user?.subrol?.toUpperCase() ?? null;
 
   // Only ADMINISTRADOR with BIBLIOTECARIO subrol gets admin navigation

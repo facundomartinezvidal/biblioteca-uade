@@ -35,7 +35,6 @@ interface PopUpBookProps {
     authorLastName?: string | null;
     gender?: string | null;
     location?: string | null;
-    locationCampus?: string | null;
   } | null;
   onReserve?: (bookId: string) => void;
   onToggleFavorite?: (bookId: string) => void;
@@ -126,20 +125,9 @@ export default function PopUpBook({
     .filter(Boolean)
     .join(" ");
 
-  // Format location to show campus and address
+  // Format location - now comes pre-formatted from backoffice
   const formatLocation = () => {
-    if (!book.location) return "No especificada";
-    if (!book.locationCampus) return book.location;
-
-    // Map campus enum to readable names
-    const campusNames: Record<string, string> = {
-      MONSERRAT: "Sede Monserrat",
-      RECOLETA: "Sede Recoleta",
-      COSTA: "Sede Costa",
-    };
-
-    const campusName = campusNames[book.locationCampus] ?? book.locationCampus;
-    return `${campusName} - ${book.location}`;
+    return book.location ?? "No especificada";
   };
 
   return (
