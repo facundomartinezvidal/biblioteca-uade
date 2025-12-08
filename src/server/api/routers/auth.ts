@@ -22,6 +22,26 @@ export const authRouter = createTRPCRouter({
     const firstName = nameParts[0] ?? null;
     const lastName = nameParts.slice(1).join(" ") || null;
 
+    const user = userResult[0]!;
+
+    // Then get role data if exists
+    let roleData = null;
+    if (user.id_rol) {
+      const roleResult = await ctx.db
+        .select({
+          nombre_rol: roles.nombre_rol,
+          descripcion: roles.descripcion,
+          subcategoria: roles.subcategoria,
+          sueldo_base: roles.sueldo_base,
+          status: roles.status,
+        })
+        .from(roles)
+        .where(eq(roles.id_rol, user.id_rol))
+        .limit(1);
+
+      roleData = roleResult[0] ?? null;
+    }
+
     return {
       user: {
         id: ctxUser.id,
