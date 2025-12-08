@@ -46,14 +46,13 @@ export default function ImprovedFiltersSidebar(
     selectedLocation,
   } = props;
 
-  const { data: locationsData, isLoading: isLoadingLocations } =
-    api.catalog.getAllLocations.useQuery(undefined, {
+  const { data: locations, isLoading: isLoadingLocations } =
+    api.locations.getAll.useQuery(undefined, {
       retry: 0,
       staleTime: 600000, // 10 minutes
       refetchOnMount: false,
       refetchOnWindowFocus: false,
     });
-  const locations = locationsData?.response ?? [];
 
   const { data: gendersData, isLoading: isLoadingGenders } =
     api.catalog.getAllGenders.useQuery(
@@ -79,14 +78,8 @@ export default function ImprovedFiltersSidebar(
     );
   const editorials = editorialsData?.response ?? [];
 
-  const formatLocationLabel = (campus: string, address: string) => {
-    const campusNames: Record<string, string> = {
-      MONSERRAT: "Sede Monserrat",
-      RECOLETA: "Sede Recoleta",
-      COSTA: "Sede Costa",
-    };
-    const campusName = campusNames[campus] ?? campus;
-    return `${campusName} - ${address}`;
+  const formatLocationLabel = (name: string, address: string) => {
+    return `Sede ${name} - ${address}`;
   };
 
   return (
@@ -177,14 +170,14 @@ export default function ImprovedFiltersSidebar(
             <SelectItem value="_loading" disabled>
               Cargando ubicaciones...
             </SelectItem>
-          ) : locations.length === 0 ? (
+          ) : !locations || locations.length === 0 ? (
             <SelectItem value="_empty" disabled>
               No hay ubicaciones disponibles
             </SelectItem>
           ) : (
             locations.map((location) => (
               <SelectItem key={location.id} value={location.id}>
-                {formatLocationLabel(location.campus, location.address)}
+                {formatLocationLabel(location.name, location.address)}
               </SelectItem>
             ))
           )}

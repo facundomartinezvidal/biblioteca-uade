@@ -8,7 +8,6 @@ import {
   useState,
 } from "react";
 import { api } from "~/trpc/react";
-import { supabase } from "~/lib/supabase/client";
 
 export interface UserData {
   id: string;
@@ -19,6 +18,7 @@ export interface UserData {
   identity_card: string | null;
   career: string | null;
   rol: string | null;
+  subrol: string | null;
   description: string | null;
   subcategory: string | null;
   base_salary: string | null;
@@ -55,18 +55,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setIsInitializing(false);
     }
   }, [isClient, isLoading]);
-
-  useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT" || event === "SIGNED_IN") {
-        void refetch();
-      }
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [refetch]);
 
   const value: UserContextType = {
     user: data?.user ?? null,

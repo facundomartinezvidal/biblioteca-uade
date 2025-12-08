@@ -9,6 +9,7 @@ import { FooterWrapper } from "./_components/footer-wrapper";
 import { Toaster } from "sonner";
 import { UserProvider } from "~/lib/contexts";
 import { ErrorBoundary } from "./_components/error-boundary";
+import { RoleGuard } from "./_components/role-guard";
 
 export const metadata: Metadata = {
   title: "Biblioteca UADE",
@@ -31,12 +32,14 @@ export default function RootLayout({
         <ErrorBoundary>
           <TRPCReactProvider>
             <UserProvider>
-              <Toaster />
-              <NavbarWrapper />
-              <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
-                {children}
-              </main>
-              <FooterWrapper />
+              <RoleGuard>
+                <Toaster />
+                <NavbarWrapper />
+                <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+                  {children}
+                </main>
+                <FooterWrapper />
+              </RoleGuard>
             </UserProvider>
           </TRPCReactProvider>
         </ErrorBoundary>

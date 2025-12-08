@@ -2,15 +2,7 @@ import { count, eq, gte, sql } from "drizzle-orm";
 
 import { createTRPCRouter } from "../trpc";
 import { adminProcedure } from "../procedures/admin";
-import {
-  authors,
-  books,
-  genders,
-  loans,
-  penalties,
-  roles,
-  users,
-} from "~/server/db/schemas";
+import { authors, books, genders, loans, userParameters } from "~/server/db/schemas";
 
 export const dashboardRouter = createTRPCRouter({
   getAdminOverview: adminProcedure.query(async ({ ctx }) => {
@@ -45,19 +37,19 @@ export const dashboardRouter = createTRPCRouter({
 
     const penaltyStatusCounts = await ctx.db
       .select({
-        status: penalties.status,
+        status: userParameters.status,
         count: count(),
       })
-      .from(penalties)
-      .groupBy(penalties.status);
+      .from(userParameters)
+      .groupBy(userParameters.status);
 
-    const studentCountResult = await ctx.db
+    // Student count is no longer available from local DB
+    // Would need to fetch from backoffice API if needed
+    const studentCountResult = [{ count: 0 }];
+
+    const authorCountResult = await ctx.db
       .select({ count: count() })
-      .from(users)
-      .innerJoin(roles, eq(users.id_rol, roles.id_rol))
-      .where(eq(roles.nombre_rol, "estudiante"));
-
-    const authorCountResult = await ctx.db.select({ count: count() }).from(authors);
+      .from(authors);
 
     const genreCountsRaw = await ctx.db
       .select({
@@ -73,20 +65,22 @@ export const dashboardRouter = createTRPCRouter({
       .limit(5);
 
     // Process book status
-    const bookStatusRecord = bookStatusCounts.reduce<
-      Record<string, number>
-    >((acc, item) => {
-      acc[item.status] = Number(item.count ?? 0);
-      return acc;
-    }, {});
+    const bookStatusRecord = bookStatusCounts.reduce<Record<string, number>>(
+      (acc, item) => {
+        acc[item.status] = Number(item.count ?? 0);
+        return acc;
+      },
+      {},
+    );
 
     // Process loan status
-    const loanStatusRecord = loanStatusCounts.reduce<
-      Record<string, number>
-    >((acc, item) => {
-      acc[item.status] = Number(item.count ?? 0);
-      return acc;
-    }, {});
+    const loanStatusRecord = loanStatusCounts.reduce<Record<string, number>>(
+      (acc, item) => {
+        acc[item.status] = Number(item.count ?? 0);
+        return acc;
+      },
+      {},
+    );
 
     // Process penalty status
     const penaltyStatusRecord = penaltyStatusCounts.reduce<

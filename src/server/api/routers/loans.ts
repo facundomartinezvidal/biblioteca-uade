@@ -8,28 +8,85 @@ import { loans } from "~/server/db/schemas/loans";
 import { books } from "~/server/db/schemas/books";
 import { authors } from "~/server/db/schemas/authors";
 import { genders } from "~/server/db/schemas/genders";
-import { locations } from "~/server/db/schemas/locations";
 import { editorials } from "~/server/db/schemas/editorials";
-import { users } from "~/server/db/schemas/users";
-import { roles } from "~/server/db/schemas/roles";
-import { penalties } from "~/server/db/schemas/penalties";
-import { sanctions } from "~/server/db/schemas/sanctions";
+import { userParameters } from "~/server/db/schemas/user-parameters";
 import { notifications } from "~/server/db/schemas/notifications";
 import { eq, and, desc, or, ilike, count, gte, lte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { getLocationFromBackoffice, getParameterByNameFromBackoffice } from "~/lib/backoffice-api";
+
+/**
+ * Helper function to enrich loans with location data from backoffice
+ */
+async function enrichLoansWithLocations<
+  T extends {
+    locationId: string | null;
+    book: Record<string, unknown>;
+    editorial: string | null;
+  },
+>(
+  loans: T[],
+): Promise<
+  Array<
+    Omit<T, "locationId"> & {
+      location: {
+        id: string;
+        address: string;
+        campus: string;
+      } | null;
+      book: T["book"] & { editorial: string };
+    }
+  >
+> {
+  const uniqueLocationIds = [
+    ...new Set(loans.map((loan) => loan.locationId).filter(Boolean)),
+  ] as string[];
+
+  const locationMap = new Map<
+    string,
+    { id: string; address: string; campus: string }
+  >();
+
+  await Promise.all(
+    uniqueLocationIds.map(async (locationId) => {
+      try {
+        const location = await getLocationFromBackoffice(locationId);
+        if (location) {
+          locationMap.set(locationId, {
+            id: location.id_sede,
+            address: location.ubicacion,
+            campus: location.nombre,
+          });
+        }
+      } catch (error) {
+        console.error(
+          `Failed to fetch location ${locationId} from backoffice:`,
+          error,
+        );
+      }
+    }),
+  );
+
+  return loans.map((loan) => {
+    const { locationId, ...loanWithoutLocationId } = loan;
+    return {
+      ...loanWithoutLocationId,
+      book: {
+        ...loan.book,
+        editorial: loan.editorial ?? "",
+      },
+      location: locationId ? (locationMap.get(locationId) ?? null) : null,
+    };
+  });
+}
 
 // Middleware para verificar rol de admin
 const enforceUserIsAdmin = protectedProcedure.use(async ({ ctx, next }) => {
-  const userWithRole = await ctx.db
-    .select({
-      rol: roles.nombre_rol,
-    })
-    .from(users)
-    .where(eq(users.id, ctx.user.id))
-    .innerJoin(roles, eq(users.id_rol, roles.id_rol))
-    .limit(1);
+  const userRole = ctx.user.role?.toUpperCase();
+  const userSubrol = ctx.user.subrol?.toUpperCase();
 
-  if (!userWithRole[0] || userWithRole[0].rol === "estudiante") {
+  // Only ADMINISTRADOR with BIBLIOTECARIO subrol can access
+  if (userRole !== "ADMINISTRADOR" || userSubrol !== "BIBLIOTECARIO") {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "No tienes permisos para acceder a este recurso",
@@ -105,18 +162,13 @@ export const loansRouter = createTRPCRouter({
             name: genders.name,
             createdAt: genders.createdAt,
           },
-          location: {
-            id: locations.id,
-            address: locations.address,
-            campus: locations.campus,
-          },
+          locationId: books.locationId,
           editorial: editorials.name,
         })
         .from(loans)
         .innerJoin(books, eq(loans.bookId, books.id))
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
-        .leftJoin(locations, eq(books.locationId, locations.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .where(whereConditions)
         .orderBy(desc(loans.createdAt))
@@ -130,16 +182,11 @@ export const loansRouter = createTRPCRouter({
         .leftJoin(authors, eq(books.authorId, authors.id))
         .where(whereConditions);
 
-      const formattedResults = results.map((result) => ({
-        ...result,
-        book: {
-          ...result.book,
-          editorial: result.editorial ?? "",
-        },
-      }));
+      // Enrich loans with location data from backoffice
+      const enrichedResults = await enrichLoansWithLocations(results);
 
       return {
-        results: formattedResults,
+        results: enrichedResults,
         total: totalResults.length,
         page: input.page,
         limit: input.limit,
@@ -178,33 +225,23 @@ export const loansRouter = createTRPCRouter({
           name: genders.name,
           createdAt: genders.createdAt,
         },
-        location: {
-          id: locations.id,
-          address: locations.address,
-          campus: locations.campus,
-        },
+        locationId: books.locationId,
         editorial: editorials.name,
       })
       .from(loans)
       .innerJoin(books, eq(loans.bookId, books.id))
       .leftJoin(authors, eq(books.authorId, authors.id))
       .leftJoin(genders, eq(books.genderId, genders.id))
-      .leftJoin(locations, eq(books.locationId, locations.id))
       .leftJoin(editorials, eq(books.editorialId, editorials.id))
       .where(and(eq(loans.userId, userId), eq(loans.status, "ACTIVE")))
       .orderBy(desc(loans.createdAt));
 
-    const formattedResults = results.map((result) => ({
-      ...result,
-      book: {
-        ...result.book,
-        editorial: result.editorial ?? "",
-      },
-    }));
+    // Enrich loans with location data from backoffice
+    const enrichedResults = await enrichLoansWithLocations(results);
 
     return {
-      results: formattedResults,
-      total: formattedResults.length,
+      results: enrichedResults,
+      total: enrichedResults.length,
     };
   }),
 
@@ -240,31 +277,23 @@ export const loansRouter = createTRPCRouter({
             name: genders.name,
             createdAt: genders.createdAt,
           },
-          location: {
-            id: locations.id,
-            address: locations.address,
-            campus: locations.campus,
-          },
+          locationId: books.locationId,
           editorial: editorials.name,
         })
         .from(loans)
         .innerJoin(books, eq(loans.bookId, books.id))
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
-        .leftJoin(locations, eq(books.locationId, locations.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .where(eq(loans.id, input.id))
         .limit(1);
 
       if (result.length === 0) return null;
 
-      return {
-        ...result[0],
-        book: {
-          ...result[0]!.book,
-          editorial: result[0]!.editorial ?? "",
-        },
-      };
+      // Enrich the single loan with location data from backoffice
+      const enrichedResult = await enrichLoansWithLocations([result[0]!]);
+
+      return enrichedResult[0] ?? null;
     }),
 
   cancelReservation: protectedProcedure
@@ -345,23 +374,8 @@ export const loansRouter = createTRPCRouter({
   createReservationForStudent: enforceUserIsAdmin
     .input(z.object({ bookId: z.string(), studentId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      // Verificar que el usuario sea un estudiante
-      const student = await ctx.db
-        .select({
-          id: users.id,
-          rol: roles.nombre_rol,
-        })
-        .from(users)
-        .where(eq(users.id, input.studentId))
-        .innerJoin(roles, eq(users.id_rol, roles.id_rol))
-        .limit(1);
-
-      if (!student[0] || student[0].rol !== "estudiante") {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "El usuario seleccionado no es un estudiante",
-        });
-      }
+      // Note: We're trusting that the studentId is valid since it comes from backoffice
+      // The backoffice handles user validation
 
       const book = await ctx.db
         .select()
@@ -508,17 +522,13 @@ export const loansRouter = createTRPCRouter({
         });
       }
 
-      // Buscar la sanción por libro dañado
-      const damagedBookSanction = await ctx.db
-        .select()
-        .from(sanctions)
-        .where(eq(sanctions.type, "LIBRO_DANADO"))
-        .limit(1);
+      // Buscar el parámetro de libro dañado desde backoffice
+      const damagedBookParameter = await getParameterByNameFromBackoffice("Libro roto");
 
-      if (!damagedBookSanction[0]) {
+      if (!damagedBookParameter) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "No se encontró la sanción por libro dañado",
+          message: "No se encontró el parámetro por libro dañado",
         });
       }
 
@@ -526,11 +536,11 @@ export const loansRouter = createTRPCRouter({
 
       // Crear la multa por libro dañado
       const newPenalty = await ctx.db
-        .insert(penalties)
+        .insert(userParameters)
         .values({
           userId: loan[0].userId,
           loanId: input.loanId,
-          sanctionId: damagedBookSanction[0].id,
+          parameterId: damagedBookParameter.id_parametro,
           status: "PENDING",
           createdAt: now,
         })
@@ -542,7 +552,7 @@ export const loansRouter = createTRPCRouter({
           userId: loan[0].userId,
           type: "PENALTY_APPLIED",
           title: "Nueva multa aplicada",
-          message: `Se te ha aplicado una multa de $${damagedBookSanction[0].amount} por libro dañado.`,
+          message: `Se te ha aplicado una multa de $${damagedBookParameter.valor_numerico} por libro dañado.`,
           penaltyId: newPenalty[0].id,
           loanId: input.loanId,
         });
@@ -578,12 +588,12 @@ export const loansRouter = createTRPCRouter({
         .groupBy(loans.status),
       ctx.db
         .select({
-          status: penalties.status,
+          status: userParameters.status,
           count: count(),
         })
-        .from(penalties)
-        .where(eq(penalties.userId, userId))
-        .groupBy(penalties.status),
+        .from(userParameters)
+        .where(eq(userParameters.userId, userId))
+        .groupBy(userParameters.status),
     ]);
 
     const loanStatusMap = loanStats.reduce<Record<string, number>>(
@@ -698,18 +708,13 @@ export const loansRouter = createTRPCRouter({
             name: genders.name,
             createdAt: genders.createdAt,
           },
-          location: {
-            id: locations.id,
-            address: locations.address,
-            campus: locations.campus,
-          },
+          locationId: books.locationId,
           editorial: editorials.name,
         })
         .from(loans)
         .innerJoin(books, eq(loans.bookId, books.id))
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
-        .leftJoin(locations, eq(books.locationId, locations.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .where(whereConditions)
         .orderBy(desc(loans.createdAt))
@@ -723,16 +728,11 @@ export const loansRouter = createTRPCRouter({
         .leftJoin(authors, eq(books.authorId, authors.id))
         .where(whereConditions);
 
-      const formattedResults = results.map((result) => ({
-        ...result,
-        book: {
-          ...result.book,
-          editorial: result.editorial ?? "",
-        },
-      }));
+      // Enrich loans with location data from backoffice
+      const enrichedResults = await enrichLoansWithLocations(results);
 
       return {
-        results: formattedResults,
+        results: enrichedResults,
         total: totalResults.length,
         page: input.page,
         limit: input.limit,

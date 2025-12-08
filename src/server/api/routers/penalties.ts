@@ -4,31 +4,122 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import { z } from "zod";
-import { penalties } from "~/server/db/schemas/penalties";
-import { sanctions } from "~/server/db/schemas/sanctions";
+import { userParameters } from "~/server/db/schemas/user-parameters";
 import { loans } from "~/server/db/schemas/loans";
 import { books } from "~/server/db/schemas/books";
 import { authors } from "~/server/db/schemas/authors";
 import { genders } from "~/server/db/schemas/genders";
-import { locations } from "~/server/db/schemas/locations";
 import { editorials } from "~/server/db/schemas/editorials";
-import { users } from "~/server/db/schemas/users";
-import { roles } from "~/server/db/schemas/roles";
 import { eq, and, desc, or, ilike } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import {
+  getLocationFromBackoffice,
+  getAllParametersFromBackoffice,
+} from "~/lib/backoffice-api";
+
+/**
+ * Helper function to enrich user parameters with location and parameter data
+ */
+async function enrichUserParametersWithData<
+  T extends {
+    locationId: string | null;
+    book: Record<string, unknown>;
+    editorial: string | null;
+    parameterId: string;
+  },
+>(
+  userParams: T[],
+): Promise<
+  Array<
+    Omit<T, "locationId" | "parameterId"> & {
+      location: {
+        id: string;
+        address: string;
+        campus: string;
+      } | null;
+      book: T["book"] & { editorial: string };
+      parameter: {
+        id: string;
+        name: string;
+        type: string;
+        amount: string;
+      } | null;
+    }
+  >
+> {
+  // Fetch all parameters from backoffice
+  const parameters = await getAllParametersFromBackoffice();
+  const parameterMap = new Map<
+    string,
+    {
+      id: string;
+      name: string;
+      type: string;
+      amount: string;
+    }
+  >(
+    parameters.map((p) => [
+      p.id_parametro,
+      {
+        id: p.id_parametro,
+        name: p.nombre,
+        type: p.tipo,
+        amount: p.valor_numerico,
+      },
+    ]),
+  );
+
+  // Fetch locations
+  const uniqueLocationIds = [
+    ...new Set(userParams.map((param) => param.locationId).filter(Boolean)),
+  ] as string[];
+
+  const locationMap = new Map<
+    string,
+    { id: string; address: string; campus: string }
+  >();
+
+  await Promise.all(
+    uniqueLocationIds.map(async (locationId) => {
+      try {
+        const location = await getLocationFromBackoffice(locationId);
+        if (location) {
+          locationMap.set(locationId, {
+            id: location.id_sede,
+            address: location.ubicacion,
+            campus: location.nombre,
+          });
+        }
+      } catch (error) {
+        console.error(
+          `Failed to fetch location ${locationId} from backoffice:`,
+          error,
+        );
+      }
+    }),
+  );
+
+  return userParams.map((param) => {
+    const { locationId, parameterId, ...paramWithoutExtra } = param;
+    return {
+      ...paramWithoutExtra,
+      book: {
+        ...param.book,
+        editorial: param.editorial ?? "",
+      },
+      location: locationId ? (locationMap.get(locationId) ?? null) : null,
+      parameter: parameterMap.get(parameterId) ?? null,
+    };
+  });
+}
 
 // Middleware para verificar rol de admin
 const enforceUserIsAdmin = protectedProcedure.use(async ({ ctx, next }) => {
-  const userWithRole = await ctx.db
-    .select({
-      rol: roles.nombre_rol,
-    })
-    .from(users)
-    .where(eq(users.id, ctx.user.id))
-    .innerJoin(roles, eq(users.id_rol, roles.id_rol))
-    .limit(1);
+  const userRole = ctx.user.role?.toUpperCase();
+  const userSubrol = ctx.user.subrol?.toUpperCase();
 
-  if (!userWithRole[0] || userWithRole[0].rol === "estudiante") {
+  // Only ADMINISTRADOR with BIBLIOTECARIO subrol can access
+  if (userRole !== "ADMINISTRADOR" || userSubrol !== "BIBLIOTECARIO") {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "No tienes permisos para acceder a este recurso",
@@ -44,7 +135,7 @@ export const penaltiesRouter = createTRPCRouter({
       z.object({
         page: z.number().min(1).default(1),
         limit: z.number().min(1).max(100).default(10),
-        status: z.enum(["PENDING", "PAID", "EXPIRED"]).optional(),
+        status: z.enum(["PENDING", "PAID"]).optional(),
         search: z.string().optional(),
       }),
     )
@@ -52,10 +143,10 @@ export const penaltiesRouter = createTRPCRouter({
       const userId = ctx.user.id;
       const offset = (input.page - 1) * input.limit;
 
-      const conditions = [eq(penalties.userId, userId)];
+      const conditions = [eq(userParameters.userId, userId)];
 
       if (input.status) {
-        conditions.push(eq(penalties.status, input.status));
+        conditions.push(eq(userParameters.status, input.status));
       }
 
       if (input.search) {
@@ -75,21 +166,12 @@ export const penaltiesRouter = createTRPCRouter({
 
       const results = await ctx.db
         .select({
-          id: penalties.id,
-          userId: penalties.userId,
-          loanId: penalties.loanId,
-          sanctionId: penalties.sanctionId,
-          amount: sanctions.amount,
-          status: penalties.status,
-          createdAt: penalties.createdAt,
-          expiresIn: penalties.expiresIn,
-          sanction: {
-            id: sanctions.id,
-            name: sanctions.name,
-            type: sanctions.type,
-            description: sanctions.description,
-            amount: sanctions.amount,
-          },
+          id: userParameters.id,
+          userId: userParameters.userId,
+          loanId: userParameters.loanId,
+          parameterId: userParameters.parameterId,
+          status: userParameters.status,
+          createdAt: userParameters.createdAt,
           loan: {
             id: loans.id,
             endDate: loans.endDate,
@@ -118,44 +200,33 @@ export const penaltiesRouter = createTRPCRouter({
             name: genders.name,
             createdAt: genders.createdAt,
           },
-          location: {
-            id: locations.id,
-            address: locations.address,
-            campus: locations.campus,
-          },
+          locationId: books.locationId,
           editorial: editorials.name,
         })
-        .from(penalties)
-        .leftJoin(sanctions, eq(penalties.sanctionId, sanctions.id))
-        .innerJoin(loans, eq(penalties.loanId, loans.id))
+        .from(userParameters)
+        .innerJoin(loans, eq(userParameters.loanId, loans.id))
         .innerJoin(books, eq(loans.bookId, books.id))
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
-        .leftJoin(locations, eq(books.locationId, locations.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .where(whereConditions)
-        .orderBy(desc(penalties.createdAt))
+        .orderBy(desc(userParameters.createdAt))
         .limit(input.limit)
         .offset(offset);
 
       const totalResults = await ctx.db
-        .select({ count: penalties.id })
-        .from(penalties)
-        .innerJoin(loans, eq(penalties.loanId, loans.id))
+        .select({ count: userParameters.id })
+        .from(userParameters)
+        .innerJoin(loans, eq(userParameters.loanId, loans.id))
         .innerJoin(books, eq(loans.bookId, books.id))
         .leftJoin(authors, eq(books.authorId, authors.id))
         .where(whereConditions);
 
-      const formattedResults = results.map((result) => ({
-        ...result,
-        book: {
-          ...result.book,
-          editorial: result.editorial ?? "",
-        },
-      }));
+      // Enrich with location and parameter data from backoffice
+      const enrichedResults = await enrichUserParametersWithData(results);
 
       return {
-        results: formattedResults,
+        results: enrichedResults,
         total: totalResults.length,
         page: input.page,
         limit: input.limit,
@@ -167,7 +238,7 @@ export const penaltiesRouter = createTRPCRouter({
       z.object({
         page: z.number().min(1).default(1),
         limit: z.number().min(1).max(100).default(10),
-        status: z.enum(["PENDING", "PAID", "EXPIRED"]).optional(),
+        status: z.enum(["PENDING", "PAID"]).optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -175,26 +246,20 @@ export const penaltiesRouter = createTRPCRouter({
       const offset = (input.page - 1) * input.limit;
 
       const whereConditions = input.status
-        ? and(eq(penalties.userId, userId), eq(penalties.status, input.status))
-        : eq(penalties.userId, userId);
+        ? and(
+            eq(userParameters.userId, userId),
+            eq(userParameters.status, input.status),
+          )
+        : eq(userParameters.userId, userId);
 
       const results = await ctx.db
         .select({
-          id: penalties.id,
-          userId: penalties.userId,
-          loanId: penalties.loanId,
-          sanctionId: penalties.sanctionId,
-          amount: sanctions.amount,
-          status: penalties.status,
-          createdAt: penalties.createdAt,
-          expiresIn: penalties.expiresIn,
-          sanction: {
-            id: sanctions.id,
-            name: sanctions.name,
-            type: sanctions.type,
-            description: sanctions.description,
-            amount: sanctions.amount,
-          },
+          id: userParameters.id,
+          userId: userParameters.userId,
+          loanId: userParameters.loanId,
+          parameterId: userParameters.parameterId,
+          status: userParameters.status,
+          createdAt: userParameters.createdAt,
           loan: {
             id: loans.id,
             endDate: loans.endDate,
@@ -223,41 +288,30 @@ export const penaltiesRouter = createTRPCRouter({
             name: genders.name,
             createdAt: genders.createdAt,
           },
-          location: {
-            id: locations.id,
-            address: locations.address,
-            campus: locations.campus,
-          },
+          locationId: books.locationId,
           editorial: editorials.name,
         })
-        .from(penalties)
-        .leftJoin(sanctions, eq(penalties.sanctionId, sanctions.id))
-        .innerJoin(loans, eq(penalties.loanId, loans.id))
+        .from(userParameters)
+        .innerJoin(loans, eq(userParameters.loanId, loans.id))
         .innerJoin(books, eq(loans.bookId, books.id))
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
-        .leftJoin(locations, eq(books.locationId, locations.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .where(whereConditions)
-        .orderBy(desc(penalties.createdAt))
+        .orderBy(desc(userParameters.createdAt))
         .limit(input.limit)
         .offset(offset);
 
       const totalResults = await ctx.db
-        .select({ count: penalties.id })
-        .from(penalties)
+        .select({ count: userParameters.id })
+        .from(userParameters)
         .where(whereConditions);
 
-      const formattedResults = results.map((result) => ({
-        ...result,
-        book: {
-          ...result.book,
-          editorial: result.editorial ?? "",
-        },
-      }));
+      // Enrich with location and parameter data from backoffice
+      const enrichedResults = await enrichUserParametersWithData(results);
 
       return {
-        results: formattedResults,
+        results: enrichedResults,
         total: totalResults.length,
         page: input.page,
         limit: input.limit,
@@ -269,21 +323,12 @@ export const penaltiesRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const result = await ctx.db
         .select({
-          id: penalties.id,
-          userId: penalties.userId,
-          loanId: penalties.loanId,
-          sanctionId: penalties.sanctionId,
-          amount: sanctions.amount,
-          status: penalties.status,
-          createdAt: penalties.createdAt,
-          expiresIn: penalties.expiresIn,
-          sanction: {
-            id: sanctions.id,
-            name: sanctions.name,
-            type: sanctions.type,
-            description: sanctions.description,
-            amount: sanctions.amount,
-          },
+          id: userParameters.id,
+          userId: userParameters.userId,
+          loanId: userParameters.loanId,
+          parameterId: userParameters.parameterId,
+          status: userParameters.status,
+          createdAt: userParameters.createdAt,
           loan: {
             id: loans.id,
             endDate: loans.endDate,
@@ -312,33 +357,24 @@ export const penaltiesRouter = createTRPCRouter({
             name: genders.name,
             createdAt: genders.createdAt,
           },
-          location: {
-            id: locations.id,
-            address: locations.address,
-            campus: locations.campus,
-          },
+          locationId: books.locationId,
           editorial: editorials.name,
         })
-        .from(penalties)
-        .leftJoin(sanctions, eq(penalties.sanctionId, sanctions.id))
-        .innerJoin(loans, eq(penalties.loanId, loans.id))
+        .from(userParameters)
+        .innerJoin(loans, eq(userParameters.loanId, loans.id))
         .innerJoin(books, eq(loans.bookId, books.id))
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
-        .leftJoin(locations, eq(books.locationId, locations.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
-        .where(eq(penalties.id, input.id))
+        .where(eq(userParameters.id, input.id))
         .limit(1);
 
       if (result.length === 0) return null;
 
-      return {
-        ...result[0],
-        book: {
-          ...result[0]!.book,
-          editorial: result[0]!.editorial ?? "",
-        },
-      };
+      // Enrich with location and parameter data from backoffice
+      const enrichedResult = await enrichUserParametersWithData([result[0]!]);
+
+      return enrichedResult[0] ?? null;
     }),
 
   markAsPaid: protectedProcedure
@@ -348,9 +384,12 @@ export const penaltiesRouter = createTRPCRouter({
 
       const existingPenalty = await ctx.db
         .select()
-        .from(penalties)
+        .from(userParameters)
         .where(
-          and(eq(penalties.id, input.penaltyId), eq(penalties.userId, userId)),
+          and(
+            eq(userParameters.id, input.penaltyId),
+            eq(userParameters.userId, userId),
+          ),
         )
         .limit(1);
 
@@ -369,9 +408,9 @@ export const penaltiesRouter = createTRPCRouter({
       }
 
       await ctx.db
-        .update(penalties)
+        .update(userParameters)
         .set({ status: "PAID" })
-        .where(eq(penalties.id, input.penaltyId));
+        .where(eq(userParameters.id, input.penaltyId));
 
       return { success: true };
     }),
@@ -381,18 +420,15 @@ export const penaltiesRouter = createTRPCRouter({
 
     const allPenalties = await ctx.db
       .select({
-        id: penalties.id,
-        sanctionId: penalties.sanctionId,
-        userId: penalties.userId,
-        loanId: penalties.loanId,
-        status: penalties.status,
-        createdAt: penalties.createdAt,
-        expiresIn: penalties.expiresIn,
-        sanctionAmount: sanctions.amount,
+        id: userParameters.id,
+        userId: userParameters.userId,
+        loanId: userParameters.loanId,
+        parameterId: userParameters.parameterId,
+        status: userParameters.status,
+        createdAt: userParameters.createdAt,
       })
-      .from(penalties)
-      .leftJoin(sanctions, eq(penalties.sanctionId, sanctions.id))
-      .where(eq(penalties.userId, userId));
+      .from(userParameters)
+      .where(eq(userParameters.userId, userId));
 
     const pendingPenalties = allPenalties.filter(
       (penalty) => penalty.status === "PENDING",
@@ -402,29 +438,22 @@ export const penaltiesRouter = createTRPCRouter({
       (penalty) => penalty.status === "PAID",
     ).length;
 
-    const totalAmount = allPenalties.reduce((sum, penalty) => {
-      return (
-        sum +
-        (penalty.status !== "PAID"
-          ? parseFloat(penalty.sanctionAmount ?? "0")
-          : 0)
-      );
-    }, 0);
+    // Get parameter amounts from backoffice
+    const parameters = await getAllParametersFromBackoffice();
+    const parameterMap = new Map<string, number>(
+      parameters.map((p) => [p.id_parametro, parseFloat(p.valor_numerico)]),
+    );
 
-    const now = new Date();
-    const expiringSoon = allPenalties.filter((penalty) => {
-      if (penalty.status === "PAID" || !penalty.expiresIn) return false;
-      const expirationDate = new Date(penalty.expiresIn);
-      const threeDaysFromNow = new Date(now);
-      threeDaysFromNow.setDate(now.getDate() + 3);
-      return expirationDate >= now && expirationDate <= threeDaysFromNow;
-    }).length;
+    const totalAmount = allPenalties.reduce((sum, penalty) => {
+      if (penalty.status === "PAID") return sum;
+      const amount = parameterMap.get(penalty.parameterId) ?? 0;
+      return sum + amount;
+    }, 0);
 
     return {
       pendingPenalties,
       paidPenalties,
       totalAmount,
-      expiringSoon,
     };
   }),
 
@@ -434,17 +463,17 @@ export const penaltiesRouter = createTRPCRouter({
         userId: z.string(),
         page: z.number().min(1).default(1),
         limit: z.number().min(1).max(100).default(10),
-        status: z.enum(["PENDING", "PAID", "EXPIRED"]).optional(),
+        status: z.enum(["PENDING", "PAID"]).optional(),
         search: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
       const offset = (input.page - 1) * input.limit;
 
-      const conditions = [eq(penalties.userId, input.userId)];
+      const conditions = [eq(userParameters.userId, input.userId)];
 
       if (input.status) {
-        conditions.push(eq(penalties.status, input.status));
+        conditions.push(eq(userParameters.status, input.status));
       }
 
       if (input.search) {
@@ -464,21 +493,12 @@ export const penaltiesRouter = createTRPCRouter({
 
       const results = await ctx.db
         .select({
-          id: penalties.id,
-          userId: penalties.userId,
-          loanId: penalties.loanId,
-          sanctionId: penalties.sanctionId,
-          amount: sanctions.amount,
-          status: penalties.status,
-          createdAt: penalties.createdAt,
-          expiresIn: penalties.expiresIn,
-          sanction: {
-            id: sanctions.id,
-            name: sanctions.name,
-            type: sanctions.type,
-            description: sanctions.description,
-            amount: sanctions.amount,
-          },
+          id: userParameters.id,
+          userId: userParameters.userId,
+          loanId: userParameters.loanId,
+          parameterId: userParameters.parameterId,
+          status: userParameters.status,
+          createdAt: userParameters.createdAt,
           loan: {
             id: loans.id,
             endDate: loans.endDate,
@@ -507,44 +527,33 @@ export const penaltiesRouter = createTRPCRouter({
             name: genders.name,
             createdAt: genders.createdAt,
           },
-          location: {
-            id: locations.id,
-            address: locations.address,
-            campus: locations.campus,
-          },
+          locationId: books.locationId,
           editorial: editorials.name,
         })
-        .from(penalties)
-        .leftJoin(sanctions, eq(penalties.sanctionId, sanctions.id))
-        .innerJoin(loans, eq(penalties.loanId, loans.id))
+        .from(userParameters)
+        .innerJoin(loans, eq(userParameters.loanId, loans.id))
         .innerJoin(books, eq(loans.bookId, books.id))
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
-        .leftJoin(locations, eq(books.locationId, locations.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .where(whereConditions)
-        .orderBy(desc(penalties.createdAt))
+        .orderBy(desc(userParameters.createdAt))
         .limit(input.limit)
         .offset(offset);
 
       const totalResults = await ctx.db
-        .select({ count: penalties.id })
-        .from(penalties)
-        .innerJoin(loans, eq(penalties.loanId, loans.id))
+        .select({ count: userParameters.id })
+        .from(userParameters)
+        .innerJoin(loans, eq(userParameters.loanId, loans.id))
         .innerJoin(books, eq(loans.bookId, books.id))
         .leftJoin(authors, eq(books.authorId, authors.id))
         .where(whereConditions);
 
-      const formattedResults = results.map((result) => ({
-        ...result,
-        book: {
-          ...result.book,
-          editorial: result.editorial ?? "",
-        },
-      }));
+      // Enrich with location and parameter data from backoffice
+      const enrichedResults = await enrichUserParametersWithData(results);
 
       return {
-        results: formattedResults,
+        results: enrichedResults,
         total: totalResults.length,
         page: input.page,
         limit: input.limit,

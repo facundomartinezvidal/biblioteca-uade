@@ -1,7 +1,5 @@
 "use client";
 
-import { Clock } from "lucide-react";
-import { ComingSoon } from "~/app/_components/coming-soon";
 import { StudentBooksGrid } from "./student-books-grid";
 
 interface Book {

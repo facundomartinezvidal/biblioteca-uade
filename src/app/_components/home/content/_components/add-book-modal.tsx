@@ -44,12 +44,11 @@ export function AddBookModal({
   const { data: authorsData } = api.catalog.getAllAuthors.useQuery();
   const { data: gendersData } = api.catalog.getAllGenders.useQuery();
   const { data: editorialsData } = api.catalog.getAllEditorials.useQuery();
-  const { data: locationsData } = api.catalog.getAllLocations.useQuery();
+  const { data: locations } = api.locations.getAll.useQuery();
 
   const authors = authorsData?.response ?? [];
   const genders = gendersData?.response ?? [];
   const editorials = editorialsData?.response ?? [];
-  const locations = locationsData?.response ?? [];
 
   const form = useForm({
     defaultValues: {
@@ -483,10 +482,12 @@ export function AddBookModal({
                     <div className="space-y-2">
                       <Label htmlFor="locationId">Ubicación</Label>
                       <Combobox
-                        options={locations.map((location) => ({
-                          value: location.id,
-                          label: `${location.campus === "MONSERRAT" ? "Sede Monserrat" : location.campus === "RECOLETA" ? "Sede Recoleta" : "Sede Costa"} - ${location.address}`,
-                        }))}
+                        options={
+                          locations?.map((location) => ({
+                            value: location.id,
+                            label: `Sede ${location.name} - ${location.address}`,
+                          })) ?? []
+                        }
                         value={field.state.value}
                         onValueChange={(value) => field.handleChange(value)}
                         placeholder="Seleccionar ubicación"

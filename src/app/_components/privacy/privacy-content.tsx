@@ -1,15 +1,13 @@
 import React from "react";
-import Link from "next/link";
-import { AlertCircle, ChevronLeft } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "~/components/ui/card";
-import { Alert } from "~/components/ui/alert";
 
 export const metadata = {
   title: "Política de Privacidad - Biblioteca UADE",

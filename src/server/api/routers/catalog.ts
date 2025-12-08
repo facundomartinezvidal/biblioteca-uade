@@ -1,5 +1,5 @@
 import { createTRPCRouter, publicProcedure } from "../trpc";
-import { authors, editorials, genders, locations } from "~/server/db/schemas";
+import { authors, editorials, genders } from "~/server/db/schemas";
 import { z } from "zod";
 import { eq, or, ilike, count } from "drizzle-orm";
 
@@ -324,13 +324,13 @@ export const catalogRouter = createTRPCRouter({
       };
     }),
 
-  getAllLocations: publicProcedure.query(async ({ ctx }) => {
-    const allLocations = await ctx.db.select().from(locations);
-
+  // Get locations from backoffice
+  // Note: This endpoint is deprecated. Use api.locations.getAll() instead
+  getAllLocations: publicProcedure.query(async () => {
     return {
       success: true,
       method: "GET",
-      response: allLocations,
+      response: [],
     };
   }),
 });

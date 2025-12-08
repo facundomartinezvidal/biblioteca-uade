@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { notifications } from "~/server/db/schemas/notifications";
-import { users } from "~/server/db/schemas/users";
-import { roles } from "~/server/db/schemas/roles";
 import { eq, and, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
@@ -135,17 +133,10 @@ export const notificationsRouter = createTRPCRouter({
   // Eliminar notificaciones antiguas (más de 30 días)
   cleanOldNotifications: protectedProcedure.mutation(async ({ ctx }) => {
     // Solo permitir a admins
-    const userId = ctx.user.id;
-    const userWithRole = await ctx.db
-      .select({
-        rol: roles.nombre_rol,
-      })
-      .from(users)
-      .where(eq(users.id, userId))
-      .innerJoin(roles, eq(users.id_rol, roles.id_rol))
-      .limit(1);
+    const userRole = ctx.user.role?.toUpperCase();
+    const userSubrol = ctx.user.subrol?.toUpperCase();
 
-    if (!userWithRole[0] || userWithRole[0].rol !== "admin") {
+    if (userRole !== "ADMINISTRADOR" || userSubrol !== "BIBLIOTECARIO") {
       throw new TRPCError({
         code: "FORBIDDEN",
         message: "No tienes permisos para realizar esta acción",

@@ -45,15 +45,12 @@ type PenaltyItem = {
   id: string;
   userId: string | null;
   loanId: string | null;
-  sanctionId: string | null;
-  status: "PENDING" | "PAID" | "EXPIRED";
+  status: "PENDING" | "PAID";
   createdAt: Date | null;
-  expiresIn: Date | null;
-  sanction: {
+  parameter: {
     id: string;
     name: string;
     type: string;
-    description: string | null;
     amount: string;
   } | null;
   loan: {
@@ -92,18 +89,11 @@ type PenaltyItem = {
   } | null;
 };
 
-const getStatusBadge = (status: "PENDING" | "PAID" | "EXPIRED") => {
+const getStatusBadge = (status: "PENDING" | "PAID") => {
   if (status === "PAID") {
     return (
       <Badge className="bg-berkeley-blue/10 text-berkeley-blue border-0 text-sm">
         Pagada
-      </Badge>
-    );
-  }
-  if (status === "EXPIRED") {
-    return (
-      <Badge className="border-0 bg-orange-600 text-sm text-white">
-        Vencida
       </Badge>
     );
   }
@@ -126,7 +116,7 @@ export default function PenaltiesPage() {
   const [limit] = useState(10);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<
-    "all" | "PENDING" | "PAID" | "EXPIRED"
+    "all" | "PENDING" | "PAID"
   >("all");
 
   const [selectedPenalty, setSelectedPenalty] = useState<PenaltyItem | null>(
@@ -163,7 +153,7 @@ export default function PenaltiesPage() {
     },
   });
 
-  const results = data?.results ?? [];
+  const results = (data?.results ?? []) as PenaltyItem[];
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const hasNextPage = page < totalPages;
@@ -242,7 +232,7 @@ export default function PenaltiesPage() {
             <Select
               value={statusFilter}
               onValueChange={(v) =>
-                setStatusFilter(v as "all" | "PENDING" | "PAID" | "EXPIRED")
+                setStatusFilter(v as "all" | "PENDING" | "PAID")
               }
             >
               <SelectTrigger className="w-[180px]">
@@ -252,7 +242,6 @@ export default function PenaltiesPage() {
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="PENDING">Pendiente</SelectItem>
                 <SelectItem value="PAID">Pagada</SelectItem>
-                <SelectItem value="EXPIRED">Vencida</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -268,13 +257,12 @@ export default function PenaltiesPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[100px]">ID</TableHead>
-                      <TableHead>ID Préstamo</TableHead>
+                      <TableHead className="w-[100px]">ID Préstamo</TableHead>
                       <TableHead>Libro</TableHead>
-                      <TableHead>Sanción</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Descripción</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead className="min-w-[120px]">Creada</TableHead>
-                      <TableHead className="min-w-[120px]">Vence</TableHead>
                       <TableHead className="min-w-[120px]">Monto</TableHead>
                       <TableHead className="w-[80px] text-right">
                         Acciones
@@ -292,9 +280,6 @@ export default function PenaltiesPage() {
 
                         return (
                           <TableRow key={penalty.id}>
-                            <TableCell className="font-mono text-xs text-gray-500">
-                              {penalty.id.substring(0, 8)}...
-                            </TableCell>
                             <TableCell className="font-mono text-sm text-gray-600">
                               {penalty.loanId
                                 ? penalty.loanId.slice(0, 8) + "..."
@@ -330,8 +315,12 @@ export default function PenaltiesPage() {
                               </div>
                             </TableCell>
 
+                            <TableCell className="text-sm capitalize text-gray-700">
+                              {penalty.parameter?.type ?? "Sin especificar"}
+                            </TableCell>
+
                             <TableCell className="text-sm text-gray-700">
-                              {penalty.sanction?.name ?? "Sin especificar"}
+                              {penalty.parameter?.name ?? "Sin especificar"}
                             </TableCell>
 
                             <TableCell>
@@ -343,11 +332,7 @@ export default function PenaltiesPage() {
                             </TableCell>
 
                             <TableCell className="text-sm text-gray-600">
-                              {formatDate(penalty.expiresIn)}
-                            </TableCell>
-
-                            <TableCell className="text-sm text-gray-600">
-                              ${penalty.sanction?.amount ?? "0"}
+                              ${penalty.parameter?.amount ?? "0"}
                             </TableCell>
 
                             <TableCell className="w-[80px] text-right">
@@ -375,7 +360,7 @@ export default function PenaltiesPage() {
                                         handleOpenPayModal(
                                           penalty.id,
                                           penalty.book.title,
-                                          penalty.sanction?.amount ?? "0",
+                                          penalty.parameter?.amount ?? "0",
                                         )
                                       }
                                       disabled={isPaying}
@@ -388,8 +373,7 @@ export default function PenaltiesPage() {
                                       ) : (
                                         <>
                                           <DollarSign className="mr-2 h-4 w-4" />
-                                          Pagar{" "}
-                                          {penalty.sanction?.amount ?? "0"}
+                                          Pagar ${penalty.parameter?.amount ?? "0"}
                                         </>
                                       )}
                                     </DropdownMenuItem>
@@ -403,10 +387,10 @@ export default function PenaltiesPage() {
                     ) : (
                       <TableRow>
                         <TableCell
-                          colSpan={9}
+                          colSpan={8}
                           className="py-8 text-center text-gray-500"
                         >
-                          No se encontraron multas
+                          No se encontraron multas y sanciones
                         </TableCell>
                       </TableRow>
                     )}

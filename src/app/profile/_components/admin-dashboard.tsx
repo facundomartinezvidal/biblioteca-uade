@@ -52,7 +52,6 @@ export function AdminDashboard({ data }: AdminDashboardProps) {
     summary: {
       totalBooks,
       availableBooks,
-      reservedBooks,
       notAvailableBooks,
       activeLoans,
       reservedLoans,

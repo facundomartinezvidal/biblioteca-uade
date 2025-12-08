@@ -1,8 +1,4 @@
 import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
-
-import { roles, users } from "~/server/db/schemas";
-
 import { protectedProcedure } from "../trpc";
 
 export const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
@@ -13,18 +9,12 @@ export const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
     });
   }
 
-  const userWithRole = await ctx.db
-    .select({
-      rol: roles.nombre_rol,
-    })
-    .from(users)
-    .where(eq(users.id, ctx.user.id))
-    .innerJoin(roles, eq(users.id_rol, roles.id_rol))
-    .limit(1);
+  // Check role from context (comes from Core API)
+  const userRole = ctx.user.role?.toUpperCase();
+  const userSubrol = ctx.user.subrol?.toUpperCase();
 
-  const role = userWithRole[0]?.rol?.toLowerCase();
-
-  if (role !== "admin") {
+  // Only ADMINISTRADOR with BIBLIOTECARIO subrol can access admin procedures
+  if (userRole !== "ADMINISTRADOR" || userSubrol !== "BIBLIOTECARIO") {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "No tienes permisos para acceder a este recurso",
@@ -35,5 +25,3 @@ export const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
     ctx,
   });
 });
-
-
