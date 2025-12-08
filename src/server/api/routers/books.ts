@@ -1,19 +1,45 @@
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  publicProcedure,
-} from "../trpc";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import type { RouterInput, RouterOutput } from "../root";
-import {
-  authors,
-  books,
-  editorials,
-  genders,
-  locations,
-} from "~/server/db/schemas";
+import { authors, books, editorials, genders } from "~/server/db/schemas";
 import { loans } from "~/server/db/schemas/loans";
-import { eq, or, ilike, and, count, gte, lte, inArray, desc } from "drizzle-orm";
+import {
+  eq,
+  or,
+  ilike,
+  and,
+  count,
+  gte,
+  lte,
+  inArray,
+  desc,
+} from "drizzle-orm";
 import { z } from "zod";
+import { getLocationFromBackoffice } from "~/lib/backoffice-api";
+
+// Helper function to enrich books with location names from backoffice
+async function enrichBooksWithLocations<
+  T extends { locationId: string | null },
+>(books: T[]): Promise<(T & { location: string })[]> {
+  return await Promise.all(
+    books.map(async (book) => {
+      let locationName = "No especificada";
+      if (book.locationId) {
+        try {
+          const location = await getLocationFromBackoffice(book.locationId);
+          if (location) {
+            locationName = `Sede ${location.nombre}`;
+          }
+        } catch (error) {
+          console.error(`Error fetching location ${book.locationId}:`, error);
+        }
+      }
+      return {
+        ...book,
+        location: locationName,
+      };
+    }),
+  );
+}
 
 const normalizeText = (text: string | null | undefined) =>
   (text ?? "")
@@ -203,7 +229,6 @@ export const booksRouter = createTRPCRouter({
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
-        .leftJoin(locations, eq(books.locationId, locations.id))
         .where(whereClause);
 
       const totalCount = totalCountResult[0]?.count ?? 0;
@@ -222,8 +247,7 @@ export const booksRouter = createTRPCRouter({
           year: books.year,
           editorial: editorials.name,
           gender: genders.name,
-          location: locations.address,
-          locationCampus: locations.campus,
+          locationId: books.locationId,
           imageUrl: books.imageUrl,
           createdAt: books.createdAt,
         })
@@ -231,17 +255,19 @@ export const booksRouter = createTRPCRouter({
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
-        .leftJoin(locations, eq(books.locationId, locations.id))
         .where(whereClause)
         .limit(limit)
         .offset(offset);
 
       const totalPages = Math.ceil(totalCount / limit);
 
+      // Enrich books with location names from backoffice
+      const booksWithLocations = await enrichBooksWithLocations(allBooks);
+
       return {
         success: true,
         method: "GET",
-        response: allBooks,
+        response: booksWithLocations,
         pagination: {
           page,
           limit,
@@ -325,8 +351,6 @@ export const booksRouter = createTRPCRouter({
           editorialId: books.editorialId,
           gender: genders.name,
           genderId: books.genderId,
-          location: locations.address,
-          locationCampus: locations.campus,
           locationId: books.locationId,
           imageUrl: books.imageUrl,
           createdAt: books.createdAt,
@@ -335,7 +359,6 @@ export const booksRouter = createTRPCRouter({
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
-        .leftJoin(locations, eq(books.locationId, locations.id))
         .where(eq(books.status, "AVAILABLE"))
         .orderBy(desc(books.createdAt));
 
@@ -428,8 +451,7 @@ export const booksRouter = createTRPCRouter({
             tokenScore *= 1.5;
           }
 
-          const score =
-            authorScore + genderScore + editorialScore + tokenScore;
+          const score = authorScore + genderScore + editorialScore + tokenScore;
 
           return {
             ...book,
@@ -482,7 +504,6 @@ export const booksRouter = createTRPCRouter({
         editorial: book.editorial,
         gender: book.gender,
         location: book.location,
-        locationCampus: book.locationCampus,
         locationId: book.locationId,
         imageUrl: book.imageUrl,
       }));
@@ -508,7 +529,17 @@ export const booksRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { search, status, locationId, genre, editorial, yearFrom, yearTo, page, limit } = input;
+      const {
+        search,
+        status,
+        locationId,
+        genre,
+        editorial,
+        yearFrom,
+        yearTo,
+        page,
+        limit,
+      } = input;
       const offset = (page - 1) * limit;
 
       const conditions = [];
@@ -558,7 +589,6 @@ export const booksRouter = createTRPCRouter({
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
-        .leftJoin(locations, eq(books.locationId, locations.id))
         .where(whereClause);
 
       const totalCount = totalCountResult[0]?.count ?? 0;
@@ -579,8 +609,6 @@ export const booksRouter = createTRPCRouter({
           editorialId: books.editorialId,
           gender: genders.name,
           genderId: books.genderId,
-          location: locations.address,
-          locationCampus: locations.campus,
           locationId: books.locationId,
           imageUrl: books.imageUrl,
           createdAt: books.createdAt,
@@ -589,7 +617,6 @@ export const booksRouter = createTRPCRouter({
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
-        .leftJoin(locations, eq(books.locationId, locations.id))
         .where(whereClause)
         .limit(limit)
         .offset(offset);
@@ -629,8 +656,6 @@ export const booksRouter = createTRPCRouter({
           editorialId: books.editorialId,
           gender: genders.name,
           genderId: books.genderId,
-          location: locations.address,
-          locationCampus: locations.campus,
           locationId: books.locationId,
           imageUrl: books.imageUrl,
           createdAt: books.createdAt,
@@ -639,8 +664,7 @@ export const booksRouter = createTRPCRouter({
         .where(eq(books.id, input.id))
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
-        .leftJoin(genders, eq(books.genderId, genders.id))
-        .leftJoin(locations, eq(books.locationId, locations.id));
+        .leftJoin(genders, eq(books.genderId, genders.id));
       return {
         success: true,
         method: "GET",
@@ -653,9 +677,9 @@ export const booksRouter = createTRPCRouter({
         id: z.string(),
         title: z.string().min(1),
         description: z.string().optional(),
-        isbn: z
-          .string()
-          .regex(/^[0-9]{10}$|^[0-9]{13}$/,{ message: "El ISBN debe tener 10 o 13 dígitos numéricos" }),
+        isbn: z.string().regex(/^[0-9]{10}$|^[0-9]{13}$/, {
+          message: "El ISBN debe tener 10 o 13 dígitos numéricos",
+        }),
         status: z.enum(["AVAILABLE", "NOT_AVAILABLE", "RESERVED"]),
         year: z.number().min(1800).max(2030).optional(),
         editorialId: z.string().optional(),
@@ -697,9 +721,10 @@ export const booksRouter = createTRPCRouter({
       z.object({
         title: z.string().min(1, "El título es obligatorio"),
         description: z.string().optional(),
-        isbn: z
-          .string()
-          .regex(/^[0-9]{10}$|^[0-9]{13}$/,{ message: "El ISBN debe ser numérico y contener exactamente 10 o 13 dígitos" }),
+        isbn: z.string().regex(/^[0-9]{10}$|^[0-9]{13}$/, {
+          message:
+            "El ISBN debe ser numérico y contener exactamente 10 o 13 dígitos",
+        }),
         status: z.enum(["AVAILABLE", "NOT_AVAILABLE", "RESERVED"]).optional(),
         year: z.number().min(1800).max(2030).optional(),
         editorialId: z.string().optional(),

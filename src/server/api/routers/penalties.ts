@@ -10,25 +10,17 @@ import { loans } from "~/server/db/schemas/loans";
 import { books } from "~/server/db/schemas/books";
 import { authors } from "~/server/db/schemas/authors";
 import { genders } from "~/server/db/schemas/genders";
-import { locations } from "~/server/db/schemas/locations";
 import { editorials } from "~/server/db/schemas/editorials";
-import { users } from "~/server/db/schemas/users";
-import { roles } from "~/server/db/schemas/roles";
 import { eq, and, desc, or, ilike } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 // Middleware para verificar rol de admin
 const enforceUserIsAdmin = protectedProcedure.use(async ({ ctx, next }) => {
-  const userWithRole = await ctx.db
-    .select({
-      rol: roles.nombre_rol,
-    })
-    .from(users)
-    .where(eq(users.id, ctx.user.id))
-    .innerJoin(roles, eq(users.id_rol, roles.id_rol))
-    .limit(1);
+  const userRole = ctx.user.role?.toUpperCase();
+  const userSubrol = ctx.user.subrol?.toUpperCase();
 
-  if (!userWithRole[0] || userWithRole[0].rol === "estudiante") {
+  // Only ADMINISTRADOR with BIBLIOTECARIO subrol can access
+  if (userRole !== "ADMINISTRADOR" || userSubrol !== "BIBLIOTECARIO") {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "No tienes permisos para acceder a este recurso",

@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { GraduationCap, Loader2, LogOut, UserStarIcon } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
+import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
@@ -17,27 +17,33 @@ import {
 import { Separator } from "~/components/ui/separator";
 import { routes } from "~/lib/routes";
 import { cn } from "~/lib/utils";
-import { supabase } from "~/lib/supabase/client";
+import { logoutAction } from "~/app/auth/actions";
 import { toast } from "sonner";
 import { useState } from "react";
-import { useUser } from "~/lib/contexts";
+import { useUser } from "~/lib/contexts/user-context";
 import { NotificationsPopover } from "./notifications-popover";
 import CalendarPopover from "./calendar-popover";
 
 export default function AppNavbar() {
   const pathname = usePathname();
   const [isLoadingLogout, setIsLoadingLogout] = useState(false);
-  const router = useRouter();
   const { user, isLoading: isLoadingUser, isAuthenticated } = useUser();
 
   let navLinks: { href: string; label: string }[] = [];
-  if (user?.rol === "admin") {
+  // Basic role check, adjust based on actual roles from Core
+  const userRole = user?.rol?.toUpperCase() ?? "ALUMNO";
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+  const userSubrol = user?.subrol?.toUpperCase() ?? null;
+
+  // Only ADMINISTRADOR with BIBLIOTECARIO subrol gets admin navigation
+  if (userRole === "ADMINISTRADOR" && userSubrol === "BIBLIOTECARIO") {
     navLinks = [
       { href: routes.home, label: "Libros" },
       { href: routes.users, label: "Usuarios" },
       { href: routes.profile, label: "Perfil" },
     ];
-  } else if (user?.rol === "estudiante") {
+  } else {
+    // ALUMNO and others
     navLinks = [
       { href: routes.home, label: "Inicio" },
       { href: routes.loans, label: "Préstamos" },
@@ -49,13 +55,11 @@ export default function AppNavbar() {
   const handleLogout = async () => {
     try {
       setIsLoadingLogout(true);
-      await supabase.auth.signOut();
-      toast.success("Sesión cerrada exitosamente");
-      router.push("/auth/login");
+      await logoutAction();
     } catch (error) {
       toast.error((error as Error).message ?? "Error al cerrar sesión");
+      setIsLoadingLogout(false);
     }
-    toast.success("Sesión cerrada exitosamente");
   };
 
   const isActive = (href: string) => {
@@ -142,10 +146,6 @@ export default function AppNavbar() {
             ) : isAuthenticated && user ? (
               <>
                 <Avatar className="h-8 w-8 border-white/20">
-                  <AvatarImage
-                    src="/fmartinezvidal-profile.jpeg"
-                    alt={`${user.name} ${user.last_name}`}
-                  />
                   <AvatarFallback className="bg-white/20 text-xs font-semibold">
                     {user.name?.[0]}
                     {user.last_name?.[0]}
@@ -160,16 +160,17 @@ export default function AppNavbar() {
                   variant="secondary"
                   className="w-fit bg-white/20 px-1.5 py-0 text-sm text-white hover:bg-white/30"
                 >
-                  {user.rol === "admin" && (
-                    <>
-                      <UserStarIcon className="h-4 w-4" />
-                      Administrador
-                    </>
-                  )}
-                  {user.rol === "estudiante" && (
+                  {userRole === "ADMINISTRADOR" &&
+                    userSubrol === "BIBLIOTECARIO" && (
+                      <>
+                        <UserStarIcon className="h-4 w-4" />
+                        Bibliotecario
+                      </>
+                    )}
+                  {userRole === "ALUMNO" && (
                     <>
                       <GraduationCap className="h-4 w-4" />
-                      Estudiante
+                      Alumno
                     </>
                   )}
                 </Badge>
@@ -188,7 +189,7 @@ export default function AppNavbar() {
           <div className="flex items-center gap-1">
             {isLoadingUser ? (
               <Skeleton className="h-8 w-8 rounded-md" />
-            ) : user?.rol === "estudiante" ? (
+            ) : user?.rol?.toUpperCase() === "ALUMNO" ? (
               <>
                 <CalendarPopover className="h-8 w-8" />
                 <NotificationsPopover />

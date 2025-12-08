@@ -11,7 +11,7 @@ import superjson from "superjson";
 import { ZodError } from "zod";
 
 import { db } from "~/server/db";
-import { createServerClient } from "@supabase/ssr";
+import { getMe, type User } from "~/lib/core-api";
 
 /**
  * 1. CONTEXT
@@ -26,55 +26,40 @@ import { createServerClient } from "@supabase/ssr";
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          // Extract cookies from the headers
-          const cookieHeader = opts.headers.get("cookie");
-          if (!cookieHeader) return [];
+  const cookieHeader = opts.headers.get("cookie");
+  let token: string | undefined;
 
-          return cookieHeader.split(";").map((cookie) => {
-            const [name, ...rest] = cookie.trim().split("=");
-            return {
-              name: name ?? "",
-              value: rest.join("=") || "",
-            };
-          });
-        },
-        setAll(_cookiesToSet) {
-          // In the TRPC context, we can't set cookies directly
-          // This is handled by the middleware
-        },
+  if (cookieHeader) {
+    const cookies = cookieHeader.split(";").reduce(
+      (acc, cookie) => {
+        const [name, ...rest] = cookie.trim().split("=");
+        if (name && rest) {
+          acc[name] = rest.join("=");
+        }
+        return acc;
       },
-    },
-  );
+      {} as Record<string, string>,
+    );
+    token = cookies.access_token;
+  }
 
-  // Add timeout to prevent hanging
-  let user = null;
-  try {
-    const getUserWithTimeout = Promise.race([
-      supabase.auth.getUser(),
-      new Promise<{ data: { user: null } }>((_, reject) =>
-        setTimeout(
-          () => reject(new Error("Auth timeout in TRPC context")),
-          5000,
-        ),
-      ),
-    ]);
+  let user: User | null = null;
 
-    const result = await getUserWithTimeout;
-    user = result.data.user;
-  } catch (error) {
-    console.error("Failed to get user in TRPC context:", error);
-    // Continue without user - will be caught by protectedProcedure if needed
+  if (token) {
+    try {
+      const { user: coreUser } = await getMe(token);
+      console.log("User from Core API:", coreUser); // Debug log
+      user = coreUser;
+    } catch (error) {
+      console.error("Failed to get user in TRPC context:", error);
+      // User remains null
+    }
   }
 
   return {
     db,
     user,
+    token, // expose token in case needed
     ...opts,
   };
 };
@@ -163,9 +148,17 @@ const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
   if (!ctx.user) {
     throw new Error("UNAUTHORIZED");
   }
+
+  // Ensure user has an ID
+  if (!ctx.user.id) {
+    console.error("User object missing ID:", ctx.user);
+    throw new Error("UNAUTHORIZED: User ID not found");
+  }
+
   return next({
     ctx: {
       user: ctx.user,
+      token: ctx.token!, // if user exists, token must exist
     },
   });
 });

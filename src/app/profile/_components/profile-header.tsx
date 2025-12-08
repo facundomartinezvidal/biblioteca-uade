@@ -1,4 +1,3 @@
-import Image from "next/image";
 import {
   User,
   GraduationCap,
@@ -10,7 +9,7 @@ import {
 } from "lucide-react";
 import { Badge } from "~/components/ui/badge";
 import { Card, CardContent } from "~/components/ui/card";
-import type { getUserOutput } from "~/server/api/routers/user";
+import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 
 export function ProfileHeader({
   name,
@@ -21,29 +20,29 @@ export function ProfileHeader({
   identity_card,
   legacy_number,
   role,
-}: getUserOutput) {
+  subrol,
+}: {
+  name: string;
+  last_name: string;
+  institutional_email: string;
+  personal_email: string;
+  phone: string;
+  identity_card: string;
+  legacy_number: string;
+  role: string;
+  subrol?: string | null;
+}) {
   return (
     <Card className="shadow-sm">
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
-            <div className="relative h-20 w-20 overflow-hidden rounded-full bg-gray-100">
-              <Image
-                src={"/fmartinezvidal-profile.jpeg"}
-                alt={`${name} ${last_name}`}
-                fill
-                className="object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = "none";
-                  const sibling = target.nextElementSibling as HTMLElement;
-                  if (sibling) sibling.style.display = "flex";
-                }}
-              />
-              <div className="absolute inset-0 hidden items-center justify-center text-gray-400">
-                <User className="h-6 w-6" />
-              </div>
-            </div>
+            <Avatar className="border-berkeley-blue/20 h-20 w-20 border-2">
+              <AvatarFallback className="bg-berkeley-blue/10 text-berkeley-blue text-xl font-semibold">
+                {name?.[0]}
+                {last_name?.[0]}
+              </AvatarFallback>
+            </Avatar>
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-lg font-semibold text-gray-900 sm:text-xl">
@@ -51,16 +50,16 @@ export function ProfileHeader({
                 </h1>
 
                 <Badge className="text-berkeley-blue border-0 bg-blue-100 text-sm">
-                  {role === "estudiante" && (
+                  {role === "ALUMNO" && (
                     <>
                       <GraduationCap className="mr-1 h-4 w-4" />
-                      Estudiante
+                      Alumno
                     </>
                   )}
-                  {role === "admin" && (
+                  {role === "ADMINISTRADOR" && subrol === "BIBLIOTECARIO" && (
                     <>
                       <UserStarIcon className="mr-1 h-4 w-4" />
-                      Administrador
+                      Bibliotecario
                     </>
                   )}
                 </Badge>

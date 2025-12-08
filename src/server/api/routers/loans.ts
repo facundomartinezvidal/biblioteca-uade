@@ -8,10 +8,7 @@ import { loans } from "~/server/db/schemas/loans";
 import { books } from "~/server/db/schemas/books";
 import { authors } from "~/server/db/schemas/authors";
 import { genders } from "~/server/db/schemas/genders";
-import { locations } from "~/server/db/schemas/locations";
 import { editorials } from "~/server/db/schemas/editorials";
-import { users } from "~/server/db/schemas/users";
-import { roles } from "~/server/db/schemas/roles";
 import { penalties } from "~/server/db/schemas/penalties";
 import { sanctions } from "~/server/db/schemas/sanctions";
 import { notifications } from "~/server/db/schemas/notifications";
@@ -20,16 +17,11 @@ import { TRPCError } from "@trpc/server";
 
 // Middleware para verificar rol de admin
 const enforceUserIsAdmin = protectedProcedure.use(async ({ ctx, next }) => {
-  const userWithRole = await ctx.db
-    .select({
-      rol: roles.nombre_rol,
-    })
-    .from(users)
-    .where(eq(users.id, ctx.user.id))
-    .innerJoin(roles, eq(users.id_rol, roles.id_rol))
-    .limit(1);
+  const userRole = ctx.user.role?.toUpperCase();
+  const userSubrol = ctx.user.subrol?.toUpperCase();
 
-  if (!userWithRole[0] || userWithRole[0].rol === "estudiante") {
+  // Only ADMINISTRADOR with BIBLIOTECARIO subrol can access
+  if (userRole !== "ADMINISTRADOR" || userSubrol !== "BIBLIOTECARIO") {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "No tienes permisos para acceder a este recurso",
@@ -105,18 +97,13 @@ export const loansRouter = createTRPCRouter({
             name: genders.name,
             createdAt: genders.createdAt,
           },
-          location: {
-            id: locations.id,
-            address: locations.address,
-            campus: locations.campus,
-          },
+          locationId: books.locationId,
           editorial: editorials.name,
         })
         .from(loans)
         .innerJoin(books, eq(loans.bookId, books.id))
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
-        .leftJoin(locations, eq(books.locationId, locations.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .where(whereConditions)
         .orderBy(desc(loans.createdAt))
@@ -178,18 +165,13 @@ export const loansRouter = createTRPCRouter({
           name: genders.name,
           createdAt: genders.createdAt,
         },
-        location: {
-          id: locations.id,
-          address: locations.address,
-          campus: locations.campus,
-        },
+        locationId: books.locationId,
         editorial: editorials.name,
       })
       .from(loans)
       .innerJoin(books, eq(loans.bookId, books.id))
       .leftJoin(authors, eq(books.authorId, authors.id))
       .leftJoin(genders, eq(books.genderId, genders.id))
-      .leftJoin(locations, eq(books.locationId, locations.id))
       .leftJoin(editorials, eq(books.editorialId, editorials.id))
       .where(and(eq(loans.userId, userId), eq(loans.status, "ACTIVE")))
       .orderBy(desc(loans.createdAt));
@@ -240,18 +222,13 @@ export const loansRouter = createTRPCRouter({
             name: genders.name,
             createdAt: genders.createdAt,
           },
-          location: {
-            id: locations.id,
-            address: locations.address,
-            campus: locations.campus,
-          },
+          locationId: books.locationId,
           editorial: editorials.name,
         })
         .from(loans)
         .innerJoin(books, eq(loans.bookId, books.id))
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
-        .leftJoin(locations, eq(books.locationId, locations.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .where(eq(loans.id, input.id))
         .limit(1);
@@ -345,23 +322,8 @@ export const loansRouter = createTRPCRouter({
   createReservationForStudent: enforceUserIsAdmin
     .input(z.object({ bookId: z.string(), studentId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      // Verificar que el usuario sea un estudiante
-      const student = await ctx.db
-        .select({
-          id: users.id,
-          rol: roles.nombre_rol,
-        })
-        .from(users)
-        .where(eq(users.id, input.studentId))
-        .innerJoin(roles, eq(users.id_rol, roles.id_rol))
-        .limit(1);
-
-      if (!student[0] || student[0].rol !== "estudiante") {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "El usuario seleccionado no es un estudiante",
-        });
-      }
+      // Note: We're trusting that the studentId is valid since it comes from backoffice
+      // The backoffice handles user validation
 
       const book = await ctx.db
         .select()
@@ -698,18 +660,13 @@ export const loansRouter = createTRPCRouter({
             name: genders.name,
             createdAt: genders.createdAt,
           },
-          location: {
-            id: locations.id,
-            address: locations.address,
-            campus: locations.campus,
-          },
+          locationId: books.locationId,
           editorial: editorials.name,
         })
         .from(loans)
         .innerJoin(books, eq(loans.bookId, books.id))
         .leftJoin(authors, eq(books.authorId, authors.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
-        .leftJoin(locations, eq(books.locationId, locations.id))
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .where(whereConditions)
         .orderBy(desc(loans.createdAt))

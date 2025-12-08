@@ -51,13 +51,13 @@ export const dashboardRouter = createTRPCRouter({
       .from(penalties)
       .groupBy(penalties.status);
 
-    const studentCountResult = await ctx.db
-      .select({ count: count() })
-      .from(users)
-      .innerJoin(roles, eq(users.id_rol, roles.id_rol))
-      .where(eq(roles.nombre_rol, "estudiante"));
+    // Student count is no longer available from local DB
+    // Would need to fetch from backoffice API if needed
+    const studentCountResult = [{ count: 0 }];
 
-    const authorCountResult = await ctx.db.select({ count: count() }).from(authors);
+    const authorCountResult = await ctx.db
+      .select({ count: count() })
+      .from(authors);
 
     const genreCountsRaw = await ctx.db
       .select({
@@ -73,20 +73,22 @@ export const dashboardRouter = createTRPCRouter({
       .limit(5);
 
     // Process book status
-    const bookStatusRecord = bookStatusCounts.reduce<
-      Record<string, number>
-    >((acc, item) => {
-      acc[item.status] = Number(item.count ?? 0);
-      return acc;
-    }, {});
+    const bookStatusRecord = bookStatusCounts.reduce<Record<string, number>>(
+      (acc, item) => {
+        acc[item.status] = Number(item.count ?? 0);
+        return acc;
+      },
+      {},
+    );
 
     // Process loan status
-    const loanStatusRecord = loanStatusCounts.reduce<
-      Record<string, number>
-    >((acc, item) => {
-      acc[item.status] = Number(item.count ?? 0);
-      return acc;
-    }, {});
+    const loanStatusRecord = loanStatusCounts.reduce<Record<string, number>>(
+      (acc, item) => {
+        acc[item.status] = Number(item.count ?? 0);
+        return acc;
+      },
+      {},
+    );
 
     // Process penalty status
     const penaltyStatusRecord = penaltyStatusCounts.reduce<

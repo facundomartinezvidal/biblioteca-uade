@@ -57,12 +57,25 @@ interface LoanItem {
 export default function ProfilePage() {
   const router = useRouter();
   const utils = api.useUtils();
-  // Use context user instead of separate query
-  const { user: contextUser, isLoading: isLoadingUser } = useUser();
-  
+  // Use context user for basic role check
+  const { user: contextUser, isLoading: isLoadingContextUser } = useUser();
+
+  // Fetch complete user data from backoffice
+  const { data: profileData, isLoading: isLoadingProfile } =
+    api.user.getUser.useQuery(undefined, {
+      enabled: !!contextUser,
+    });
+
+  const isLoadingUser = isLoadingContextUser || isLoadingProfile;
+
+  const userRole = contextUser?.rol?.toUpperCase();
+  const userSubrol: string | undefined = contextUser?.subrol
+    ? String(contextUser.subrol).toUpperCase()
+    : undefined;
+
   const { data: stats, isLoading: isLoadingStats } =
     api.loans.getStats.useQuery(undefined, {
-      enabled: !!contextUser && contextUser.rol === "estudiante",
+      enabled: !!contextUser && userRole === "ALUMNO",
     });
   const {
     data: activeLoansData,
@@ -71,7 +84,7 @@ export default function ProfilePage() {
   } = api.loans.getByUserId.useQuery(
     { page: 1, limit: 100 },
     {
-      enabled: !!contextUser && contextUser.rol === "estudiante",
+      enabled: !!contextUser && userRole === "ALUMNO",
     },
   );
 
@@ -80,7 +93,10 @@ export default function ProfilePage() {
     isLoading: isLoadingAdminOverview,
     refetch: refetchAdminOverview,
   } = api.dashboard.getAdminOverview.useQuery(undefined, {
-    enabled: !!contextUser && contextUser.rol === "admin",
+    enabled:
+      !!contextUser &&
+      userRole === "ADMINISTRADOR" &&
+      userSubrol === "BIBLIOTECARIO",
   });
 
   const [selectedLoan, setSelectedLoan] = useState<LoanItem | null>(null);
@@ -153,17 +169,20 @@ export default function ProfilePage() {
       <div className="container mx-auto px-8 py-8">
         <div className="flex flex-col gap-6">
           <ProfileHeader
-            name={contextUser?.name ?? ""}
-            last_name={contextUser?.last_name ?? ""}
-            institutional_email={contextUser?.email ?? ""}
-            personal_email={contextUser?.email ?? ""}
-            phone={contextUser?.phone ?? ""}
-            identity_card={contextUser?.identity_card ?? ""}
-            legacy_number={contextUser?.career ?? ""}
-            role={contextUser?.rol ?? ""}
+            name={profileData?.name ?? contextUser?.name ?? ""}
+            last_name={profileData?.last_name ?? contextUser?.last_name ?? ""}
+            subrol={userSubrol ?? undefined}
+            institutional_email={
+              profileData?.institutional_email ?? contextUser?.email ?? ""
+            }
+            personal_email={profileData?.personal_email ?? ""}
+            phone={profileData?.phone ?? ""}
+            identity_card={profileData?.identity_card ?? ""}
+            legacy_number={profileData?.legacy_number ?? ""}
+            role={profileData?.role ?? contextUser?.rol ?? ""}
           />
 
-          {contextUser?.rol === "admin" && (
+          {userRole === "ADMINISTRADOR" && userSubrol === "BIBLIOTECARIO" && (
             <>
               {isLoadingAdminOverview ? (
                 <AdminDashboardSkeleton />
@@ -189,7 +208,7 @@ export default function ProfilePage() {
             </>
           )}
 
-          {contextUser?.rol === "estudiante" && (
+          {userRole === "ALUMNO" && (
             <>
               {isLoadingStats ? (
                 <StatsGridSkeleton />
