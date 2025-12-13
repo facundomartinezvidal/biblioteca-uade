@@ -167,6 +167,7 @@ export default function PenaltyUserDetailsPage() {
                       <TableHead>Descripción</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead className="min-w-[120px]">Creada</TableHead>
+                      <TableHead className="min-w-[120px]">Vencimiento</TableHead>
                       <TableHead className="min-w-[120px]">Monto</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -227,6 +228,28 @@ export default function PenaltyUserDetailsPage() {
                             </TableCell>
 
                             <TableCell className="text-sm text-gray-600">
+                              {(() => {
+                                if (!penalty.createdAt) return "N/A";
+                                const dueDate = new Date(penalty.createdAt);
+                                dueDate.setDate(dueDate.getDate() + 14);
+                                const isOverdue =
+                                  new Date() > dueDate &&
+                                  penalty.status === "PENDING";
+                                return (
+                                  <span
+                                    className={
+                                      isOverdue
+                                        ? "font-medium text-red-600"
+                                        : "text-gray-600"
+                                    }
+                                  >
+                                    {formatDate(dueDate)}
+                                  </span>
+                                );
+                              })()}
+                            </TableCell>
+
+                            <TableCell className="text-sm text-gray-600">
                               ${penalty.parameter?.amount ?? "0"}
                             </TableCell>
                           </TableRow>
@@ -235,7 +258,7 @@ export default function PenaltyUserDetailsPage() {
                     ) : (
                       <TableRow>
                         <TableCell
-                          colSpan={7}
+                          colSpan={8}
                           className="py-8 text-center text-gray-500"
                         >
                           {search || statusFilter !== "all"
