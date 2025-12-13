@@ -13,7 +13,11 @@ import { userParameters } from "~/server/db/schemas/user-parameters";
 import { notifications } from "~/server/db/schemas/notifications";
 import { eq, and, desc, or, ilike, count, gte, lte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { getLocationFromBackoffice, getParameterByNameFromBackoffice } from "~/lib/backoffice-api";
+import { publishEvent, RABBITMQ_ROUTING_KEYS } from "~/lib/rabbitmq";
+import {
+  getLocationFromBackoffice,
+  getParameterByNameFromBackoffice,
+} from "~/lib/backoffice-api";
 
 /**
  * Helper function to enrich loans with location data from backoffice
@@ -523,7 +527,8 @@ export const loansRouter = createTRPCRouter({
       }
 
       // Buscar el parámetro de libro dañado desde backoffice
-      const damagedBookParameter = await getParameterByNameFromBackoffice("Libro roto");
+      const damagedBookParameter =
+        await getParameterByNameFromBackoffice("Libro roto");
 
       if (!damagedBookParameter) {
         throw new TRPCError({
@@ -555,6 +560,17 @@ export const loansRouter = createTRPCRouter({
           message: `Se te ha aplicado una multa de $${damagedBookParameter.valor_numerico} por libro dañado.`,
           penaltyId: newPenalty[0].id,
           loanId: input.loanId,
+        });
+
+        // Publicar evento en RabbitMQ
+        await publishEvent(RABBITMQ_ROUTING_KEYS.PENALTY_CREATED, {
+          id: newPenalty[0].id,
+          userId: newPenalty[0].userId,
+          parameterId: newPenalty[0].parameterId,
+          amount: damagedBookParameter.valor_numerico,
+          status: newPenalty[0].status,
+          createdAt: newPenalty[0].createdAt,
+          source: "BIBLIOTECA",
         });
       }
 

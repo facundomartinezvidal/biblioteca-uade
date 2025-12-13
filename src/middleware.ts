@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
   refreshToken,
-  verifyToken,
+  getMe,
   type AuthTokens,
   CORE_FRONTEND_URL,
 } from "~/lib/core-api";
@@ -20,36 +20,30 @@ export async function middleware(request: NextRequest) {
   if (urlToken) {
     try {
       // Verify the token
-      const verifyRes = await verifyToken(urlToken, "access");
+      await getMe(urlToken);
 
-      if (verifyRes.valid) {
-        // Create response with redirect to remove query param
-        const newUrl = request.nextUrl.clone();
-        newUrl.searchParams.delete("token");
-        newUrl.searchParams.delete("access_token");
-        newUrl.searchParams.delete("JWT");
+      // Create response with redirect to remove query param
+      const newUrl = request.nextUrl.clone();
+      newUrl.searchParams.delete("token");
+      newUrl.searchParams.delete("access_token");
+      newUrl.searchParams.delete("JWT");
 
-        const response = NextResponse.redirect(newUrl);
+      const response = NextResponse.redirect(newUrl);
 
-        // Set access token cookie
-        response.cookies.set("access_token", urlToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          path: "/",
-          sameSite: "lax",
-          maxAge: 3600, // Default to 1 hour since we don't have exp claim here
-        });
+      // Set access token cookie
+      response.cookies.set("access_token", urlToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        sameSite: "lax",
+        maxAge: 3600, // Default to 1 hour since we don't have exp claim here
+      });
 
-        // We probably don't get a refresh token in the URL redirect flow usually,
-        // unless provided. If provided in params, we could set it too.
-        // For now, assume only access token.
+      // We probably don't get a refresh token in the URL redirect flow usually,
+      // unless provided. If provided in params, we could set it too.
+      // For now, assume only access token.
 
-        return response;
-      } else {
-        console.error("Token from URL invalid:", verifyRes.reason);
-        // If invalid, we probably want to redirect to Core Login again?
-        // Or let it fall through to normal checks?
-      }
+      return response;
     } catch (e) {
       console.error("Token verification error", e);
     }
