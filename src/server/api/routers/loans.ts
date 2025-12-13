@@ -11,7 +11,7 @@ import { genders } from "~/server/db/schemas/genders";
 import { editorials } from "~/server/db/schemas/editorials";
 import { userParameters } from "~/server/db/schemas/user-parameters";
 import { notifications } from "~/server/db/schemas/notifications";
-import { eq, and, desc, or, ilike, count, gte, lte } from "drizzle-orm";
+import { eq, and, desc, or, ilike, count, gte, lte, gt } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { publishEvent, RABBITMQ_ROUTING_KEYS } from "~/lib/rabbitmq";
 import {
@@ -329,6 +329,80 @@ export const loansRouter = createTRPCRouter({
         .update(books)
         .set({ status: "AVAILABLE" })
         .where(eq(books.id, bookId));
+
+      // Find the last time this user actually borrowed this book successfully (ACTIVE or FINISHED)
+      // We only count cancellations that occurred AFTER this date to allowing "resetting" the strike count.
+      const lastSuccessfulLoan = await ctx.db
+        .select({ createdAt: loans.createdAt })
+        .from(loans)
+        .where(
+          and(
+            eq(loans.userId, userId),
+            eq(loans.bookId, bookId),
+            or(eq(loans.status, "ACTIVE"), eq(loans.status, "FINISHED")),
+          ),
+        )
+        .orderBy(desc(loans.createdAt))
+        .limit(1);
+
+      const cutoffDate =
+        lastSuccessfulLoan[0]?.createdAt ?? new Date(0).toISOString();
+
+      // Check for previous cancellations of the same book by this user SINCE the last successful loan
+      const recentCancellations = await ctx.db
+        .select({ count: count() })
+        .from(loans)
+        .where(
+          and(
+            eq(loans.userId, userId),
+            eq(loans.bookId, bookId),
+            eq(loans.status, "CANCELLED"),
+            gt(loans.createdAt, cutoffDate),
+          ),
+        );
+
+      const cancellationCount = recentCancellations[0]?.count ?? 0;
+
+      if (cancellationCount >= 2) {
+        // Apply penalty "Cancelacion Reserva"
+        const PENALTY_PARAM_ID = "a87b8068-f472-4a39-acca-d64ea06fe6c5";
+        const PENALTY_AMOUNT = "100.00"; // Should probably fetch but user gave us the JSON
+
+        const newPenalty = await ctx.db
+          .insert(userParameters)
+          .values({
+            userId: userId,
+            loanId: input.loanId,
+            parameterId: PENALTY_PARAM_ID,
+            status: "PENDING",
+            createdAt: new Date(),
+          })
+          .returning();
+
+        if (newPenalty[0]) {
+          // Notify user
+          await ctx.db.insert(notifications).values({
+            userId: userId,
+            type: "PENALTY_APPLIED",
+            title: "Sanción por cancelación reiterada",
+            message: `Has cancelado la reserva de este libro 2 veces. Se ha aplicado una sanción de $${PENALTY_AMOUNT}.`,
+            penaltyId: newPenalty[0].id,
+            loanId: input.loanId,
+            read: false,
+          });
+
+          // Publish event
+          await publishEvent(RABBITMQ_ROUTING_KEYS.PENALTY_CREATED, {
+            id: newPenalty[0].id,
+            userId: newPenalty[0].userId,
+            parameterId: newPenalty[0].parameterId,
+            amount: PENALTY_AMOUNT,
+            status: newPenalty[0].status,
+            createdAt: newPenalty[0].createdAt,
+            source: "BIBLIOTECA",
+          });
+        }
+      }
 
       return { success: true };
     }),
