@@ -30,13 +30,15 @@ export async function middleware(request: NextRequest) {
 
       const response = NextResponse.redirect(newUrl);
 
-      // Set access token cookie
+      // Set access token cookie with more robust options
       response.cookies.set("access_token", urlToken, {
         httpOnly: true,
+        // Allow cookie to be set on localhost for development, but require secure for production
         secure: process.env.NODE_ENV === "production",
         path: "/",
+        // Lax allows the cookie to be sent when navigating from external site (Core)
         sameSite: "lax",
-        maxAge: 3600, // Default to 1 hour since we don't have exp claim here
+        maxAge: 3600,
       });
 
       // We probably don't get a refresh token in the URL redirect flow usually,
@@ -74,6 +76,13 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/", request.url));
     }
     return NextResponse.next();
+  } else {
+    // Check if there is a pending token verification from URL above
+    // If urlToken was present and we set the cookie in the response object,
+    // request.cookies won't have it yet for this request cycle.
+    // However, we returned the response immediately in the block above so we shouldn't reach here?
+    // Wait, the block above returns 'response'.
+    // If code execution reaches here, it means NO urlToken was found in params.
   }
 
   // 4. Try Refresh
