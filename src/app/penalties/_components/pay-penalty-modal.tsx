@@ -40,19 +40,15 @@ export default function PayPenaltyModal({
           <AlertDialogDescription className="pt-2">
             ¿Estás seguro que deseas pagar la multa del libro{" "}
             <span className="font-semibold text-gray-900">{bookTitle}</span>?
-            <br />
-            <br />
-            <div className="rounded-lg bg-blue-50 p-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">
-                  Monto a pagar:
-                </span>
-                <span className="text-lg font-bold text-gray-900">
-                  ${amount}
-                </span>
-              </div>
-            </div>
           </AlertDialogDescription>
+          <div className="mt-4 rounded-lg bg-blue-50 p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">
+                Monto a pagar:
+              </span>
+              <span className="text-lg font-bold text-gray-900">${amount}</span>
+            </div>
+          </div>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading}>Cancelar</AlertDialogCancel>

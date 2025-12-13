@@ -22,7 +22,7 @@ export interface User {
   name?: string;
   role?: string;
   subrol?: string | null;
-  // Add other fields as needed
+  wallet?: string[];
 }
 
 // Raw response from Core API /me endpoint
@@ -33,6 +33,7 @@ export interface CoreMeResponse {
     name?: string;
     role?: string;
     subrol?: string | null;
+    wallet?: string[];
   };
 }
 
@@ -64,7 +65,7 @@ export async function refreshToken(token: string): Promise<AuthTokens> {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-    },
+      },
     body: JSON.stringify({ refreshToken: token }),
   });
 
@@ -97,6 +98,7 @@ export async function getMe(token: string): Promise<{ user: User }> {
       name: response.user.name,
       role: response.user.role,
       subrol: response.user.subrol,
+      wallet: response.user.wallet,
     },
   };
 }
@@ -118,4 +120,41 @@ export async function verifyToken(
   }
 
   return res.json() as Promise<VerifyResponse>;
+}
+// --- Wallet & Transfer ---
+
+export interface TransferRequest {
+  from: string; // Wallet UUID
+  to: "SYSTEM"; // Or other wallet UUID
+  amount: number;
+  description: string;
+  currency?: string;
+  type?: "credit" | "debit";
+}
+
+export async function transfer(
+  data: TransferRequest,
+  token: string,
+): Promise<unknown> {
+  const res = await fetch(`${CORE_API_URL}/api/transfers`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      ...data,
+      currency: data.currency ?? "ARG",
+    }),
+  });
+
+  const responseData = (await res.json()) as unknown;
+
+  if (!res.ok) {
+    throw new Error(
+      `Transfer failed: ${JSON.stringify(responseData)}`,
+    );
+  }
+
+  return responseData;
 }

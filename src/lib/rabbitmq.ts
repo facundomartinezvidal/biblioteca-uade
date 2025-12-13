@@ -94,4 +94,5 @@ export async function publishEvent(routingKey: string, message: object) {
 
 export const RABBITMQ_ROUTING_KEYS = {
   PENALTY_CREATED: "sanctions.created",
+  SANCTION_UPDATED: "sanctions.updated",
 };
