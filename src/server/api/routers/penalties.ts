@@ -16,6 +16,8 @@ import {
   getLocationFromBackoffice,
   getAllParametersFromBackoffice,
 } from "~/lib/backoffice-api";
+import { publishEvent, RABBITMQ_ROUTING_KEYS } from "~/lib/rabbitmq";
+import { getMe, transfer } from "~/lib/core-api";
 
 /**
  * Helper function to enrich user parameters with location and parameter data
@@ -375,6 +377,99 @@ export const penaltiesRouter = createTRPCRouter({
       const enrichedResult = await enrichUserParametersWithData([result[0]!]);
 
       return enrichedResult[0] ?? null;
+    }),
+
+  payPenalty: protectedProcedure
+    .input(z.object({ penaltyId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.user.id;
+      const userToken = ctx.token;
+
+      if (!userToken) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "No token found",
+        });
+      }
+
+      const existingPenalty = await ctx.db
+        .select()
+        .from(userParameters)
+        .where(
+          and(
+            eq(userParameters.id, input.penaltyId),
+            eq(userParameters.userId, userId),
+          ),
+        )
+        .limit(1);
+
+      if (existingPenalty.length === 0) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Multa no encontrada",
+        });
+      }
+
+      const penalty = existingPenalty[0]!;
+
+      if (penalty.status === "PAID") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Esta multa ya está pagada",
+        });
+      }
+
+      // Get amount
+      const parameters = await getAllParametersFromBackoffice();
+      const param = parameters.find(
+        (p) => p.id_parametro === penalty.parameterId,
+      );
+      const amount = param ? parseFloat(param.valor_numerico) : 0;
+
+      // Get User Wallet from Core API (profile)
+      const me = await getMe(userToken);
+      const walletId = me.user.wallet?.[0];
+
+      if (!walletId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "El usuario no tiene una billetera asignada en Core API",
+        });
+      }
+
+      console.log("User Wallet:", walletId);
+
+      // Call Core API to Transfer
+      const transferResult = await transfer(
+        {
+          from: walletId,
+          to: "SYSTEM",
+          amount: amount,
+          type: "credit",
+          description: "Pago de sanción",
+        },
+        userToken,
+      );
+
+      console.log("Core API Response for Payment:", transferResult);
+
+      // Update status
+      await ctx.db
+        .update(userParameters)
+        .set({ status: "PAID" })
+        .where(eq(userParameters.id, input.penaltyId));
+
+      // Publish event
+      await publishEvent(RABBITMQ_ROUTING_KEYS.SANCTION_UPDATED, {
+        id: penalty.id,
+        userId: penalty.userId,
+        status: "PAID",
+        parameterId: penalty.parameterId,
+        updatedAt: new Date(),
+        source: "BIBLIOTECA",
+      });
+
+      return { success: true };
     }),
 
   markAsPaid: protectedProcedure

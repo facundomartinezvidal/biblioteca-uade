@@ -137,7 +137,7 @@ export default function PenaltiesPage() {
     search: search.trim() || undefined,
   });
 
-  const markAsPaidMutation = api.penalties.markAsPaid.useMutation({
+  const payPenaltyMutation = api.penalties.payPenalty.useMutation({
     onSuccess: async () => {
       await refetch();
       await Promise.all([
@@ -185,13 +185,13 @@ export default function PenaltiesPage() {
 
   const handleConfirmPay = () => {
     if (penaltyToPay) {
-      markAsPaidMutation.mutate({ penaltyId: penaltyToPay.id });
+      payPenaltyMutation.mutate({ penaltyId: penaltyToPay.id });
     }
   };
 
   const handlePayPenalty = (penaltyId: string) => {
     // Pagar directamente desde el modal de detalles
-    markAsPaidMutation.mutate({ penaltyId });
+    payPenaltyMutation.mutate({ penaltyId });
   };
 
   return (
@@ -274,8 +274,8 @@ export default function PenaltiesPage() {
                       results.map((penalty) => {
                         const canPay = penalty.status === "PENDING";
                         const isPaying =
-                          markAsPaidMutation.isPending &&
-                          markAsPaidMutation.variables?.penaltyId ===
+                          payPenaltyMutation.isPending &&
+                          payPenaltyMutation.variables?.penaltyId ===
                             penalty.id;
 
                         return (
@@ -421,7 +421,7 @@ export default function PenaltiesPage() {
           onClose={handleCloseDetailsModal}
           penalty={selectedPenalty}
           onPay={handlePayPenalty}
-          isLoadingPay={markAsPaidMutation.isPending}
+          isLoadingPay={payPenaltyMutation.isPending}
         />
       )}
 
@@ -433,7 +433,7 @@ export default function PenaltiesPage() {
           onConfirm={handleConfirmPay}
           bookTitle={penaltyToPay.title}
           amount={penaltyToPay.amount}
-          isLoading={markAsPaidMutation.isPending}
+          isLoading={payPenaltyMutation.isPending}
         />
       )}
     </div>
