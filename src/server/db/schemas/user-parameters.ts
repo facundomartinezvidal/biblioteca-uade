@@ -11,5 +11,6 @@ export const userParameters = pgTable("user_parameters", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
+  parentId: uuid("parent_id"),
 });
 
