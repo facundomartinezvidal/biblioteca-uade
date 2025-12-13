@@ -59,6 +59,7 @@ export async function middleware(request: NextRequest) {
     "/terms-and-conditions",
     "/api/trpc", // Allow TRPC to handle its own auth or public procedures
     "/api/health", // Health check
+    "/api/webhooks", // Allow Webhooks (e.g. RabbitMQ)
   ];
 
   const isPublicRoute = publicRoutes.some((route) =>
