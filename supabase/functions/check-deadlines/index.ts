@@ -167,7 +167,7 @@ serve(async (req) => {
                 amount: lateReturnParam.valor_numerico, // Real amount from Backoffice
                 status: penalty.status,
                 createdAt: penalty.created_at,
-                source: "Biblioteca",
+
               },
             });
           }
