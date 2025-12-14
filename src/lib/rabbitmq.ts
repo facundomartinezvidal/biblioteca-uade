@@ -46,10 +46,11 @@ async function getRabbitMQConnection(): Promise<{
     connection = conn as unknown as Connection;
     channel = ch;
 
-    // Asegurar que el exchange existe
-    await channel.assertExchange(EXCHANGE_NAME, EXCHANGE_TYPE, {
-      durable: true,
-    });
+    // No intentamos afirmar el exchange porque el usuario no tiene permisos de configuración (403).
+    // Asumimos que el exchange 'sanctions.event' ya fue creado por el equipo de Core.
+    // await channel.assertExchange(EXCHANGE_NAME, EXCHANGE_TYPE, {
+    //   durable: true,
+    // });
 
     // Manejar cierre de conexión
     conn.on("close", () => {
