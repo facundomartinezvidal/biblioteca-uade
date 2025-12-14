@@ -161,13 +161,13 @@ serve(async (req) => {
             await publishEventToApp({
               type: "PENALTY_CREATED",
               data: {
-                id: penalty.id,
+                sanctionId: penalty.id,
                 userId: penalty.user_id,
                 parameterId: penalty.parameter_id,
                 amount: lateReturnParam.valor_numerico, // Real amount from Backoffice
                 status: penalty.status,
                 createdAt: penalty.created_at,
-                source: "AUTOMATIC_JOB",
+                source: "Biblioteca",
               },
             });
           }

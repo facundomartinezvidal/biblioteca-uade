@@ -393,13 +393,13 @@ export const loansRouter = createTRPCRouter({
 
           // Publish event
           await publishEvent(RABBITMQ_ROUTING_KEYS.PENALTY_CREATED, {
-            id: newPenalty[0].id,
+            sanctionId: newPenalty[0].id,
             userId: newPenalty[0].userId,
             parameterId: newPenalty[0].parameterId,
             amount: PENALTY_AMOUNT,
             status: newPenalty[0].status,
             createdAt: newPenalty[0].createdAt,
-            source: "BIBLIOTECA",
+            source: "Biblioteca",
           });
         }
       }

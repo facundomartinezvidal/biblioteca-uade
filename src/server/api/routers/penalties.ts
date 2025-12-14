@@ -461,12 +461,12 @@ export const penaltiesRouter = createTRPCRouter({
 
       // Publish event
       await publishEvent(RABBITMQ_ROUTING_KEYS.SANCTION_UPDATED, {
-        id: penalty.id,
+        sanctionId: penalty.id,
         userId: penalty.userId,
         status: "PAID",
         parameterId: penalty.parameterId,
         updatedAt: new Date(),
-        source: "BIBLIOTECA",
+        source: "Biblioteca",
       });
 
       return { success: true };

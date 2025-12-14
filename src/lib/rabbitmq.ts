@@ -1,5 +1,6 @@
 import amqp from "amqplib";
 import type { Connection, Channel } from "amqplib";
+import { randomUUID } from "node:crypto";
 
 // Variables de entorno para la conexión RabbitMQ
 const RABBITMQ_USER = process.env.RABBITMQ_DEFAULT_USER;
@@ -16,6 +17,15 @@ const EXCHANGE_TYPE = "topic";
 
 let connection: Connection | null = null;
 let channel: Channel | null = null;
+
+export interface EventEnvelope {
+  eventId: string;
+  eventType: string;
+  occurredAt: string;
+  emittedAt: string;
+  sourceModule: string;
+  payload: unknown;
+}
 
 /**
  * Obtiene o crea una conexión a RabbitMQ
@@ -70,7 +80,21 @@ export async function publishEvent(routingKey: string, message: object) {
   try {
     const { channel } = await getRabbitMQConnection();
 
-    const buffer = Buffer.from(JSON.stringify(message));
+    const envelope: EventEnvelope = {
+      eventId: randomUUID(),
+      eventType: routingKey,
+      occurredAt: new Date().toISOString(),
+      emittedAt: new Date().toISOString(),
+      sourceModule: "Biblioteca",
+      payload: message,
+    };
+
+    console.log(
+      "[RabbitMQ] Sending Envelope:",
+      JSON.stringify(envelope, null, 2),
+    );
+
+    const buffer = Buffer.from(JSON.stringify(envelope));
     const published = channel.publish(EXCHANGE_NAME, routingKey, buffer, {
       persistent: true,
     });
