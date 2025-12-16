@@ -445,7 +445,7 @@ export const penaltiesRouter = createTRPCRouter({
           from: walletId,
           to: "SYSTEM",
           amount: amount,
-          type: "credit",
+          type: "SANCION",
           description: "Pago de sanción",
         },
         userToken,
