@@ -65,7 +65,7 @@ export async function refreshToken(token: string): Promise<AuthTokens> {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      },
+    },
     body: JSON.stringify({ refreshToken: token }),
   });
 
@@ -123,13 +123,21 @@ export async function verifyToken(
 }
 // --- Wallet & Transfer ---
 
+// Transfer types from Core API
+export type TransferType =
+  | "COMPRA"
+  | "CARGA_DE_SALDO"
+  | "SANCION"
+  | "RESERVA"
+  | "INSCRIPCION_EVENTO";
+
 export interface TransferRequest {
   from: string; // Wallet UUID
   to: "SYSTEM"; // Or other wallet UUID
   amount: number;
   description: string;
   currency?: string;
-  type?: "credit" | "debit";
+  type: TransferType;
 }
 
 export async function transfer(
@@ -151,9 +159,7 @@ export async function transfer(
   const responseData = (await res.json()) as unknown;
 
   if (!res.ok) {
-    throw new Error(
-      `Transfer failed: ${JSON.stringify(responseData)}`,
-    );
+    throw new Error(`Transfer failed: ${JSON.stringify(responseData)}`);
   }
 
   return responseData;
