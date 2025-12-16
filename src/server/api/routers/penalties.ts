@@ -465,6 +465,7 @@ export const penaltiesRouter = createTRPCRouter({
         userId: penalty.userId,
         status: "PAID",
         parameterId: penalty.parameterId,
+        amount: amount,
         updatedAt: new Date(),
       });
 
