@@ -399,7 +399,7 @@ export const loansRouter = createTRPCRouter({
             amount: PENALTY_AMOUNT,
             status: newPenalty[0].status,
             createdAt: newPenalty[0].createdAt,
-
+            source: "BIBLIOTECA",
           });
         }
       }
@@ -638,10 +638,10 @@ export const loansRouter = createTRPCRouter({
 
         // Publicar evento en RabbitMQ
         await publishEvent(RABBITMQ_ROUTING_KEYS.PENALTY_CREATED, {
-          id: newPenalty[0].id,
+          sanctionId: newPenalty[0].id,
           userId: newPenalty[0].userId,
           parameterId: newPenalty[0].parameterId,
-          amount: damagedBookParameter.valor_numerico,
+          amount: parseFloat(damagedBookParameter.valor_numerico),
           status: newPenalty[0].status,
           createdAt: newPenalty[0].createdAt,
           source: "BIBLIOTECA",

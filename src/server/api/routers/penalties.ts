@@ -467,6 +467,7 @@ export const penaltiesRouter = createTRPCRouter({
         parameterId: penalty.parameterId,
         amount: amount,
         updatedAt: new Date(),
+        source: "BIBLIOTECA",
       });
 
       return { success: true };
