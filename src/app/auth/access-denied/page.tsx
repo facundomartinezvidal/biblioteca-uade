@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "~/components/ui/button";
 import {
@@ -33,7 +33,7 @@ const ACCESS_DENIED_MESSAGES = {
   },
 };
 
-export default function AccessDeniedPage() {
+function AccessDeniedContent() {
   const searchParams = useSearchParams();
   const reason = searchParams.get("reason") ?? "default";
   const [isLoadingLogout, setIsLoadingLogout] = useState(false);
@@ -100,5 +100,19 @@ export default function AccessDeniedPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function AccessDeniedPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+        </div>
+      }
+    >
+      <AccessDeniedContent />
+    </Suspense>
   );
 }
