@@ -57,16 +57,28 @@ export function AdminLoanActions({
 
   const utils = api.useUtils();
 
+  // Check if pickup is late (more than 24 hours since reservation)
+  const { data: latePickupData, isLoading: isCheckingLatePickup } =
+    api.loans.checkLatePickup.useQuery(
+      { loanId },
+      { enabled: showActivateDialog && loanStatus === "RESERVED" }
+    );
+
   const activateLoanMutation = api.loans.activateLoan.useMutation({
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       await Promise.all([
         utils.loans.invalidate(), // Invalida todas las queries de loans
         utils.books.invalidate(), // Invalida todas las queries de books
         utils.dashboard.invalidate(), // Invalida dashboard
         utils.notifications.invalidate(), // Invalida notificaciones
+        utils.penalties.invalidate(), // Invalida penalties si se creó una
       ]);
       onSuccess?.();
-      toast.success("Préstamo activado exitosamente");
+      if (data.penaltyApplied) {
+        toast.success("Préstamo activado y usuario multado por retiro tardío");
+      } else {
+        toast.success("Préstamo activado exitosamente");
+      }
       setShowActivateDialog(false);
     },
     onError: (error) => {
@@ -135,7 +147,10 @@ export function AdminLoanActions({
     });
 
   const handleActivate = async () => {
-    activateLoanMutation.mutate({ loanId });
+    activateLoanMutation.mutate({ 
+      loanId, 
+      applyLatePickupPenalty: latePickupData?.isLatePickup ?? false 
+    });
   };
 
   const handleFinish = async () => {
@@ -230,6 +245,29 @@ export function AdminLoanActions({
               será de 7 días desde ahora.
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          {/* Warning for late pickup */}
+          {isCheckingLatePickup ? (
+            <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+              <span className="text-sm text-gray-600">Verificando tiempo de reserva...</span>
+            </div>
+          ) : latePickupData?.isLatePickup ? (
+            <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4">
+              <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
+              <div className="grid gap-1.5">
+                <span className="text-sm font-semibold text-amber-900">
+                  Retiro tardío - Se aplicará multa
+                </span>
+                <p className="text-xs text-amber-700">
+                  Han pasado más de 24 horas desde la reserva
+                  {latePickupData.hoursLate > 0 && ` (${latePickupData.hoursLate} horas de demora)`}. 
+                  Al entregar el libro, se aplicará automáticamente una multa al usuario por retiro tardío.
+                </p>
+              </div>
+            </div>
+          ) : null}
+
           <AlertDialogFooter>
             <AlertDialogCancel
               disabled={activateLoanMutation.isPending}
@@ -247,14 +285,20 @@ export function AdminLoanActions({
                 e.preventDefault();
                 void handleActivate();
               }}
-              className="bg-berkeley-blue hover:bg-berkeley-blue/90"
-              disabled={activateLoanMutation.isPending}
+              className={
+                latePickupData?.isLatePickup
+                  ? "bg-amber-600 hover:bg-amber-700"
+                  : "bg-berkeley-blue hover:bg-berkeley-blue/90"
+              }
+              disabled={activateLoanMutation.isPending || isCheckingLatePickup}
             >
               {activateLoanMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Activando
+                  {latePickupData?.isLatePickup ? "Entregando y multando..." : "Activando..."}
                 </>
+              ) : latePickupData?.isLatePickup ? (
+                "Entregar y Multar"
               ) : (
                 "Confirmar Entrega"
               )}
