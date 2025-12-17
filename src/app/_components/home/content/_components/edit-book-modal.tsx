@@ -67,9 +67,15 @@ export function EditBookModal({
 
   const utils = api.useUtils();
 
-  const { data: authorsData } = api.catalog.getAllAuthors.useQuery();
-  const { data: gendersData } = api.catalog.getAllGenders.useQuery();
-  const { data: editorialsData } = api.catalog.getAllEditorials.useQuery();
+  const { data: authorsData } = api.catalog.getAllAuthors.useQuery({
+    limit: 100,
+  });
+  const { data: gendersData } = api.catalog.getAllGenders.useQuery({
+    limit: 100,
+  });
+  const { data: editorialsData } = api.catalog.getAllEditorials.useQuery({
+    limit: 100,
+  });
   const { data: locations } = api.locations.getAll.useQuery();
 
   const authors = authorsData?.response ?? [];
@@ -100,6 +106,22 @@ export function EditBookModal({
         setUpdateError("El ISBN es obligatorio");
         return;
       }
+      if (!value.authorId?.trim()) {
+        setUpdateError("El autor es obligatorio");
+        return;
+      }
+      if (!value.genderId?.trim()) {
+        setUpdateError("El género es obligatorio");
+        return;
+      }
+      if (!value.editorialId?.trim()) {
+        setUpdateError("La editorial es obligatoria");
+        return;
+      }
+      if (!value.year) {
+        setUpdateError("El año es obligatorio");
+        return;
+      }
 
       updateBookMutation.mutate({
         id: book.id,
@@ -116,6 +138,27 @@ export function EditBookModal({
       });
     },
   });
+
+  // Reset form values when book changes or modal opens
+  useEffect(() => {
+    if (isOpen) {
+      form.reset();
+      form.setFieldValue("title", book.title);
+      form.setFieldValue("description", book.description ?? "");
+      form.setFieldValue("isbn", formatISBN(book.isbn));
+      form.setFieldValue(
+        "status",
+        book.status as "AVAILABLE" | "NOT_AVAILABLE" | "RESERVED",
+      );
+      form.setFieldValue("year", book.year ?? new Date().getFullYear());
+      form.setFieldValue("editorialId", book.editorialId ?? "");
+      form.setFieldValue("authorId", book.authorId ?? "");
+      form.setFieldValue("genderId", book.genderId ?? "");
+      form.setFieldValue("locationId", book.locationId ?? "");
+      form.setFieldValue("imageUrl", book.imageUrl ?? "");
+      setImagePreview(book.imageUrl ?? null);
+    }
+  }, [isOpen, book.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClose = useCallback(() => {
     form.reset();

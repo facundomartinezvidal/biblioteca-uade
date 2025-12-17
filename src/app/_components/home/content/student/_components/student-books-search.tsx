@@ -2,6 +2,7 @@
 
 import { Search, X } from "lucide-react";
 import { Input } from "~/components/ui/input";
+import { Button } from "~/components/ui/button";
 import ImprovedFiltersSidebar from "~/app/_components/home/improved-filters-sidebar";
 
 interface StudentBooksSearchProps {
@@ -44,25 +45,30 @@ export function StudentBooksSearch({
   onFilterSubmit,
 }: StudentBooksSearchProps) {
   return (
-    <div className="mb-6 flex flex-wrap items-start gap-3">
+    <div className="mb-6 flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50/50 px-4 py-3">
       {/* Search Bar */}
-      <div className="relative w-[300px]">
-        <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+      <div className="relative w-[280px] shrink-0">
+        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
         <Input
           placeholder="Buscar por título, autor, etc..."
-          className="pr-10 pl-10"
+          className="h-9 pr-10 pl-10"
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
         />
         {searchTerm && (
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-1/2 right-1 h-6 w-6 -translate-y-1/2 transform rounded-full hover:bg-gray-100"
             onClick={() => onSearchChange("")}
-            className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 transition-colors"
           >
-            <X className="h-4 w-4" />
-          </button>
+            <X className="h-3 w-3 text-gray-500" />
+          </Button>
         )}
       </div>
+
+      {/* Separator */}
+      <div className="h-6 w-px shrink-0 bg-gray-300" />
 
       {/* Filters */}
       <ImprovedFiltersSidebar
@@ -81,6 +87,7 @@ export function StudentBooksSearch({
         selectedLocation={formLocation}
         selectedYearFrom={formYearFrom}
         selectedYearTo={formYearTo}
+        inline
       />
     </div>
   );

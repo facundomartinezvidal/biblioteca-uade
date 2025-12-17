@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, Search, MoreHorizontal, Eye, AlertCircle } from "lucide-react";
+import { Users, Search, MoreHorizontal, Eye, AlertCircle, X } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import {
@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Card, CardContent } from "~/components/ui/card";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PaginationControls from "../_components/home/pagination-controls";
 import { api } from "~/trpc/react";
 import { useRouter } from "next/navigation";
@@ -31,10 +31,22 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
+  // Proper debounce with cleanup
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      if (search !== debouncedSearch) {
+        setPage(1);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const { data, isLoading } = api.user.getAllStudents.useQuery({
     page,
     limit,
-    search: debouncedSearch,
+    search: debouncedSearch || undefined,
   });
 
   const results = data?.results ?? [];
@@ -45,10 +57,12 @@ export default function UsersPage() {
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
-    setTimeout(() => {
-      setDebouncedSearch(value);
-      setPage(1);
-    }, 300);
+  };
+
+  const handleClearSearch = () => {
+    setSearch("");
+    setDebouncedSearch("");
+    setPage(1);
   };
 
   const handleViewLoans = (userId: string) => {
@@ -77,10 +91,20 @@ export default function UsersPage() {
             <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
             <Input
               placeholder="Buscar por nombre, apellido, legajo, correo, DNI..."
-              className="pl-10"
+              className="pr-10 pl-10"
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
             />
+            {search && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-1/2 right-1 h-6 w-6 -translate-y-1/2 transform rounded-full hover:bg-gray-100"
+                onClick={handleClearSearch}
+              >
+                <X className="h-3 w-3 text-gray-500" />
+              </Button>
+            )}
           </div>
         </div>
 

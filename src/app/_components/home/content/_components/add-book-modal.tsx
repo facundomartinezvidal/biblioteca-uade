@@ -41,9 +41,15 @@ export function AddBookModal({
 
   const utils = api.useUtils();
 
-  const { data: authorsData } = api.catalog.getAllAuthors.useQuery();
-  const { data: gendersData } = api.catalog.getAllGenders.useQuery();
-  const { data: editorialsData } = api.catalog.getAllEditorials.useQuery();
+  const { data: authorsData } = api.catalog.getAllAuthors.useQuery({
+    limit: 100,
+  });
+  const { data: gendersData } = api.catalog.getAllGenders.useQuery({
+    limit: 100,
+  });
+  const { data: editorialsData } = api.catalog.getAllEditorials.useQuery({
+    limit: 100,
+  });
   const { data: locations } = api.locations.getAll.useQuery();
 
   const authors = authorsData?.response ?? [];
@@ -71,6 +77,22 @@ export function AddBookModal({
       }
       if (!value.isbn.trim()) {
         setCreateError("El ISBN es obligatorio");
+        return;
+      }
+      if (!value.authorId?.trim()) {
+        setCreateError("El autor es obligatorio");
+        return;
+      }
+      if (!value.genderId?.trim()) {
+        setCreateError("El género es obligatorio");
+        return;
+      }
+      if (!value.editorialId?.trim()) {
+        setCreateError("La editorial es obligatoria");
+        return;
+      }
+      if (!value.year) {
+        setCreateError("El año es obligatorio");
         return;
       }
 

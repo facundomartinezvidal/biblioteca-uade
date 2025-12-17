@@ -1,11 +1,10 @@
 import { AdminBooksTable } from "./admin-books-table";
-import { AddBookModal } from "./add-book-modal";
 import { useState, useMemo, useEffect } from "react";
 import PaginationControls from "~/app/_components/home/pagination-controls";
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { Plus, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import ImprovedFiltersSidebar from "~/app/_components/home/improved-filters-sidebar";
 
 export function AdminBooksTab() {
@@ -30,7 +29,6 @@ export function AdminBooksTab() {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [filterKey, setFilterKey] = useState(0);
-  const [showAddBookModal, setShowAddBookModal] = useState(false);
 
   const utils = api.useUtils();
 
@@ -97,13 +95,14 @@ export function AdminBooksTab() {
 
   return (
     <div className="w-full">
-      <div className="mb-6 flex flex-row items-center gap-3">
-        {/* Search bar */}
+      {/* Search + Filters in same row */}
+      <div className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-gray-50/50 px-4 py-3">
+        {/* Search */}
         <div className="relative w-[280px]">
           <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
           <Input
             placeholder="Buscar por título, autor, ISBN..."
-            className="pr-10 pl-10"
+            className="pr-10 pl-10 h-9"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -111,15 +110,18 @@ export function AdminBooksTab() {
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 transform rounded-full hover:bg-gray-100"
+              className="absolute top-1/2 right-1 h-6 w-6 -translate-y-1/2 transform rounded-full hover:bg-gray-100"
               onClick={() => setSearch("")}
             >
-              <X className="h-4 w-4 text-gray-500" />
+              <X className="h-3 w-3 text-gray-500" />
             </Button>
           )}
         </div>
 
-        {/* Filter Sidebar */}
+        {/* Separator */}
+        <div className="h-6 w-px bg-gray-300" />
+
+        {/* Filters */}
         <ImprovedFiltersSidebar
           key={filterKey}
           selectedGenre={formGenre}
@@ -136,11 +138,8 @@ export function AdminBooksTab() {
           onLocationChange={setFormLocation}
           onCancel={clearFilters}
           onSubmit={applyFilters}
+          inline
         />
-
-        <Button onClick={() => setShowAddBookModal(true)} className="ml-auto bg-berkeley-blue hover:bg-berkeley-blue/90">
-          <Plus className="mr-2 h-4 w-4" /> Agregar Libro
-        </Button>
       </div>
 
       <AdminBooksTable books={books} isLoading={isLoading} onDeleteSuccess={handleRefresh} />
@@ -155,8 +154,6 @@ export function AdminBooksTab() {
           onPageChange={(p) => { if (p >= 1 && p <= pagination.totalPages) setPage(p); }}
         />
       )}
-
-      <AddBookModal isOpen={showAddBookModal} onClose={() => setShowAddBookModal(false)} onSuccess={handleRefresh} />
     </div>
   );
 }

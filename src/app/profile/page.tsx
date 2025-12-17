@@ -107,6 +107,13 @@ export default function ProfilePage() {
     title: string;
   } | null>(null);
 
+  // Query para verificar si la cancelación aplicará multa
+  const { data: penaltyCheckData, isLoading: isCheckingPenalty } =
+    api.loans.checkCancellationPenalty.useQuery(
+      { loanId: loanToCancel?.id ?? "" },
+      { enabled: !!loanToCancel?.id },
+    );
+
   const cancelMutation = api.loans.cancelReservation.useMutation({
     onSuccess: async () => {
       await refetch();
@@ -262,6 +269,8 @@ export default function ProfilePage() {
         bookTitle={loanToCancel?.title ?? ""}
         onConfirm={handleConfirmCancel}
         isLoading={cancelMutation.isPending}
+        willBePenalized={penaltyCheckData?.willBePenalized ?? false}
+        isCheckingPenalty={isCheckingPenalty}
       />
     </div>
   );

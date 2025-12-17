@@ -142,6 +142,13 @@ export default function LoansPage() {
   } | null>(null);
   const [loadingReserveId, setLoadingReserveId] = useState<string | null>(null);
 
+  // Query para verificar si la cancelación aplicará multa
+  const { data: penaltyCheckData, isLoading: isCheckingPenalty } =
+    api.loans.checkCancellationPenalty.useQuery(
+      { loanId: loanToCancel?.id ?? "" },
+      { enabled: !!loanToCancel?.id },
+    );
+
   const { data, isLoading, refetch } = api.loans.getByUserId.useQuery({
     page,
     limit,
@@ -447,6 +454,8 @@ export default function LoansPage() {
           onConfirm={handleConfirmCancel}
           bookTitle={loanToCancel.title}
           isLoading={cancelMutation.isPending}
+          willBePenalized={penaltyCheckData?.willBePenalized ?? false}
+          isCheckingPenalty={isCheckingPenalty}
         />
       )}
     </div>

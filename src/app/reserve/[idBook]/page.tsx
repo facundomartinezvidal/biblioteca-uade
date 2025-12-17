@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "~/trpc/react";
+import { toast } from "sonner";
 import ReservationSuccessModal from "~/app/_components/reservation-success-modal";
 import PopUpBook from "~/app/_components/home/pop-up-book";
 import {
@@ -84,17 +85,17 @@ export default function ReservePage() {
 
   const handleReserve = async () => {
     if (!termsAccepted) {
-      alert("Debes aceptar los términos y condiciones para continuar");
+      toast.error("Debes aceptar los términos y condiciones para continuar");
       return;
     }
 
     if (!book) {
-      alert("No se pudo cargar la información del libro");
+      toast.error("No se pudo cargar la información del libro");
       return;
     }
 
     if (book.status !== "AVAILABLE") {
-      alert("Este libro no está disponible para reserva");
+      toast.error("Este libro no está disponible para reserva");
       return;
     }
 
@@ -114,7 +115,7 @@ export default function ReservePage() {
 
       setShowSuccessModal(true);
     } catch (error) {
-      alert(
+      toast.error(
         error instanceof Error
           ? error.message
           : "Error al crear la reserva. Por favor, intenta nuevamente.",

@@ -27,6 +27,7 @@ type ImprovedFiltersSidebarProps = {
   selectedLocation?: string;
   selectedYearFrom?: number;
   selectedYearTo?: number;
+  inline?: boolean;
 };
 
 export default function ImprovedFiltersSidebar(
@@ -44,6 +45,7 @@ export default function ImprovedFiltersSidebar(
     selectedAvailability,
     selectedEditorial,
     selectedLocation,
+    inline = false,
   } = props;
 
   const { data: locations, isLoading: isLoadingLocations } =
@@ -84,15 +86,21 @@ export default function ImprovedFiltersSidebar(
 
   return (
     <div
-      className={["flex flex-wrap items-center gap-2", className]
+      className={[
+        "flex flex-wrap items-center gap-3",
+        !inline && "rounded-lg border border-gray-200 bg-gray-50/50 px-4 py-3",
+        className,
+      ]
         .filter(Boolean)
         .join(" ")}
     >
       {/* Filter Label */}
-      <div className="flex items-center gap-2 text-sm font-medium">
-        <Filter className="h-4 w-4" />
-        <span>Filtrar por:</span>
-      </div>
+      {!inline && (
+        <div className="flex items-center gap-2 text-sm font-medium text-gray-600">
+          <Filter className="h-4 w-4" />
+          <span>Filtrar por:</span>
+        </div>
+      )}
 
       {/* Género */}
       <Select value={selectedGenre} onValueChange={onGenreChange}>
@@ -183,6 +191,9 @@ export default function ImprovedFiltersSidebar(
           )}
         </SelectContent>
       </Select>
+
+      {/* Separator */}
+      {!inline && <div className="mx-1 h-6 w-px bg-gray-300" />}
 
       {/* Action Buttons */}
       <div className="flex gap-2">
