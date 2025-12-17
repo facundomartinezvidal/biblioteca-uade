@@ -37,13 +37,13 @@ export function Footer() {
                 Inicio
               </Link>
               <Link
-                href="/prestamos"
+                href="/loans"
                 className="text-sm text-white/70 transition-colors hover:text-white"
               >
                 Préstamos
               </Link>
               <Link
-                href="/multas"
+                href="/penalties"
                 className="text-sm text-white/70 transition-colors hover:text-white"
               >
                 Multas
