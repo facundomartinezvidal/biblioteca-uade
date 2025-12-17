@@ -459,7 +459,6 @@ export const loansRouter = createTRPCRouter({
             amount: PENALTY_AMOUNT,
             status: newPenalty[0].status,
             createdAt: newPenalty[0].createdAt,
-
           });
         }
       }
@@ -600,8 +599,38 @@ export const loansRouter = createTRPCRouter({
       return { success: true, loan: newLoan[0] };
     }),
 
-  activateLoan: enforceUserIsAdmin
+  // Check if a reservation is past the 24-hour pickup window
+  checkLatePickup: enforceUserIsAdmin
     .input(z.object({ loanId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const loan = await ctx.db
+        .select()
+        .from(loans)
+        .where(eq(loans.id, input.loanId))
+        .limit(1);
+
+      if (!loan[0] || loan[0].status !== "RESERVED") {
+        return { isLatePickup: false, hoursLate: 0 };
+      }
+
+      const createdAt = new Date(loan[0].createdAt);
+      const now = new Date();
+      const hoursSinceCreation =
+        (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+
+      const isLatePickup = hoursSinceCreation > 24;
+      const hoursLate = isLatePickup ? Math.floor(hoursSinceCreation - 24) : 0;
+
+      return { isLatePickup, hoursLate };
+    }),
+
+  activateLoan: enforceUserIsAdmin
+    .input(
+      z.object({
+        loanId: z.string(),
+        applyLatePickupPenalty: z.boolean().optional().default(false),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const loan = await ctx.db
         .select()
@@ -627,6 +656,59 @@ export const loansRouter = createTRPCRouter({
       const endDate = new Date(now);
       endDate.setDate(endDate.getDate() + 7); // 7 días para préstamos activos (igual que reservas)
 
+      // Check if late pickup penalty should be applied
+      let penaltyApplied = false;
+      if (input.applyLatePickupPenalty) {
+        const createdAt = new Date(loan[0].createdAt);
+        const hoursSinceCreation =
+          (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+
+        if (hoursSinceCreation > 24) {
+          // Get the "Retiro atrasado" parameter from backoffice
+          const latePickupParam =
+            await getParameterByNameFromBackoffice("Retiro atrasado");
+
+          if (latePickupParam) {
+            // Create penalty for late pickup
+            const newPenalty = await ctx.db
+              .insert(userParameters)
+              .values({
+                userId: loan[0].userId,
+                loanId: input.loanId,
+                parameterId: latePickupParam.id_parametro,
+                status: "PENDING",
+                createdAt: now,
+              })
+              .returning();
+
+            // Create notification for the penalty
+            await ctx.db.insert(notifications).values({
+              userId: loan[0].userId,
+              type: "PENALTY_APPLIED",
+              title: "Multa por retiro tardío",
+              message: `Se te aplicó una multa por no retirar el libro dentro de las 24 horas.`,
+              loanId: input.loanId,
+              read: false,
+              createdAt: now,
+            });
+
+            // Publish event to RabbitMQ
+            if (newPenalty[0]) {
+              void publishEvent(RABBITMQ_ROUTING_KEYS.PENALTY_CREATED, {
+                sanctionId: newPenalty[0].id,
+                userId: newPenalty[0].userId,
+                parameterId: newPenalty[0].parameterId,
+                amount: parseFloat(latePickupParam.valor_numerico),
+                status: newPenalty[0].status,
+                createdAt: newPenalty[0].createdAt,
+              });
+            }
+
+            penaltyApplied = true;
+          }
+        }
+      }
+
       await ctx.db
         .update(loans)
         .set({
@@ -640,7 +722,7 @@ export const loansRouter = createTRPCRouter({
         .set({ status: "NOT_AVAILABLE" })
         .where(eq(books.id, loan[0].bookId));
 
-      return { success: true };
+      return { success: true, penaltyApplied };
     }),
 
   finishLoan: enforceUserIsAdmin
@@ -746,7 +828,6 @@ export const loansRouter = createTRPCRouter({
           amount: parseFloat(damagedBookParameter.valor_numerico),
           status: newPenalty[0].status,
           createdAt: newPenalty[0].createdAt,
-          source: "BIBLIOTECA",
         });
       }
 
