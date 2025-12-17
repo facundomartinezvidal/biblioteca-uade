@@ -24,13 +24,13 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
 
     // Check if user is DOCENTE and redirect
     if (userRole === "DOCENTE") {
-      router.push("/auth/access-denied");
+      router.push("/auth/access-denied?reason=docente");
       return;
     }
 
     // Check if user is ADMINISTRADOR but NOT BIBLIOTECARIO
     if (userRole === "ADMINISTRADOR" && userSubrol !== "BIBLIOTECARIO") {
-      router.push("/auth/access-denied");
+      router.push("/auth/access-denied?reason=admin-no-bibliotecario");
       return;
     }
   }, [user, isLoading, router, pathname]);
