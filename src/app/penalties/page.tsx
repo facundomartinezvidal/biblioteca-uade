@@ -110,6 +110,34 @@ const formatDate = (dateString: string | Date | null) => {
   });
 };
 
+const calculateDueDate = (createdAt: string | Date | null) => {
+  if (!createdAt) return null;
+  const date = new Date(createdAt);
+  date.setDate(date.getDate() + 14); // Vencimiento: 14 días después de creación
+  return date;
+};
+
+const formatDueDate = (
+  createdAt: string | Date | null,
+  status: "PENDING" | "PAID",
+) => {
+  if (status === "PAID") return "—";
+  const dueDate = calculateDueDate(createdAt);
+  if (!dueDate) return "N/A";
+
+  const now = new Date();
+  const isOverdue = dueDate < now;
+
+  return {
+    date: dueDate.toLocaleDateString("es-ES", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }),
+    isOverdue,
+  };
+};
+
 export default function PenaltiesPage() {
   const utils = api.useUtils();
   const [page, setPage] = useState(1);
@@ -269,6 +297,9 @@ export default function PenaltiesPage() {
                       <TableHead>Descripción</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead className="min-w-[120px]">Creada</TableHead>
+                      <TableHead className="min-w-[120px]">
+                        Vencimiento
+                      </TableHead>
                       <TableHead className="min-w-[120px]">Monto</TableHead>
                       <TableHead className="w-[80px] text-right">
                         Acciones
@@ -337,6 +368,29 @@ export default function PenaltiesPage() {
                               {formatDate(penalty.createdAt)}
                             </TableCell>
 
+                            <TableCell className="text-sm">
+                              {(() => {
+                                const dueDateInfo = formatDueDate(
+                                  penalty.createdAt,
+                                  penalty.status,
+                                );
+                                if (typeof dueDateInfo === "string")
+                                  return dueDateInfo;
+                                return (
+                                  <span
+                                    className={
+                                      dueDateInfo.isOverdue
+                                        ? "font-medium text-red-600"
+                                        : "text-gray-600"
+                                    }
+                                  >
+                                    {dueDateInfo.date}
+                                    {dueDateInfo.isOverdue && " (Vencida)"}
+                                  </span>
+                                );
+                              })()}
+                            </TableCell>
+
                             <TableCell className="text-sm text-gray-600">
                               ${penalty.parameter?.amount ?? "0"}
                             </TableCell>
@@ -393,7 +447,7 @@ export default function PenaltiesPage() {
                     ) : (
                       <TableRow>
                         <TableCell
-                          colSpan={8}
+                          colSpan={9}
                           className="py-8 text-center text-gray-500"
                         >
                           No se encontraron multas y sanciones
