@@ -179,10 +179,18 @@ export function EditBookModal({
       onClose();
     },
     onError: (error) => {
-      setUpdateError(
-        error.message ||
-          "Error al actualizar el libro. Por favor, intenta de nuevo.",
-      );
+      // Traducir mensajes de error técnicos a mensajes amigables
+      let friendlyMessage = "Error al actualizar el libro. Por favor, intenta de nuevo.";
+      
+      if (error.message.includes("books_isbn_key") || error.message.includes("duplicate key")) {
+        friendlyMessage = "Ya existe un libro con este ISBN. Por favor, verifica el número e intenta con uno diferente.";
+      } else if (error.message.includes("books_title_key")) {
+        friendlyMessage = "Ya existe un libro con este título.";
+      } else if (error.message) {
+        friendlyMessage = error.message;
+      }
+      
+      setUpdateError(friendlyMessage);
     },
   });
 
