@@ -19,6 +19,9 @@ import {
   getParameterByNameFromBackoffice,
 } from "~/lib/backoffice-api";
 
+// Límite máximo de libros que un usuario puede tener reservados/prestados a la vez
+const MAX_ACTIVE_LOANS_PER_USER = 5;
+
 /**
  * Helper function to enrich loans with location data from backoffice
  */
@@ -300,6 +303,63 @@ export const loansRouter = createTRPCRouter({
       return enrichedResult[0] ?? null;
     }),
 
+  // Verifica si el usuario será multado al cancelar una reserva
+  checkCancellationPenalty: protectedProcedure
+    .input(z.object({ loanId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.user.id;
+
+      const existingLoan = await ctx.db
+        .select()
+        .from(loans)
+        .where(and(eq(loans.id, input.loanId), eq(loans.userId, userId)))
+        .limit(1);
+
+      if (existingLoan.length === 0 || existingLoan[0]!.status !== "RESERVED") {
+        return { willBePenalized: false, cancellationCount: 0 };
+      }
+
+      const bookId = existingLoan[0]!.bookId;
+
+      // Find the last successful loan to get cutoff date
+      const lastSuccessfulLoan = await ctx.db
+        .select({ createdAt: loans.createdAt })
+        .from(loans)
+        .where(
+          and(
+            eq(loans.userId, userId),
+            eq(loans.bookId, bookId),
+            or(eq(loans.status, "ACTIVE"), eq(loans.status, "FINISHED")),
+          ),
+        )
+        .orderBy(desc(loans.createdAt))
+        .limit(1);
+
+      const cutoffDate =
+        lastSuccessfulLoan[0]?.createdAt ?? new Date(0).toISOString();
+
+      // Count previous cancellations since last successful loan
+      const previousCancellations = await ctx.db
+        .select({ count: count() })
+        .from(loans)
+        .where(
+          and(
+            eq(loans.userId, userId),
+            eq(loans.bookId, bookId),
+            eq(loans.status, "CANCELLED"),
+            gt(loans.createdAt, cutoffDate),
+          ),
+        );
+
+      const cancellationCount = previousCancellations[0]?.count ?? 0;
+
+      // Will be penalized if this would be the 2nd cancellation (count + 1 >= 2)
+      return {
+        willBePenalized: cancellationCount + 1 >= 2,
+        cancellationCount: cancellationCount,
+      };
+    }),
+
   cancelReservation: protectedProcedure
     .input(z.object({ loanId: z.string() }))
     .mutation(async ({ ctx, input }) => {
@@ -412,6 +472,24 @@ export const loansRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.user.id;
 
+      // Verificar límite de préstamos/reservas activas
+      const activeLoansCount = await ctx.db
+        .select({ count: count() })
+        .from(loans)
+        .where(
+          and(
+            eq(loans.userId, userId),
+            or(eq(loans.status, "RESERVED"), eq(loans.status, "ACTIVE")),
+          ),
+        );
+
+      if ((activeLoansCount[0]?.count ?? 0) >= MAX_ACTIVE_LOANS_PER_USER) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Ya tenés ${MAX_ACTIVE_LOANS_PER_USER} libros reservados o en préstamo. Devolvé alguno antes de reservar otro.`,
+        });
+      }
+
       const book = await ctx.db
         .select()
         .from(books)
@@ -419,11 +497,17 @@ export const loansRouter = createTRPCRouter({
         .limit(1);
 
       if (book.length === 0) {
-        throw new Error("Libro no encontrado");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Libro no encontrado",
+        });
       }
 
       if (book[0]!.status !== "AVAILABLE") {
-        throw new Error("El libro no está disponible para reserva");
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "El libro no está disponible para reserva",
+        });
       }
 
       const now = new Date();
@@ -454,6 +538,24 @@ export const loansRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       // Note: We're trusting that the studentId is valid since it comes from backoffice
       // The backoffice handles user validation
+
+      // Verificar límite de préstamos/reservas activas del estudiante
+      const activeLoansCount = await ctx.db
+        .select({ count: count() })
+        .from(loans)
+        .where(
+          and(
+            eq(loans.userId, input.studentId),
+            or(eq(loans.status, "RESERVED"), eq(loans.status, "ACTIVE")),
+          ),
+        );
+
+      if ((activeLoansCount[0]?.count ?? 0) >= MAX_ACTIVE_LOANS_PER_USER) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Este usuario ya tiene ${MAX_ACTIVE_LOANS_PER_USER} libros reservados o en préstamo. Debe devolver alguno antes de prestarle otro.`,
+        });
+      }
 
       const book = await ctx.db
         .select()

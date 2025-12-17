@@ -15,6 +15,7 @@ import {
 } from "drizzle-orm";
 import { z } from "zod";
 import { getLocationFromBackoffice } from "~/lib/backoffice-api";
+import { TRPCError } from "@trpc/server";
 
 // Helper function to enrich books with location names from backoffice
 async function enrichBooksWithLocations<
@@ -714,13 +715,36 @@ export const booksRouter = createTRPCRouter({
   deleteBook: publicProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db.delete(books).where(eq(books.id, input.id));
+      try {
+        await ctx.db.delete(books).where(eq(books.id, input.id));
 
-      return {
-        success: true,
-        method: "DELETE",
-        message: "Book deleted successfully",
-      };
+        return {
+          success: true,
+          method: "DELETE",
+          message: "Book deleted successfully",
+        };
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+
+        // Check if error is due to foreign key constraint (book has loans)
+        if (
+          errorMessage.includes("foreign key constraint") ||
+          errorMessage.includes("loans_book_id_fkey")
+        ) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "No se puede eliminar este libro porque tiene préstamos o reservas asociadas.",
+          });
+        }
+
+        // Re-throw other errors
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Error al eliminar el libro. Por favor, intentá nuevamente.",
+        });
+      }
     }),
 
   createBook: publicProcedure

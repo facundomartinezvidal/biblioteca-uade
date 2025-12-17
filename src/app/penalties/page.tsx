@@ -115,9 +115,9 @@ export default function PenaltiesPage() {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "PENDING" | "PAID"
-  >("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "PENDING" | "PAID">(
+    "all",
+  );
 
   const [selectedPenalty, setSelectedPenalty] = useState<PenaltyItem | null>(
     null,
@@ -129,6 +129,7 @@ export default function PenaltiesPage() {
     title: string;
     amount: string;
   } | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const { data, isLoading, refetch } = api.penalties.getByUserId.useQuery({
     page,
@@ -139,6 +140,7 @@ export default function PenaltiesPage() {
 
   const payPenaltyMutation = api.penalties.payPenalty.useMutation({
     onSuccess: async () => {
+      setPaymentError(null);
       await refetch();
       await Promise.all([
         utils.penalties.invalidate(), // Invalida todas las queries de penalties
@@ -150,6 +152,9 @@ export default function PenaltiesPage() {
       setPenaltyToPay(null);
       setIsDetailsModalOpen(false); // Cerrar también el modal de detalles
       setSelectedPenalty(null);
+    },
+    onError: (error) => {
+      setPaymentError(error.message);
     },
   });
 
@@ -179,6 +184,7 @@ export default function PenaltiesPage() {
     bookTitle: string,
     amount: string,
   ) => {
+    setPaymentError(null); // Limpiar error previo
     setPenaltyToPay({ id: penaltyId, title: bookTitle, amount });
     setIsPayModalOpen(true);
   };
@@ -315,7 +321,7 @@ export default function PenaltiesPage() {
                               </div>
                             </TableCell>
 
-                            <TableCell className="text-sm capitalize text-gray-700">
+                            <TableCell className="text-sm text-gray-700 capitalize">
                               {penalty.parameter?.type ?? "Sin especificar"}
                             </TableCell>
 
@@ -373,7 +379,7 @@ export default function PenaltiesPage() {
                                       ) : (
                                         <>
                                           <DollarSign className="mr-2 h-4 w-4" />
-                                          Pagar ${penalty.parameter?.amount ?? "0"}
+                                          Pagar
                                         </>
                                       )}
                                     </DropdownMenuItem>
@@ -429,11 +435,15 @@ export default function PenaltiesPage() {
       {penaltyToPay && (
         <PayPenaltyModal
           isOpen={isPayModalOpen}
-          onClose={() => setIsPayModalOpen(false)}
+          onClose={() => {
+            setIsPayModalOpen(false);
+            setPaymentError(null);
+          }}
           onConfirm={handleConfirmPay}
           bookTitle={penaltyToPay.title}
           amount={penaltyToPay.amount}
           isLoading={payPenaltyMutation.isPending}
+          error={paymentError}
         />
       )}
     </div>

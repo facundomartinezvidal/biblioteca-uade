@@ -53,15 +53,18 @@ export function ManageCatalogModals({
   }, [type]);
 
   // Queries gated by active tab
-  const authorsQuery = api.catalog.getAllAuthors.useQuery(undefined, {
-    enabled: activeType === "author" && open,
-  });
-  const gendersQuery = api.catalog.getAllGenders.useQuery(undefined, {
-    enabled: activeType === "gender" && open,
-  });
-  const editorialsQuery = api.catalog.getAllEditorials.useQuery(undefined, {
-    enabled: activeType === "editorial" && open,
-  });
+  const authorsQuery = api.catalog.getAllAuthors.useQuery(
+    { limit: 100 },
+    { enabled: activeType === "author" && open },
+  );
+  const gendersQuery = api.catalog.getAllGenders.useQuery(
+    { limit: 100 },
+    { enabled: activeType === "gender" && open },
+  );
+  const editorialsQuery = api.catalog.getAllEditorials.useQuery(
+    { limit: 100 },
+    { enabled: activeType === "editorial" && open },
+  );
 
   const rawList: BaseItem[] = useMemo(
     () =>

@@ -134,16 +134,29 @@ export async function getStudentsFromBackoffice(params?: {
   users = users.filter((user) => user.rol.categoria.toUpperCase() === "ALUMNO");
 
   // Apply search filter if provided
-  if (params?.search) {
-    const searchLower = params.search.toLowerCase();
-    users = users.filter(
-      (user) =>
-        user.nombre.toLowerCase().includes(searchLower) ||
-        user.apellido.toLowerCase().includes(searchLower) ||
-        user.legajo.toLowerCase().includes(searchLower) ||
-        user.email_institucional.toLowerCase().includes(searchLower) ||
-        user.dni.toLowerCase().includes(searchLower),
-    );
+  const searchTerm = params?.search?.trim();
+  if (searchTerm && searchTerm.length > 0) {
+    const searchLower = searchTerm.toLowerCase();
+    // Split search term into words for more flexible matching
+    const searchWords = searchLower.split(/\s+/).filter(word => word.length > 0);
+    
+    users = users.filter((user) => {
+      // Create a searchable string with all user fields
+      const searchableFields = [
+        user.nombre,
+        user.apellido,
+        user.legajo,
+        user.email_institucional,
+        user.dni,
+        // Also combine nombre + apellido for full name search
+        `${user.nombre} ${user.apellido}`,
+      ].map(field => (field ?? "").toLowerCase());
+      
+      // Check if ALL search words match at least one field
+      return searchWords.every(word =>
+        searchableFields.some(field => field.includes(word))
+      );
+    });
   }
 
   const total = users.length;
