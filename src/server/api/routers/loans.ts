@@ -624,6 +624,39 @@ export const loansRouter = createTRPCRouter({
       return { isLatePickup, hoursLate };
     }),
 
+  // Check if a loan is past its end date (late return)
+  checkLateReturn: enforceUserIsAdmin
+    .input(z.object({ loanId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const loan = await ctx.db
+        .select()
+        .from(loans)
+        .where(eq(loans.id, input.loanId))
+        .limit(1);
+
+      if (
+        !loan[0] ||
+        (loan[0].status !== "ACTIVE" && loan[0].status !== "EXPIRED")
+      ) {
+        return { isLateReturn: false, daysLate: 0 };
+      }
+
+      if (!loan[0].endDate) {
+        return { isLateReturn: false, daysLate: 0 };
+      }
+
+      const endDate = new Date(loan[0].endDate);
+      const now = new Date();
+      const msLate = now.getTime() - endDate.getTime();
+
+      const isLateReturn = msLate > 0;
+      const daysLate = isLateReturn
+        ? Math.floor(msLate / (1000 * 60 * 60 * 24))
+        : 0;
+
+      return { isLateReturn, daysLate };
+    }),
+
   activateLoan: enforceUserIsAdmin
     .input(
       z.object({
@@ -726,7 +759,12 @@ export const loansRouter = createTRPCRouter({
     }),
 
   finishLoan: enforceUserIsAdmin
-    .input(z.object({ loanId: z.string() }))
+    .input(
+      z.object({
+        loanId: z.string(),
+        applyLateReturnPenalty: z.boolean().optional().default(false),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const loan = await ctx.db
         .select()
@@ -741,11 +779,65 @@ export const loansRouter = createTRPCRouter({
         });
       }
 
-      if (loan[0].status !== "ACTIVE") {
+      if (loan[0].status !== "ACTIVE" && loan[0].status !== "EXPIRED") {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Solo se pueden finalizar préstamos en estado ACTIVO",
+          message:
+            "Solo se pueden finalizar préstamos en estado ACTIVO o EXPIRADO",
         });
+      }
+
+      const now = new Date();
+      let penaltyApplied = false;
+
+      // Check if late return penalty should be applied
+      if (input.applyLateReturnPenalty && loan[0].endDate) {
+        const endDate = new Date(loan[0].endDate);
+
+        if (now.getTime() > endDate.getTime()) {
+          // Get the "Devolución tardía" parameter from backoffice
+          const lateReturnParam =
+            await getParameterByNameFromBackoffice("Devolución tardía");
+
+          if (lateReturnParam) {
+            // Create penalty for late return
+            const newPenalty = await ctx.db
+              .insert(userParameters)
+              .values({
+                userId: loan[0].userId,
+                loanId: input.loanId,
+                parameterId: lateReturnParam.id_parametro,
+                status: "PENDING",
+                createdAt: now,
+              })
+              .returning();
+
+            // Create notification for the penalty
+            await ctx.db.insert(notifications).values({
+              userId: loan[0].userId,
+              type: "PENALTY_APPLIED",
+              title: "Multa por devolución tardía",
+              message: `Se te aplicó una multa por devolver el libro después de la fecha límite.`,
+              loanId: input.loanId,
+              read: false,
+              createdAt: now,
+            });
+
+            // Publish event to RabbitMQ
+            if (newPenalty[0]) {
+              void publishEvent(RABBITMQ_ROUTING_KEYS.PENALTY_CREATED, {
+                sanctionId: newPenalty[0].id,
+                userId: newPenalty[0].userId,
+                parameterId: newPenalty[0].parameterId,
+                amount: parseFloat(lateReturnParam.valor_numerico),
+                status: newPenalty[0].status,
+                createdAt: newPenalty[0].createdAt,
+              });
+            }
+
+            penaltyApplied = true;
+          }
+        }
       }
 
       await ctx.db
@@ -758,7 +850,7 @@ export const loansRouter = createTRPCRouter({
         .set({ status: "AVAILABLE" })
         .where(eq(books.id, loan[0].bookId));
 
-      return { success: true };
+      return { success: true, penaltyApplied };
     }),
 
   createPenaltyForDamagedBook: enforceUserIsAdmin
@@ -777,10 +869,11 @@ export const loansRouter = createTRPCRouter({
         });
       }
 
-      if (loan[0].status !== "ACTIVE") {
+      if (loan[0].status !== "ACTIVE" && loan[0].status !== "EXPIRED") {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Solo se pueden multar préstamos en estado ACTIVO",
+          message:
+            "Solo se pueden multar préstamos en estado ACTIVO o EXPIRADO",
         });
       }
 
@@ -796,6 +889,54 @@ export const loansRouter = createTRPCRouter({
       }
 
       const now = new Date();
+      let lateReturnPenaltyApplied = false;
+
+      // Check if also late return and apply that penalty first
+      if (loan[0].endDate) {
+        const endDate = new Date(loan[0].endDate);
+        if (now.getTime() > endDate.getTime()) {
+          const lateReturnParam =
+            await getParameterByNameFromBackoffice("Devolución tardía");
+
+          if (lateReturnParam) {
+            // Create penalty for late return
+            const lateReturnPenalty = await ctx.db
+              .insert(userParameters)
+              .values({
+                userId: loan[0].userId,
+                loanId: input.loanId,
+                parameterId: lateReturnParam.id_parametro,
+                status: "PENDING",
+                createdAt: now,
+              })
+              .returning();
+
+            if (lateReturnPenalty[0]) {
+              // Create notification for late return penalty
+              await ctx.db.insert(notifications).values({
+                userId: loan[0].userId,
+                type: "PENALTY_APPLIED",
+                title: "Multa por devolución tardía",
+                message: `Se te aplicó una multa de $${lateReturnParam.valor_numerico} por devolver el libro después de la fecha límite.`,
+                penaltyId: lateReturnPenalty[0].id,
+                loanId: input.loanId,
+              });
+
+              // Publish event to RabbitMQ for late return
+              await publishEvent(RABBITMQ_ROUTING_KEYS.PENALTY_CREATED, {
+                sanctionId: lateReturnPenalty[0].id,
+                userId: lateReturnPenalty[0].userId,
+                parameterId: lateReturnPenalty[0].parameterId,
+                amount: parseFloat(lateReturnParam.valor_numerico),
+                status: lateReturnPenalty[0].status,
+                createdAt: lateReturnPenalty[0].createdAt,
+              });
+
+              lateReturnPenaltyApplied = true;
+            }
+          }
+        }
+      }
 
       // Crear la multa por libro dañado
       const newPenalty = await ctx.db
@@ -814,13 +955,13 @@ export const loansRouter = createTRPCRouter({
         await ctx.db.insert(notifications).values({
           userId: loan[0].userId,
           type: "PENALTY_APPLIED",
-          title: "Nueva multa aplicada",
+          title: "Multa por libro dañado",
           message: `Se te ha aplicado una multa de $${damagedBookParameter.valor_numerico} por libro dañado.`,
           penaltyId: newPenalty[0].id,
           loanId: input.loanId,
         });
 
-        // Publicar evento en RabbitMQ
+        // Publicar evento en RabbitMQ for damaged book
         await publishEvent(RABBITMQ_ROUTING_KEYS.PENALTY_CREATED, {
           sanctionId: newPenalty[0].id,
           userId: newPenalty[0].userId,
@@ -843,7 +984,7 @@ export const loansRouter = createTRPCRouter({
         .set({ status: "AVAILABLE" })
         .where(eq(books.id, loan[0].bookId));
 
-      return { success: true };
+      return { success: true, lateReturnPenaltyApplied };
     }),
 
   getStats: protectedProcedure.query(async ({ ctx }) => {
