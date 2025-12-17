@@ -459,7 +459,7 @@ export const loansRouter = createTRPCRouter({
             amount: PENALTY_AMOUNT,
             status: newPenalty[0].status,
             createdAt: newPenalty[0].createdAt,
-            source: "BIBLIOTECA",
+
           });
         }
       }
