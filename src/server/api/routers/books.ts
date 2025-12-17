@@ -12,6 +12,8 @@ import {
   lte,
   inArray,
   desc,
+  sql,
+  asc,
 } from "drizzle-orm";
 import { z } from "zod";
 import { getLocationFromBackoffice } from "~/lib/backoffice-api";
@@ -223,6 +225,21 @@ export const booksRouter = createTRPCRouter({
       const whereClause =
         conditions.length > 0 ? and(...conditions) : undefined;
 
+      // Get IDs of books reserved/loaned by the current user (if authenticated)
+      let userReservedBookIds: string[] = [];
+      if (ctx.user) {
+        const userLoans = await ctx.db
+          .select({ bookId: loans.bookId })
+          .from(loans)
+          .where(
+            and(
+              eq(loans.userId, ctx.user.id),
+              or(eq(loans.status, "RESERVED"), eq(loans.status, "ACTIVE")),
+            ),
+          );
+        userReservedBookIds = userLoans.map((loan) => loan.bookId);
+      }
+
       // Get total count
       const totalCountResult = await ctx.db
         .select({ count: count() })
@@ -233,6 +250,22 @@ export const booksRouter = createTRPCRouter({
         .where(whereClause);
 
       const totalCount = totalCountResult[0]?.count ?? 0;
+
+      // Build order by clause: 1. AVAILABLE, 2. Reserved by user, 3. NOT_AVAILABLE
+      const orderByClause =
+        userReservedBookIds.length > 0
+          ? sql`CASE 
+              WHEN ${books.status} = 'AVAILABLE' THEN 1
+              WHEN ${books.id} IN (${sql.join(
+                userReservedBookIds.map((id) => sql`${id}`),
+                sql`, `,
+              )}) THEN 2
+              ELSE 3
+            END`
+          : sql`CASE 
+              WHEN ${books.status} = 'AVAILABLE' THEN 1
+              ELSE 3
+            END`;
 
       // Get paginated results
       const allBooks = await ctx.db
@@ -257,6 +290,7 @@ export const booksRouter = createTRPCRouter({
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
         .where(whereClause)
+        .orderBy(asc(orderByClause), desc(books.createdAt))
         .limit(limit)
         .offset(offset);
 
@@ -591,6 +625,21 @@ export const booksRouter = createTRPCRouter({
       const whereClause =
         conditions.length > 0 ? and(...conditions) : undefined;
 
+      // Get IDs of books reserved/loaned by the current user (if authenticated)
+      let userReservedBookIds: string[] = [];
+      if (ctx.user) {
+        const userLoans = await ctx.db
+          .select({ bookId: loans.bookId })
+          .from(loans)
+          .where(
+            and(
+              eq(loans.userId, ctx.user.id),
+              or(eq(loans.status, "RESERVED"), eq(loans.status, "ACTIVE")),
+            ),
+          );
+        userReservedBookIds = userLoans.map((loan) => loan.bookId);
+      }
+
       const totalCountResult = await ctx.db
         .select({ count: count() })
         .from(books)
@@ -600,6 +649,22 @@ export const booksRouter = createTRPCRouter({
         .where(whereClause);
 
       const totalCount = totalCountResult[0]?.count ?? 0;
+
+      // Build order by clause: 1. AVAILABLE, 2. Reserved by user, 3. NOT_AVAILABLE
+      const orderByClause =
+        userReservedBookIds.length > 0
+          ? sql`CASE 
+              WHEN ${books.status} = 'AVAILABLE' THEN 1
+              WHEN ${books.id} IN (${sql.join(
+                userReservedBookIds.map((id) => sql`${id}`),
+                sql`, `,
+              )}) THEN 2
+              ELSE 3
+            END`
+          : sql`CASE 
+              WHEN ${books.status} = 'AVAILABLE' THEN 1
+              ELSE 3
+            END`;
 
       const allBooks = await ctx.db
         .select({
@@ -626,6 +691,7 @@ export const booksRouter = createTRPCRouter({
         .leftJoin(editorials, eq(books.editorialId, editorials.id))
         .leftJoin(genders, eq(books.genderId, genders.id))
         .where(whereClause)
+        .orderBy(asc(orderByClause), desc(books.createdAt))
         .limit(limit)
         .offset(offset);
 

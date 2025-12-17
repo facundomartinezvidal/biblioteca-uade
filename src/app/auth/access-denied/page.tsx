@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -14,8 +15,32 @@ import { logoutAction } from "~/app/auth/actions";
 import { toast } from "sonner";
 import Image from "next/image";
 
-export default function AccessDeniedPage() {
+const ACCESS_DENIED_MESSAGES = {
+  docente: {
+    profile: "Perfil detectado: Docente",
+    description:
+      "Los docentes no tienen acceso a este portal. Si cree que esto es un error, por favor contacte al administrador del sistema.",
+  },
+  "admin-no-bibliotecario": {
+    profile: "Perfil detectado: Administrador",
+    description:
+      "Su cuenta de administrador no tiene el subrol de Bibliotecario asignado.",
+  },
+  default: {
+    profile: "Acceso restringido",
+    description:
+      "No tiene los permisos necesarios para acceder a este portal. Por favor, contacte al administrador del sistema.",
+  },
+};
+
+function AccessDeniedContent() {
+  const searchParams = useSearchParams();
+  const reason = searchParams.get("reason") ?? "default";
   const [isLoadingLogout, setIsLoadingLogout] = useState(false);
+
+  const message =
+    ACCESS_DENIED_MESSAGES[reason as keyof typeof ACCESS_DENIED_MESSAGES] ??
+    ACCESS_DENIED_MESSAGES.default;
 
   const handleLogout = async () => {
     try {
@@ -48,23 +73,20 @@ export default function AccessDeniedPage() {
             Acceso No Autorizado
           </CardTitle>
           <CardDescription className="text-base">
-            Lo sentimos, esta aplicación está disponible únicamente para
-            alumnos y administradores.
+            Lo sentimos, esta aplicación está disponible únicamente para alumnos
+            y administradores.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-200">
-            <p className="font-medium">Perfil detectado: Docente</p>
-            <p className="mt-2">
-              Los docentes no tienen acceso a este portal. Si cree que esto es
-              un error, por favor contacte al administrador del sistema.
-            </p>
+            <p className="font-medium">{message.profile}</p>
+            <p className="mt-2">{message.description}</p>
           </div>
 
           <Button
             onClick={handleLogout}
             disabled={isLoadingLogout}
-            className="w-full bg-berkeley-blue hover:bg-berkeley-blue/90"
+            className="bg-berkeley-blue hover:bg-berkeley-blue/90 w-full"
           >
             {isLoadingLogout ? (
               <>
@@ -81,3 +103,16 @@ export default function AccessDeniedPage() {
   );
 }
 
+export default function AccessDeniedPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+        </div>
+      }
+    >
+      <AccessDeniedContent />
+    </Suspense>
+  );
+}
