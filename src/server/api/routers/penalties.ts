@@ -440,16 +440,36 @@ export const penaltiesRouter = createTRPCRouter({
       console.log("User Wallet:", walletId);
 
       // Call Core API to Transfer
-      const transferResult = await transfer(
-        {
-          from: walletId,
-          to: "SYSTEM",
-          amount: amount,
-          type: "SANCION",
-          description: "Pago de sanción",
-        },
-        userToken,
-      );
+      let transferResult: unknown;
+      try {
+        transferResult = await transfer(
+          {
+            from: walletId,
+            to: "SYSTEM",
+            amount: amount,
+            type: "SANCION",
+            description: "Pago de sanción",
+          },
+          userToken,
+        );
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+
+        // Check if error is due to insufficient funds
+        if (errorMessage.includes("Fondos insuficientes")) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `No tenés saldo suficiente en tu billetera.`,
+          });
+        }
+
+        // Re-throw other errors
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Error al procesar el pago. Por favor, intentá nuevamente.",
+        });
+      }
 
       console.log("Core API Response for Payment:", transferResult);
 

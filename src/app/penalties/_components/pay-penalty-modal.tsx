@@ -1,6 +1,6 @@
 "use client";
 
-import { DollarSign, Loader2 } from "lucide-react";
+import { AlertTriangle, DollarSign, Loader2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,6 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
+import { Alert, AlertDescription } from "~/components/ui/alert";
 
 interface PayPenaltyModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ interface PayPenaltyModalProps {
   bookTitle: string;
   amount: string;
   isLoading?: boolean;
+  error?: string | null;
 }
 
 export default function PayPenaltyModal({
@@ -28,6 +30,7 @@ export default function PayPenaltyModal({
   bookTitle,
   amount,
   isLoading = false,
+  error = null,
 }: PayPenaltyModalProps) {
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
@@ -49,6 +52,12 @@ export default function PayPenaltyModal({
               <span className="text-lg font-bold text-gray-900">${amount}</span>
             </div>
           </div>
+          {error && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading}>Cancelar</AlertDialogCancel>
