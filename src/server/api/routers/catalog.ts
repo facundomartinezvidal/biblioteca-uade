@@ -1,7 +1,8 @@
 import { createTRPCRouter, publicProcedure } from "../trpc";
 import { authors, editorials, genders } from "~/server/db/schemas";
 import { z } from "zod";
-import { eq, or, ilike, count } from "drizzle-orm";
+import { eq, or, ilike, count, and } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 
 export const catalogRouter = createTRPCRouter({
   getAllAuthors: publicProcedure
@@ -121,6 +122,27 @@ export const catalogRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      // Check if author already exists (case-insensitive, check name + lastName)
+      const existingAuthor = await ctx.db
+        .select()
+        .from(authors)
+        .where(
+          and(
+            ilike(authors.name, input.name.trim()),
+            ilike(authors.lastName, input.lastName.trim()),
+          ),
+        )
+        .limit(1);
+
+      if (existingAuthor.length > 0) {
+        const existing = existingAuthor[0]!;
+        const existingFullName = `${existing.name} ${existing.middleName ? existing.middleName + " " : ""}${existing.lastName}`.trim();
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `Ya existe un autor similar: "${existingFullName}". Por favor, verifica el listado de autores existentes antes de crear uno nuevo.`,
+        });
+      }
+
       const newAuthor = await ctx.db
         .insert(authors)
         .values({
@@ -175,6 +197,20 @@ export const catalogRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      // Check if gender already exists (case-insensitive)
+      const existingGender = await ctx.db
+        .select()
+        .from(genders)
+        .where(ilike(genders.name, input.name.trim()))
+        .limit(1);
+
+      if (existingGender.length > 0) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `Ya existe un género con el nombre "${input.name}". Por favor, verifica el listado de géneros existentes.`,
+        });
+      }
+
       const newGender = await ctx.db
         .insert(genders)
         .values({
@@ -279,6 +315,20 @@ export const catalogRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      // Check if editorial already exists (case-insensitive)
+      const existingEditorial = await ctx.db
+        .select()
+        .from(editorials)
+        .where(ilike(editorials.name, input.name.trim()))
+        .limit(1);
+
+      if (existingEditorial.length > 0) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `Ya existe una editorial con el nombre "${input.name}". Por favor, verifica el listado de editoriales existentes.`,
+        });
+      }
+
       const newEditorial = await ctx.db
         .insert(editorials)
         .values({

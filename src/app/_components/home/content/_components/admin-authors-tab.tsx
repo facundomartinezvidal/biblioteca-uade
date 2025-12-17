@@ -10,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { Plus } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { Card, CardContent } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
@@ -29,7 +28,6 @@ export function AdminAuthorsTab() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [editAuthor, setEditAuthor] = useState<Author | null>(null);
   const [deleteAuthor, setDeleteAuthor] = useState<Author | null>(null);
   const utils = api.useUtils();
@@ -48,9 +46,6 @@ export function AdminAuthorsTab() {
   }, [search]);
 
   // Mutations
-  const createAuthor = api.catalog.createAuthor.useMutation({
-    onSuccess: async () => { await utils.catalog.getAllAuthors.invalidate(); setShowAddModal(false); },
-  });
   const updateAuthor = api.catalog.updateAuthor.useMutation({
     onSuccess: async () => { await utils.catalog.getAllAuthors.invalidate(); setEditAuthor(null); },
   });
@@ -58,19 +53,17 @@ export function AdminAuthorsTab() {
     onSuccess: async () => { await utils.catalog.getAllAuthors.invalidate(); setDeleteAuthor(null); },
   });
 
-  // Form state
+  // Form state for edit
   const [form, setForm] = useState({ name: "", middleName: "", lastName: "" });
   useEffect(() => {
     if (editAuthor) setForm({ name: editAuthor.name, middleName: editAuthor.middleName ?? "", lastName: editAuthor.lastName });
     else setForm({ name: "", middleName: "", lastName: "" });
-  }, [editAuthor, showAddModal]);
+  }, [editAuthor]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editAuthor) {
       updateAuthor.mutate({ id: editAuthor.id, name: form.name.trim(), middleName: form.middleName.trim() || undefined, lastName: form.lastName.trim() });
-    } else {
-      createAuthor.mutate({ name: form.name.trim(), middleName: form.middleName.trim() || undefined, lastName: form.lastName.trim() });
     }
   };
 
@@ -85,9 +78,6 @@ export function AdminAuthorsTab() {
             className="w-full max-w-md"
           />
         </div>
-        <Button onClick={() => setShowAddModal(true)} className="bg-berkeley-blue hover:bg-berkeley-blue/90">
-          <Plus className="mr-2 h-4 w-4" /> Agregar Autor
-        </Button>
       </div>
       <Card className="shadow-sm">
         <CardContent className="px-6 py-4">
@@ -169,18 +159,18 @@ export function AdminAuthorsTab() {
           }}
         />
       )}
-      {/* Modal de agregar/editar */}
-      {(showAddModal || editAuthor) && (
+      {/* Modal de editar */}
+      {editAuthor && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40">
           <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md space-y-4 relative">
-            <h2 className="text-lg font-semibold mb-2">{editAuthor ? "Editar Autor" : "Agregar Autor"}</h2>
+            <h2 className="text-lg font-semibold mb-2">Editar Autor</h2>
             <Input placeholder="Nombre *" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
             <Input placeholder="Segundo Nombre" value={form.middleName} onChange={e => setForm(f => ({ ...f, middleName: e.target.value }))} />
             <Input placeholder="Apellido *" value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} required />
             <div className="flex justify-end gap-2 mt-4">
-              <Button type="button" variant="outline" onClick={() => { setShowAddModal(false); setEditAuthor(null); }}>Cancelar</Button>
-              <Button type="submit" className="bg-berkeley-blue hover:bg-berkeley-blue/90" disabled={createAuthor.isPending || updateAuthor.isPending}>
-                {createAuthor.isPending || updateAuthor.isPending ? "Guardando..." : "Guardar"}
+              <Button type="button" variant="outline" onClick={() => setEditAuthor(null)}>Cancelar</Button>
+              <Button type="submit" className="bg-berkeley-blue hover:bg-berkeley-blue/90" disabled={updateAuthor.isPending}>
+                {updateAuthor.isPending ? "Guardando..." : "Guardar"}
               </Button>
             </div>
           </form>
