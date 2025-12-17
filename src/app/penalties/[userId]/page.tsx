@@ -57,9 +57,9 @@ export default function PenaltyUserDetailsPage() {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "PENDING" | "PAID"
-  >("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "PENDING" | "PAID">(
+    "all",
+  );
 
   const { data: studentData, isLoading: isLoadingStudent } =
     api.user.getStudentById.useQuery({ userId });
@@ -167,7 +167,9 @@ export default function PenaltyUserDetailsPage() {
                       <TableHead>Descripción</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead className="min-w-[120px]">Creada</TableHead>
-                      <TableHead className="min-w-[120px]">Vencimiento</TableHead>
+                      <TableHead className="min-w-[120px]">
+                        Vencimiento
+                      </TableHead>
                       <TableHead className="min-w-[120px]">Monto</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -211,7 +213,7 @@ export default function PenaltyUserDetailsPage() {
                               </div>
                             </TableCell>
 
-                            <TableCell className="text-sm capitalize text-gray-700">
+                            <TableCell className="text-sm text-gray-700 capitalize">
                               {penalty.parameter?.type ?? "Sin especificar"}
                             </TableCell>
 
@@ -227,14 +229,13 @@ export default function PenaltyUserDetailsPage() {
                               {formatDate(penalty.createdAt)}
                             </TableCell>
 
-                            <TableCell className="text-sm text-gray-600">
+                            <TableCell className="text-sm">
                               {(() => {
+                                if (penalty.status === "PAID") return "—";
                                 if (!penalty.createdAt) return "N/A";
                                 const dueDate = new Date(penalty.createdAt);
                                 dueDate.setDate(dueDate.getDate() + 14);
-                                const isOverdue =
-                                  new Date() > dueDate &&
-                                  penalty.status === "PENDING";
+                                const isOverdue = new Date() > dueDate;
                                 return (
                                   <span
                                     className={
@@ -244,6 +245,7 @@ export default function PenaltyUserDetailsPage() {
                                     }
                                   >
                                     {formatDate(dueDate)}
+                                    {isOverdue && " (Vencida)"}
                                   </span>
                                 );
                               })()}
