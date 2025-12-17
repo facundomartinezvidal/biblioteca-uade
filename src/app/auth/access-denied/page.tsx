@@ -54,16 +54,6 @@ function AccessDeniedContent() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4 dark:from-slate-900 dark:to-slate-950">
-      <div className="mb-8">
-        <Image
-          src="/favicon.png"
-          alt="UADE Logo"
-          width={120}
-          height={120}
-          className="object-contain"
-        />
-      </div>
-
       <Card className="w-full max-w-md border-red-200 dark:border-red-800">
         <CardHeader className="space-y-1 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
