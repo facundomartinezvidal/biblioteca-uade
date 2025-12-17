@@ -10,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { Plus } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { Card, CardContent } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
@@ -28,7 +27,6 @@ export function AdminEditorialsTab() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [editEditorial, setEditEditorial] = useState<Editorial | null>(null);
   const [deleteEditorial, setDeleteEditorial] = useState<Editorial | null>(null);
   const utils = api.useUtils();
@@ -47,19 +45,6 @@ export function AdminEditorialsTab() {
   }, [search]);
 
   // Mutations
-  const createEditorial = api.catalog.createEditorial.useMutation({
-    onSuccess: async () => { 
-      await Promise.all([
-        utils.catalog.invalidate(),
-        utils.books.invalidate(),
-      ]); 
-      toast.success("Editorial creada exitosamente");
-      setShowAddModal(false); 
-    },
-    onError: (err) => {
-      toast.error(err.message || "Error al crear la editorial");
-    },
-  });
   const updateEditorial = api.catalog.updateEditorial.useMutation({
     onSuccess: async () => { 
       await Promise.all([
@@ -87,19 +72,17 @@ export function AdminEditorialsTab() {
     },
   });
 
-  // Form state
+  // Form state for edit
   const [form, setForm] = useState({ name: "" });
   useEffect(() => {
     if (editEditorial) setForm({ name: editEditorial.name });
     else setForm({ name: "" });
-  }, [editEditorial, showAddModal]);
+  }, [editEditorial]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editEditorial) {
       updateEditorial.mutate({ id: editEditorial.id, name: form.name.trim() });
-    } else {
-      createEditorial.mutate({ name: form.name.trim() });
     }
   };
 
@@ -114,9 +97,6 @@ export function AdminEditorialsTab() {
             className="w-full max-w-md"
           />
         </div>
-        <Button onClick={() => setShowAddModal(true)} className="bg-berkeley-blue hover:bg-berkeley-blue/90">
-          <Plus className="mr-2 h-4 w-4" /> Agregar Editorial
-        </Button>
       </div>
       <Card className="shadow-sm">
         <CardContent className="px-6 py-4">
@@ -192,16 +172,16 @@ export function AdminEditorialsTab() {
           }}
         />
       )}
-      {/* Modal de agregar/editar */}
-      {(showAddModal || editEditorial) && (
+      {/* Modal de editar */}
+      {editEditorial && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40">
           <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md space-y-4 relative">
-            <h2 className="text-lg font-semibold mb-2">{editEditorial ? "Editar Editorial" : "Agregar Editorial"}</h2>
+            <h2 className="text-lg font-semibold mb-2">Editar Editorial</h2>
             <Input placeholder="Nombre *" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
             <div className="flex justify-end gap-2 mt-4">
-              <Button type="button" variant="outline" onClick={() => { setShowAddModal(false); setEditEditorial(null); }}>Cancelar</Button>
-              <Button type="submit" className="bg-berkeley-blue hover:bg-berkeley-blue/90" disabled={createEditorial.isPending || updateEditorial.isPending}>
-                {createEditorial.isPending || updateEditorial.isPending ? "Guardando..." : "Guardar"}
+              <Button type="button" variant="outline" onClick={() => setEditEditorial(null)}>Cancelar</Button>
+              <Button type="submit" className="bg-berkeley-blue hover:bg-berkeley-blue/90" disabled={updateEditorial.isPending}>
+                {updateEditorial.isPending ? "Guardando..." : "Guardar"}
               </Button>
             </div>
           </form>

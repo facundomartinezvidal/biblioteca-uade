@@ -7,14 +7,59 @@ import { AdminAuthorsTab } from "./admin-authors-tab";
 import { AdminEditorialsTab } from "./admin-editorials-tab";
 import { AdminGendersTab } from "./admin-genders-tab";
 import { AddBookModal } from "./add-book-modal";
+import { AddAuthorModal } from "./add-author-modal";
+import { AddEditorialModal } from "./add-editorial-modal";
+import { AddGenderModal } from "./add-gender-modal";
 import { api } from "~/trpc/react";
 
+type TabValue = "books" | "authors" | "editorials" | "genders";
+
+const tabConfig: Record<TabValue, { label: string; buttonText: string }> = {
+  books: { label: "Libros", buttonText: "Agregar Libro" },
+  authors: { label: "Autores", buttonText: "Agregar Autor" },
+  editorials: { label: "Editoriales", buttonText: "Agregar Editorial" },
+  genders: { label: "Géneros", buttonText: "Agregar Género" },
+};
+
 export function AdminCatalogTabs() {
+  const [activeTab, setActiveTab] = useState<TabValue>("books");
   const [showAddBookModal, setShowAddBookModal] = useState(false);
+  const [showAddAuthorModal, setShowAddAuthorModal] = useState(false);
+  const [showAddEditorialModal, setShowAddEditorialModal] = useState(false);
+  const [showAddGenderModal, setShowAddGenderModal] = useState(false);
   const utils = api.useUtils();
 
-  const handleRefresh = () => {
+  const handleRefreshBooks = () => {
     void utils.books.getAllAdmin.invalidate();
+  };
+
+  const handleRefreshAuthors = () => {
+    void utils.catalog.getAllAuthors.invalidate();
+  };
+
+  const handleRefreshEditorials = () => {
+    void utils.catalog.getAllEditorials.invalidate();
+  };
+
+  const handleRefreshGenders = () => {
+    void utils.catalog.getAllGenders.invalidate();
+  };
+
+  const handleAddClick = () => {
+    switch (activeTab) {
+      case "books":
+        setShowAddBookModal(true);
+        break;
+      case "authors":
+        setShowAddAuthorModal(true);
+        break;
+      case "editorials":
+        setShowAddEditorialModal(true);
+        break;
+      case "genders":
+        setShowAddGenderModal(true);
+        break;
+    }
   };
 
   return (
@@ -31,15 +76,19 @@ export function AdminCatalogTabs() {
           </div>
         </div>
         <Button
-          onClick={() => setShowAddBookModal(true)}
+          onClick={handleAddClick}
           className="bg-berkeley-blue hover:bg-berkeley-blue/90"
         >
-          <Plus className="mr-2 h-4 w-4" /> Agregar Libro
+          <Plus className="mr-2 h-4 w-4" /> {tabConfig[activeTab].buttonText}
         </Button>
       </div>
 
-      <Tabs defaultValue="books" className="w-full">
-        <TabsList className="mb-6 grid grid-cols-4 w-full">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as TabValue)}
+        className="w-full"
+      >
+        <TabsList className="mb-6 grid w-full grid-cols-4">
           <TabsTrigger value="books">Libros</TabsTrigger>
           <TabsTrigger value="authors">Autores</TabsTrigger>
           <TabsTrigger value="editorials">Editoriales</TabsTrigger>
@@ -62,7 +111,22 @@ export function AdminCatalogTabs() {
       <AddBookModal
         isOpen={showAddBookModal}
         onClose={() => setShowAddBookModal(false)}
-        onSuccess={handleRefresh}
+        onSuccess={handleRefreshBooks}
+      />
+      <AddAuthorModal
+        isOpen={showAddAuthorModal}
+        onClose={() => setShowAddAuthorModal(false)}
+        onSuccess={handleRefreshAuthors}
+      />
+      <AddEditorialModal
+        isOpen={showAddEditorialModal}
+        onClose={() => setShowAddEditorialModal(false)}
+        onSuccess={handleRefreshEditorials}
+      />
+      <AddGenderModal
+        isOpen={showAddGenderModal}
+        onClose={() => setShowAddGenderModal(false)}
+        onSuccess={handleRefreshGenders}
       />
     </div>
   );

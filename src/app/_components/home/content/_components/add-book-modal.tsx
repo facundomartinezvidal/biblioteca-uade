@@ -420,7 +420,7 @@ export function AddBookModal({
                   <form.Field name="authorId">
                     {(field) => (
                       <div className="space-y-2">
-                        <Label htmlFor="authorId">Autor</Label>
+                        <Label htmlFor="authorId">Autor *</Label>
                         <Combobox
                           options={authors.map((author) => ({
                             value: author.id,
@@ -440,7 +440,7 @@ export function AddBookModal({
                   <form.Field name="genderId">
                     {(field) => (
                       <div className="space-y-2">
-                        <Label htmlFor="genderId">Género</Label>
+                        <Label htmlFor="genderId">Género *</Label>
                         <Combobox
                           options={genders.map((gender) => ({
                             value: gender.id,
@@ -462,7 +462,7 @@ export function AddBookModal({
                   <form.Field name="editorialId">
                     {(field) => (
                       <div className="space-y-2">
-                        <Label htmlFor="editorialId">Editorial</Label>
+                        <Label htmlFor="editorialId">Editorial *</Label>
                         <Combobox
                           options={editorials.map((editorial) => ({
                             value: editorial.id,
@@ -481,7 +481,7 @@ export function AddBookModal({
                   <form.Field name="year">
                     {(field) => (
                       <div className="space-y-2">
-                        <Label htmlFor="year">Año</Label>
+                        <Label htmlFor="year">Año *</Label>
                         <Input
                           id="year"
                           type="number"
@@ -548,16 +548,24 @@ export function AddBookModal({
               selector={(state) => ({
                 title: state.values.title,
                 isbn: state.values.isbn,
+                authorId: state.values.authorId,
+                genderId: state.values.genderId,
+                editorialId: state.values.editorialId,
+                year: state.values.year,
               })}
             >
-              {({ title, isbn }) => (
+              {({ title, isbn, authorId, genderId, editorialId, year }) => (
                 <Button
                   type="submit"
                   className="bg-berkeley-blue hover:bg-berkeley-blue/90"
                   disabled={
                     createBookMutation.isPending ||
                     !title.trim() ||
-                    !isbn.trim()
+                    !isbn.trim() ||
+                    !authorId?.trim() ||
+                    !genderId?.trim() ||
+                    !editorialId?.trim() ||
+                    !year
                   }
                 >
                   {createBookMutation.isPending && (

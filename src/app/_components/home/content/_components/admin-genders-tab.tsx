@@ -10,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { Plus } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { Card, CardContent } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
@@ -27,7 +26,6 @@ export function AdminGendersTab() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [editGender, setEditGender] = useState<Gender | null>(null);
   const [deleteGender, setDeleteGender] = useState<Gender | null>(null);
   const utils = api.useUtils();
@@ -46,9 +44,6 @@ export function AdminGendersTab() {
   }, [search]);
 
   // Mutations
-  const createGender = api.catalog.createGender.useMutation({
-    onSuccess: async () => { await utils.catalog.getAllGenders.invalidate(); setShowAddModal(false); },
-  });
   const updateGender = api.catalog.updateGender.useMutation({
     onSuccess: async () => { await utils.catalog.getAllGenders.invalidate(); setEditGender(null); },
   });
@@ -56,19 +51,17 @@ export function AdminGendersTab() {
     onSuccess: async () => { await utils.catalog.getAllGenders.invalidate(); setDeleteGender(null); },
   });
 
-  // Form state
+  // Form state for edit
   const [form, setForm] = useState({ name: "" });
   useEffect(() => {
     if (editGender) setForm({ name: editGender.name });
     else setForm({ name: "" });
-  }, [editGender, showAddModal]);
+  }, [editGender]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editGender) {
       updateGender.mutate({ id: editGender.id, name: form.name.trim() });
-    } else {
-      createGender.mutate({ name: form.name.trim() });
     }
   };
 
@@ -83,9 +76,6 @@ export function AdminGendersTab() {
             className="w-full max-w-md"
           />
         </div>
-        <Button onClick={() => setShowAddModal(true)} className="bg-berkeley-blue hover:bg-berkeley-blue/90">
-          <Plus className="mr-2 h-4 w-4" /> Agregar Género
-        </Button>
       </div>
       <Card className="shadow-sm">
         <CardContent className="px-6 py-4">
@@ -161,16 +151,16 @@ export function AdminGendersTab() {
           }}
         />
       )}
-      {/* Modal de agregar/editar */}
-      {(showAddModal || editGender) && (
+      {/* Modal de editar */}
+      {editGender && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40">
           <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md space-y-4 relative">
-            <h2 className="text-lg font-semibold mb-2">{editGender ? "Editar Género" : "Agregar Género"}</h2>
+            <h2 className="text-lg font-semibold mb-2">Editar Género</h2>
             <Input placeholder="Nombre *" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
             <div className="flex justify-end gap-2 mt-4">
-              <Button type="button" variant="outline" onClick={() => { setShowAddModal(false); setEditGender(null); }}>Cancelar</Button>
-              <Button type="submit" className="bg-berkeley-blue hover:bg-berkeley-blue/90" disabled={createGender.isPending || updateGender.isPending}>
-                {createGender.isPending || updateGender.isPending ? "Guardando..." : "Guardar"}
+              <Button type="button" variant="outline" onClick={() => setEditGender(null)}>Cancelar</Button>
+              <Button type="submit" className="bg-berkeley-blue hover:bg-berkeley-blue/90" disabled={updateGender.isPending}>
+                {updateGender.isPending ? "Guardando..." : "Guardar"}
               </Button>
             </div>
           </form>

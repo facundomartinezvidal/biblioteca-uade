@@ -804,8 +804,7 @@ export const loansRouter = createTRPCRouter({
       {},
     );
 
-    const activeLoans =
-      (loanStatusMap.ACTIVE ?? 0) + (loanStatusMap.RESERVED ?? 0);
+    const activeLoans = loanStatusMap.ACTIVE ?? 0;
     const finishedLoans = loanStatusMap.FINISHED ?? 0;
     const pendingFines =
       (penaltyStatusMap.PENDING ?? 0) + (penaltyStatusMap.EXPIRED ?? 0);
