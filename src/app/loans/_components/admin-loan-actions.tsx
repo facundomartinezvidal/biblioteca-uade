@@ -64,6 +64,13 @@ export function AdminLoanActions({
       { enabled: showActivateDialog && loanStatus === "RESERVED" }
     );
 
+  // Check if return is late (past end date)
+  const { data: lateReturnData, isLoading: isCheckingLateReturn } =
+    api.loans.checkLateReturn.useQuery(
+      { loanId },
+      { enabled: showFinishDialog && (loanStatus === "ACTIVE" || loanStatus === "EXPIRED") }
+    );
+
   const activateLoanMutation = api.loans.activateLoan.useMutation({
     onSuccess: async (data) => {
       await Promise.all([
@@ -88,15 +95,20 @@ export function AdminLoanActions({
   });
 
   const finishLoanMutation = api.loans.finishLoan.useMutation({
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       await Promise.all([
         utils.loans.invalidate(), // Invalida todas las queries de loans
         utils.books.invalidate(), // Invalida todas las queries de books
         utils.dashboard.invalidate(), // Invalida dashboard
         utils.notifications.invalidate(), // Invalida notificaciones
+        utils.penalties.invalidate(), // Invalida penalties si se creó una
       ]);
       onSuccess?.();
-      toast.success("Préstamo finalizado exitosamente");
+      if (data.penaltyApplied) {
+        toast.success("Préstamo finalizado y usuario multado por devolución tardía");
+      } else {
+        toast.success("Préstamo finalizado exitosamente");
+      }
       setShowFinishDialog(false);
       setShouldCreatePenalty(false);
     },
@@ -109,7 +121,7 @@ export function AdminLoanActions({
 
   const createPenaltyMutation =
     api.loans.createPenaltyForDamagedBook.useMutation({
-      onSuccess: async () => {
+      onSuccess: async (data) => {
         await Promise.all([
           utils.loans.invalidate(), // Invalida todas las queries de loans
           utils.books.invalidate(), // Invalida todas las queries de books
@@ -118,7 +130,11 @@ export function AdminLoanActions({
           utils.notifications.invalidate(), // Invalida notificaciones
         ]);
         onSuccess?.();
-        toast.success("Multa creada y préstamo finalizado exitosamente");
+        if (data.lateReturnPenaltyApplied) {
+          toast.success("Multas por devolución tardía y libro dañado aplicadas");
+        } else {
+          toast.success("Multa por libro dañado aplicada y préstamo finalizado");
+        }
         setShowFinishDialog(false);
         setShouldCreatePenalty(false);
       },
@@ -155,11 +171,14 @@ export function AdminLoanActions({
 
   const handleFinish = async () => {
     if (shouldCreatePenalty) {
-      // Si está marcada la opción de multar, crear la multa (que también finaliza el préstamo)
+      // Si está marcada la opción de multar por libro dañado, crear la multa (que también finaliza el préstamo)
       createPenaltyMutation.mutate({ loanId });
     } else {
-      // Si no, solo finalizar el préstamo normalmente
-      finishLoanMutation.mutate({ loanId });
+      // Finalizar el préstamo, aplicando multa por devolución tardía si corresponde
+      finishLoanMutation.mutate({ 
+        loanId,
+        applyLateReturnPenalty: lateReturnData?.isLateReturn ?? false
+      });
     }
   };
 
@@ -172,7 +191,7 @@ export function AdminLoanActions({
   };
 
   const canActivate = loanStatus === "RESERVED";
-  const canFinish = loanStatus === "ACTIVE";
+  const canFinish = loanStatus === "ACTIVE" || loanStatus === "EXPIRED";
   const canReserveAgain = loanStatus === "FINISHED";
 
   const isLoading =
@@ -320,6 +339,27 @@ export function AdminLoanActions({
             </AlertDialogDescription>
           </AlertDialogHeader>
 
+          {/* Warning for late return */}
+          {isCheckingLateReturn ? (
+            <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+              <span className="text-sm text-gray-600">Verificando fecha de devolución...</span>
+            </div>
+          ) : lateReturnData?.isLateReturn ? (
+            <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4">
+              <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
+              <div className="grid gap-1.5">
+                <span className="text-sm font-semibold text-amber-900">
+                  Devolución tardía - Se aplicará multa
+                </span>
+                <p className="text-xs text-amber-700">
+                  El préstamo venció hace {lateReturnData.daysLate} día{lateReturnData.daysLate !== 1 ? "s" : ""}. 
+                  Al finalizar, se aplicará automáticamente una multa al usuario por devolución tardía.
+                </p>
+              </div>
+            </div>
+          ) : null}
+
           {/* Opción de multar por libro dañado */}
           <div className="flex items-start space-x-3 rounded-lg border border-red-200 bg-red-50 p-4">
             <input
@@ -338,7 +378,7 @@ export function AdminLoanActions({
                 <span className="text-red-900">Multar por libro dañado</span>
               </Label>
               <p className="text-xs text-red-700">
-                Se creará una multa por el daño al libro
+                Se creará una multa adicional por el daño al libro
               </p>
             </div>
           </div>
@@ -364,17 +404,21 @@ export function AdminLoanActions({
               className={
                 shouldCreatePenalty
                   ? "bg-red-600 hover:bg-red-700"
-                  : "bg-berkeley-blue hover:bg-berkeley-blue/90"
+                  : lateReturnData?.isLateReturn
+                    ? "bg-amber-600 hover:bg-amber-700"
+                    : "bg-berkeley-blue hover:bg-berkeley-blue/90"
               }
-              disabled={isLoading}
+              disabled={isLoading || isCheckingLateReturn}
             >
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {shouldCreatePenalty ? "Creando multa" : "Finalizando"}
+                  {shouldCreatePenalty ? "Creando multas..." : lateReturnData?.isLateReturn ? "Finalizando y multando..." : "Finalizando..."}
                 </>
               ) : shouldCreatePenalty ? (
                 "Multar y Finalizar"
+              ) : lateReturnData?.isLateReturn ? (
+                "Finalizar y Multar"
               ) : (
                 "Finalizar"
               )}
